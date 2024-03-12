@@ -417,7 +417,8 @@ bool mcp_setBitrate(FuriHalSpiBusHandle* spi, MCP_BITRATE bitrate, MCP_CLOCK clk
 
 static bool readCanMsg(FuriHalSpiBusHandle* spi, const uint8_t addr, CANFRAME* frame) {
     bool ret = true;
-    uint8_t ctrl = 0;
+    uint8_t ctrl = 0, len = 0;
+    static uint8_t data = 0;
 
     ret = read_Id(spi, addr, &frame->canId, &frame->ext);
     if(!ret) return ret;
