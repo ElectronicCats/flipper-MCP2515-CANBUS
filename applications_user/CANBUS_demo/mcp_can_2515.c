@@ -473,6 +473,31 @@ ERROR_CAN readMSG(MCP2515* mcp_can, CANFRAME* frame) {
     return ret;
 }
 
+//--------------------------------------------------------------------------------
+//  To get check errors
+//--------------------------------------------------------------------------------
+
+ERROR_CAN checkError(MCP2515* mcp_can) {
+    FuriHalSpiBusHandle* spi = mcp_can->spi;
+    static uint8_t eflg = 0;
+
+    if(eflg & MCP_EFLG_ERRORMASK)
+        return ERROR_FAIL;
+    else
+        return ERROR_OK;
+}
+
+ERROR_CAN checkReceive(MCP2515* mcp_can) {
+    FuriHalSpiBusHandle* spi = mcp_can->spi;
+    static uint8_t status = 0;
+    mcp_get_status(spi, &status);
+
+    if(status & MCP_STAT_RXIF_MASK)
+        return ERROR_OK;
+    else
+        return ERROR_NOMSG;
+}
+
 //----------------------------------------------------------------------------------------------
 //
 //      TO INIT THE COMMUNICATION

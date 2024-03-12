@@ -17,7 +17,11 @@ int app_main(void* p) {
     } else {
         log_exception("FAILURE");
     }
+
     while(furi_hal_gpio_read(&gpio_button_back)) {
+        if(checkReceive(mcp_can) == ERROR_OK) {
+            log_info("Message received");
+        }
         if(readMSG(mcp_can, frame) == ERROR_OK) {
             log_info(
                 "id: %li \tlen: %u\tdata: %u\t%u\t%u\t%u\t%u\t%u\t%u\t%u",
@@ -32,9 +36,13 @@ int app_main(void* p) {
                 frame->buffer[6],
                 frame->buffer[7]);
         }
+
+        if(checkError(mcp_can) == ERROR_FAIL) {
+            log_exception("ERROR");
+        }
         furi_delay_ms(10);
     }
-    
+
     freeMCP2515(mcp_can);
 
     return 0;

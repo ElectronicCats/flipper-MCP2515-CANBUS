@@ -351,6 +351,8 @@ bool setSleepMode(FuriHalSpiBusHandle* spi);
 bool setLoopBackMode(FuriHalSpiBusHandle* spi);
 
 // To read and write a message
+ERROR_CAN checkError(MCP2515* mcp_can);
+ERROR_CAN checkReceive(MCP2515* mcp_can);
 ERROR_CAN readMSG(MCP2515* mcp_can, CANFRAME* frame); // Read a CAN BUS message
 
 #endif
