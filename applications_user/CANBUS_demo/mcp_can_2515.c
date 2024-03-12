@@ -425,7 +425,7 @@ static bool readCanMsg(FuriHalSpiBusHandle* spi, const uint8_t addr, CANFRAME* f
     ret = read_register(spi, addr - 1, &ctrl);
     if(!ret) return ret;
 
-    ret = read_register(spi, addr + 4, &(frame->len));
+    ret = read_register(spi, addr + 4, &(len));
     if(!ret) return ret;
 
     if(ctrl & 0x08)
@@ -433,12 +433,13 @@ static bool readCanMsg(FuriHalSpiBusHandle* spi, const uint8_t addr, CANFRAME* f
     else
         frame->req = 0;
 
-    ret = read_register(spi, addr + 5, frame->buffer);
+    frame->len = len;
 
-    if(frame->len != 8) {
-        for(uint8_t i = frame->len; i < 8; i++) {
-            frame->buffer[i] = 0;
-        }
+    len &= MCP_DLC_MASK;
+
+    for(uint8_t i = 0; i < len; i++) {
+        read_register(spi, addr + 5 + i, &data);
+        frame->buffer[i] = data;
     }
     return ret;
 }

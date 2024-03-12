@@ -319,7 +319,7 @@ typedef struct {
     uint8_t ext;
     uint8_t req;
     uint8_t len;
-    uint8_t* buffer;
+    uint8_t buffer[MAX_LEN];
 } CANFRAME;
 typedef struct {
     MCP_MODE mode;
