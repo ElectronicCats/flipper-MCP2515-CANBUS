@@ -433,14 +433,13 @@ static bool readCanMsg(FuriHalSpiBusHandle* spi, const uint8_t addr, CANFRAME* f
     else
         frame->req = 0;
 
-    // This part is not working well, need how to save the
-    // values in the variable buffer from the CANFRAME struct
-    uint8_t dataCan[MAX_LEN] = {0, 0, 0, 0, 0, 0, 0, 0};
+    ret = read_register(spi, addr + 5, frame->buffer);
 
-    ret = read_register(spi, addr, dataCan);
-
-    frame->buffer = dataCan;
-
+    if(frame->len != 8) {
+        for(uint8_t i = frame->len; i < 8; i++) {
+            frame->buffer[i] = 0;
+        }
+    }
     return ret;
 }
 

@@ -1,4 +1,4 @@
-#include "library/mcp_can_2515.h"
+#include "mcp_can_2515.h"
 
 //--------------------------------------------------------------------------
 //  Main
@@ -17,13 +17,24 @@ int app_main(void* p) {
     } else {
         log_exception("FAILURE");
     }
-
-    if(readMSG(mcp_can, frame) == ERROR_OK) {
-        log_info("val %u", frame->buffer[0]);
-    } else {
-        log_exception("NO MSG READ");
+    while(furi_hal_gpio_read(&gpio_button_back)) {
+        if(readMSG(mcp_can, frame) == ERROR_OK) {
+            log_info(
+                "id: %li \tlen: %u\tdata: %u\t%u\t%u\t%u\t%u\t%u\t%u\t%u",
+                frame->canId,
+                frame->len,
+                frame->buffer[0],
+                frame->buffer[1],
+                frame->buffer[2],
+                frame->buffer[3],
+                frame->buffer[4],
+                frame->buffer[5],
+                frame->buffer[6],
+                frame->buffer[7]);
+        }
+        furi_delay_ms(10);
     }
-
+    
     freeMCP2515(mcp_can);
 
     return 0;
