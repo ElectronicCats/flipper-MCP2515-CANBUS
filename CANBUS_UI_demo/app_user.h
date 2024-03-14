@@ -8,7 +8,9 @@
 #include <gui/modules/variable_item_list.h>
 #include "scenes/app_scene_functions.h"
 
+#include "libraries/mcp_can_2515.h"
 typedef struct {
+    MCP2515* mcp_can;
     SceneManager* scene_manager;
     ViewDispatcher* view_dispatcher;
     Widget* widget;
@@ -24,6 +26,7 @@ typedef enum { SniffingOptionEvent, SettingsOptionEvent } MainMenuEvents;
 typedef enum { BitrateOption, CristyalClkOption } OptionSettings;
 typedef enum { BitrateOptionEvent, CristyalClkOptionEvent } SettingsMenuEvent;
 
+// Views in the App
 typedef enum {
     SubmenuView,
     ViewWidget,
