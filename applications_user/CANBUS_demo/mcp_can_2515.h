@@ -144,9 +144,10 @@ typedef enum {
     MCP_STAT_RXIF_MASK = (0x03),
     MCP_STAT_RX0IF = (1 << 0),
     MCP_STAT_RX1IF = (1 << 1),
-    //
+    // For erro detection
     MCP_EFLG_RX1OVR = (1 << 7),
     MCP_EFLG_RX0OVR = (1 << 6),
+    //
     MCP_EFLG_TXBO = (1 << 5),
     MCP_EFLG_TXEP = (1 << 4),
     MCP_EFLG_RXEP = (1 << 3),
@@ -351,6 +352,7 @@ bool setSleepMode(FuriHalSpiBusHandle* spi);
 bool setLoopBackMode(FuriHalSpiBusHandle* spi);
 
 // To read and write a message
+uint8_t get_error(MCP2515* mcp_can);
 ERROR_CAN checkError(MCP2515* mcp_can);
 ERROR_CAN checkReceive(MCP2515* mcp_can);
 ERROR_CAN readMSG(MCP2515* mcp_can, CANFRAME* frame); // Read a CAN BUS message
