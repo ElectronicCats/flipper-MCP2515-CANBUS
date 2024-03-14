@@ -5,6 +5,7 @@
 #include <gui/scene_manager.h>
 #include <gui/modules/widget.h>
 #include <gui/modules/submenu.h>
+#include <gui/modules/variable_item_list.h>
 #include "scenes/app_scene_functions.h"
 
 typedef struct {
@@ -12,6 +13,7 @@ typedef struct {
     ViewDispatcher* view_dispatcher;
     Widget* widget;
     Submenu* submenu;
+    VariableItemList* varList;
 } App;
 
 // This is for the menu Options
@@ -25,4 +27,5 @@ typedef enum { BitrateOptionEvent, CristyalClkOptionEvent } SettingsMenuEvent;
 typedef enum {
     SubmenuView,
     ViewWidget,
+    VarListView,
 } scenesViews;

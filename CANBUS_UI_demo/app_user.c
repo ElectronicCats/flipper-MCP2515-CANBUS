@@ -27,6 +27,10 @@ static App* app_alloc() {
     app->submenu = submenu_alloc();
     view_dispatcher_add_view(app->view_dispatcher, SubmenuView, submenu_get_view(app->submenu));
 
+    app->varList = variable_item_list_alloc();
+    view_dispatcher_add_view(
+        app->view_dispatcher, VarListView, variable_item_list_get_view(app->varList));
+
     return app;
 }
 
