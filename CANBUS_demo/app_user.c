@@ -38,12 +38,9 @@ int app_main(void* p) {
 
     while(furi_hal_gpio_read(&gpio_button_back) && run) {
         if(interrupt) {
-            if(readMSG(mcp_can, frame) == ERROR_OK) log_info("Message read");
-            interrupt = false;
-        }
-        /*if(checkReceive(mcp_can) == ERROR_OK) {
             msg_ok = checkError(mcp_can);
             error = get_error(mcp_can);
+            interrupt = false;
         }
 
         if((readMSG(mcp_can, frame) == ERROR_OK) && (msg_ok == ERROR_OK)) {
@@ -73,7 +70,7 @@ int app_main(void* p) {
                 frame->buffer[5],
                 frame->buffer[6],
                 frame->buffer[7]);
-        }*/
+        }
         furi_delay_ms(10);
     }
 
