@@ -38,6 +38,11 @@ static App* app_alloc() {
     view_dispatcher_add_view(
         app->view_dispatcher, VarListView, variable_item_list_get_view(app->varList));
 
+    app->textBox = text_box_alloc();
+    view_dispatcher_add_view(app->view_dispatcher, TextBoxView, text_box_get_view(app->textBox));
+
+    app->text = furi_string_alloc();
+
     app->mcp_can = mcp_alloc(MCP_NORMAL, MCP_16MHZ, MCP_500KBPS);
 
     app->can_frame = malloc(sizeof(CANFRAME));
@@ -52,6 +57,7 @@ static void app_free(App* app) {
     view_dispatcher_free(app->view_dispatcher);
     widget_free(app->widget);
     submenu_free(app->submenu);
+    text_box_free(app->textBox);
     free(app);
 }
 

@@ -6,6 +6,7 @@
 #include <gui/modules/widget.h>
 #include <gui/modules/submenu.h>
 #include <gui/modules/variable_item_list.h>
+#include <gui/modules/text_box.h>
 #include "scenes/app_scene_functions.h"
 
 #include "libraries/mcp_can_2515.h"
@@ -26,6 +27,8 @@ typedef struct {
     Widget* widget;
     Submenu* submenu;
     VariableItemList* varList;
+    TextBox* textBox;
+    FuriString* text;
 } App;
 
 // This is for the menu Options
@@ -41,4 +44,5 @@ typedef enum {
     SubmenuView,
     ViewWidget,
     VarListView,
+    TextBoxView,
 } scenesViews;

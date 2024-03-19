@@ -36,6 +36,7 @@ static int32_t sniffing_worker(void* context) {
     return 0;
 }
 
+// Sniffing on enter
 void app_scene_Sniffing_on_enter(void* context) {
     App* app = context;
     app->mcp_can->mode = MCP_LISTENONLY;
@@ -46,18 +47,26 @@ void app_scene_Sniffing_on_enter(void* context) {
     // Start the thread
     furi_thread_start(app->thread);
 
-    widget_reset(app->widget);
-    widget_add_string_element(
-        app->widget, 25, 15, AlignLeft, AlignCenter, FontPrimary, "Sniffing");
-    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+    if(scene_manager_get_scene_state(app->scene_manager, AppScenesniffingOption) ==
+       SniffingOption) {
+        text_box_set_font(app->textBox, TextBoxFontText);
+        text_box_set_focus(app->textBox, TextBoxFocusEnd);
+        furi_string_cat_printf(app->text, "HOLA MUNDO");
+    }
+
+    text_box_reset(app->textBox);
+    view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
+    text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
 }
 
+// Sniffing on event
 bool app_scene_Sniffing_on_event(void* context, SceneManagerEvent event) {
     UNUSED(context);
     UNUSED(event);
     return false;
 }
 
+// Sniffing on exit
 void app_scene_Sniffing_on_exit(void* context) {
     App* app = context;
 
@@ -67,5 +76,5 @@ void app_scene_Sniffing_on_exit(void* context) {
     furi_thread_free(app->thread);
 
     // widget Reset
-    widget_reset(app->widget);
+    text_box_reset(app->textBox);
 }
