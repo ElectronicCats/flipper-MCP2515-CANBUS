@@ -1,4 +1,15 @@
+#include "furi.h"
+#include "furi_hal.h"
 #include "mcp_can_2515.h"
+
+#define pinInterrupt &gpio_swclk;
+
+static bool interrupt = false;
+
+void callback_interrupt(void* context) {
+    UNUSED(context);
+    interrupt = true;
+}
 
 int app_main(void* p) {
     UNUSED(p);
@@ -8,9 +19,16 @@ int app_main(void* p) {
     ERROR_CAN msg_ok = ERROR_OK;
     uint8_t error = 0;
 
+    UNUSED(msg_ok);
+    UNUSED(error);
+
     ERROR_CAN debugStatus = ERROR_OK;
     MCP2515* mcp_can = mcp_alloc(MCP_LISTENONLY, MCP_16MHZ, MCP_500KBPS);
     debugStatus = mcp2515_init(mcp_can);
+
+    furi_hal_gpio_init(&gpio_swclk, GpioModeInterruptFall, GpioPullNo, GpioSpeedVeryHigh);
+    furi_hal_gpio_add_int_callback(&gpio_swclk, callback_interrupt, NULL);
+
     if(debugStatus == ERROR_OK) {
         log_info("ALL GOOD");
     } else {
@@ -19,7 +37,11 @@ int app_main(void* p) {
     }
 
     while(furi_hal_gpio_read(&gpio_button_back) && run) {
-        if(checkReceive(mcp_can) == ERROR_OK) {
+        if(interrupt) {
+            if(readMSG(mcp_can, frame) == ERROR_OK) log_info("Message read");
+            interrupt = false;
+        }
+        /*if(checkReceive(mcp_can) == ERROR_OK) {
             msg_ok = checkError(mcp_can);
             error = get_error(mcp_can);
         }
@@ -51,10 +73,11 @@ int app_main(void* p) {
                 frame->buffer[5],
                 frame->buffer[6],
                 frame->buffer[7]);
-        }
-
+        }*/
         furi_delay_ms(10);
     }
+
+    furi_hal_gpio_remove_int_callback(&gpio_swclk);
 
     freeMCP2515(mcp_can);
 
