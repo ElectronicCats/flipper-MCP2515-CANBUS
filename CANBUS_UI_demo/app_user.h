@@ -9,8 +9,18 @@
 #include "scenes/app_scene_functions.h"
 
 #include "libraries/mcp_can_2515.h"
+
+typedef enum {
+    WorkerflagStop = (1 << 0),
+    WorkerflagReceived = (1 << 1),
+} WorkerEvtFlags;
+
+#define WORKER_ALL_RX_EVENTS (WorkerflagStop | WorkerflagReceived)
+
 typedef struct {
     MCP2515* mcp_can;
+    CANFRAME* can_frame;
+    FuriThread* thread;
     SceneManager* scene_manager;
     ViewDispatcher* view_dispatcher;
     Widget* widget;

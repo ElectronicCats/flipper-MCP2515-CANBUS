@@ -12,6 +12,12 @@ static bool app_scene_back_event(void* context) {
     return scene_manager_handle_back_event(app->scene_manager);
 }
 
+static void app_tick_event(void* context) {
+    furi_assert(context);
+    App* app = context;
+    UNUSED(app);
+}
+
 static App* app_alloc() {
     App* app = malloc(sizeof(App));
     app->scene_manager = scene_manager_alloc(&app_scene_handlers, app);
@@ -20,6 +26,7 @@ static App* app_alloc() {
     view_dispatcher_set_custom_event_callback(app->view_dispatcher, app_scene_costum_callback);
     view_dispatcher_set_event_callback_context(app->view_dispatcher, app);
     view_dispatcher_set_navigation_event_callback(app->view_dispatcher, app_scene_back_event);
+    view_dispatcher_set_tick_event_callback(app->view_dispatcher, app_tick_event, 100);
 
     app->widget = widget_alloc();
     view_dispatcher_add_view(app->view_dispatcher, ViewWidget, widget_get_view(app->widget));
@@ -30,6 +37,10 @@ static App* app_alloc() {
     app->varList = variable_item_list_alloc();
     view_dispatcher_add_view(
         app->view_dispatcher, VarListView, variable_item_list_get_view(app->varList));
+
+    app->mcp_can = mcp_alloc(MCP_NORMAL, MCP_16MHZ, MCP_500KBPS);
+
+    app->can_frame = malloc(sizeof(CANFRAME));
 
     return app;
 }
