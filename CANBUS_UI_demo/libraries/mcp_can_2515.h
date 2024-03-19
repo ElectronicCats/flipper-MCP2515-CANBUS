@@ -344,12 +344,12 @@ void freeMCP2515(MCP2515* mcp_can);
 // This is to get the status
 bool mcp_get_status(FuriHalSpiBusHandle* spi, uint8_t* data);
 
-// The mods we want to work
-bool setConfigMode(FuriHalSpiBusHandle* spi);
-bool setNormalMode(FuriHalSpiBusHandle* spi);
-bool setListenOnlyMode(FuriHalSpiBusHandle* spi);
-bool setSleepMode(FuriHalSpiBusHandle* spi);
-bool setLoopBackMode(FuriHalSpiBusHandle* spi);
+// The modes we want to work
+bool setConfigMode(MCP2515* mcp_can);
+bool setNormalMode(MCP2515* mcp_can);
+bool setListenOnlyMode(MCP2515* mcp_can);
+bool setSleepMode(MCP2515* mcp_can);
+bool setLoopBackMode(MCP2515* mcp_can);
 
 // To read and write a message
 uint8_t get_error(MCP2515* mcp_can);

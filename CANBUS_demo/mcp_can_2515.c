@@ -187,35 +187,40 @@ static bool setMode(FuriHalSpiBusHandle* spi, MCP_MODE newmode) {
 }
 
 // To set Config mode
-bool setConfigMode(FuriHalSpiBusHandle* spi) {
+bool setConfigMode(MCP2515* mcp_can) {
+    FuriHalSpiBusHandle* spi = mcp_can->spi;
     bool ret = true;
     ret = setMode(spi, MODE_CONFIG);
     return ret;
 }
 
 // To set Normal Mode
-bool setNormalMode(FuriHalSpiBusHandle* spi) {
+bool setNormalMode(MCP2515* mcp_can) {
+    FuriHalSpiBusHandle* spi = mcp_can->spi;
     bool ret = true;
     ret = setMode(spi, MCP_NORMAL);
     return ret;
 }
 
 //To set ListenOnly Mode
-bool setListenOnlyMode(FuriHalSpiBusHandle* spi) {
+bool setListenOnlyMode(MCP2515* mcp_can) {
+    FuriHalSpiBusHandle* spi = mcp_can->spi;
     bool ret = true;
     ret = setMode(spi, MCP_LISTENONLY);
     return ret;
 }
 
 // To set Sleep Mode
-bool setSleepMode(FuriHalSpiBusHandle* spi) {
+bool setSleepMode(MCP2515* mcp_can) {
+    FuriHalSpiBusHandle* spi = mcp_can->spi;
     bool ret = true;
     ret = setMode(spi, MCP_SLEEP);
     return ret;
 }
 
 // To set LoopBackMode
-bool setLoopBackMode(FuriHalSpiBusHandle* spi) {
+bool setLoopBackMode(MCP2515* mcp_can) {
+    FuriHalSpiBusHandle* spi = mcp_can->spi;
     bool ret = true;
     ret = setMode(spi, MCP_LOOPBACK);
     return ret;
