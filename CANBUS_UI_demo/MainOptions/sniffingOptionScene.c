@@ -10,6 +10,8 @@ static int32_t sniffing_worker(void* context) {
     MCP2515* mcp_can = app->mcp_can;
     CANFRAME* frame = app->can_frame;
 
+    UNUSED(frame);
+
     ERROR_CAN debugStatus = mcp2515_init(mcp_can);
 
     furi_hal_gpio_init(&gpio_swclk, GpioModeInterruptFall, GpioPullNo, GpioSpeedVeryHigh);
@@ -24,10 +26,34 @@ static int32_t sniffing_worker(void* context) {
     while(true) {
         uint32_t events =
             furi_thread_flags_wait(WORKER_ALL_RX_EVENTS, FuriFlagWaitAny, FuriWaitForever);
-        if(events & WorkerflagStop)
+        uint8_t error = 0;
+        bool error_msg = false;
+
+        UNUSED(error);
+        UNUSED(error_msg);
+
+        if(events & WorkerflagStop) {
             break;
-        else if(events & WorkerflagReceived) {
-            if(readMSG(mcp_can, frame) == ERROR_OK) log_info("Message Received");
+        } else if(events & WorkerflagReceived) {
+            if((readMSG(mcp_can, frame) == ERROR_OK) && (error_msg == false)) {
+                furi_string_cat_printf(app->text, "addr:%lx    ERROR: OK\n", frame->canId);
+                furi_string_cat_printf(app->text, "DATA[%x]    req:%x\n", frame->len, frame->req);
+                for(uint8_t i = 0; i < frame->len; i++) {
+                    furi_string_cat_printf(app->text, "%x  ", frame->buffer[i]);
+                }
+                furi_string_cat_printf(app->text, "\n");
+            }
+
+            if((readMSG(mcp_can, frame) == ERROR_OK) && (error_msg == true)) {
+                furi_string_cat_printf(app->text, "addr:%lx  ERROR: %x\n", frame->canId, error);
+                furi_string_cat_printf(app->text, "DATA[%x]    req:%x\n", frame->len, frame->req);
+                for(uint8_t i = 0; i < frame->len; i++) {
+                    furi_string_cat_printf(app->text, "%x  ", frame->buffer[i]);
+                }
+                furi_string_cat_printf(app->text, "\n");
+            }
+
+            view_dispatcher_send_custom_event(app->view_dispatcher, Refresh);
         }
     }
 
@@ -51,7 +77,7 @@ void app_scene_Sniffing_on_enter(void* context) {
        SniffingOption) {
         text_box_set_font(app->textBox, TextBoxFontText);
         text_box_set_focus(app->textBox, TextBoxFocusEnd);
-        furi_string_cat_printf(app->text, "HOLA MUNDO");
+        furi_string_cat_printf(app->text, " ");
     }
 
     text_box_reset(app->textBox);
@@ -61,9 +87,15 @@ void app_scene_Sniffing_on_enter(void* context) {
 
 // Sniffing on event
 bool app_scene_Sniffing_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
-    return false;
+    App* app = context;
+    UNUSED(app);
+    bool consume = false;
+    if(event.type == SceneManagerEventTypeCustom) {
+        text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
+        text_box_set_focus(app->textBox, TextBoxFocusEnd);
+        consume = true;
+    }
+    return consume;
 }
 
 // Sniffing on exit
@@ -74,6 +106,9 @@ void app_scene_Sniffing_on_exit(void* context) {
     furi_thread_flags_set(furi_thread_get_id(app->thread), WorkerflagStop);
     furi_thread_join(app->thread);
     furi_thread_free(app->thread);
+
+    // Clear the string
+    furi_string_reset(app->text);
 
     // widget Reset
     text_box_reset(app->textBox);

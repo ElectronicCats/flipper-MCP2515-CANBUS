@@ -18,7 +18,7 @@ void app_scene_Menu_on_enter(void* context) {
 
     submenu_set_header(app->submenu, "MENU CANBUS");
 
-    submenu_add_item(app->submenu, "Sniffing", SniffingOption, basic_scenes_menu_callback, app);
+    submenu_add_item(app->submenu, "Sniffer", SniffingOption, basic_scenes_menu_callback, app);
 
     submenu_add_item(app->submenu, "Settings", SettingsOption, basic_scenes_menu_callback, app);
 

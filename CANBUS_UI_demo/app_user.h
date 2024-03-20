@@ -36,6 +36,7 @@ typedef enum { SniffingOption, SettingsOption } MainMenuOptions;
 typedef enum { SniffingOptionEvent, SettingsOptionEvent } MainMenuEvents;
 
 // This is for the Setting Options
+typedef enum { Refresh } SnifferEvents;
 typedef enum { BitrateOption, CristyalClkOption } OptionSettings;
 typedef enum { BitrateOptionEvent, CristyalClkOptionEvent } SettingsMenuEvent;
 
