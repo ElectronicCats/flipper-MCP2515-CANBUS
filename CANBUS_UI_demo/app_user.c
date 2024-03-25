@@ -42,6 +42,7 @@ static App* app_alloc() {
     view_dispatcher_add_view(app->view_dispatcher, TextBoxView, text_box_get_view(app->textBox));
 
     app->text = furi_string_alloc();
+    app->textLabel = furi_string_alloc();
 
     app->mcp_can = mcp_alloc(MCP_NORMAL, MCP_16MHZ, MCP_500KBPS);
 
@@ -58,6 +59,10 @@ static void app_free(App* app) {
     widget_free(app->widget);
     submenu_free(app->submenu);
     text_box_free(app->textBox);
+
+    furi_string_free(app->text);
+    furi_string_free(app->textLabel);
+
     free(app);
 }
 

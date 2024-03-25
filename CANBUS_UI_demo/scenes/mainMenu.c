@@ -6,6 +6,10 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
     case SniffingOption:
         scene_manager_handle_custom_event(app->scene_manager, SniffingOptionEvent);
         break;
+
+    case SniffingTestOption:
+        scene_manager_handle_custom_event(app->scene_manager, SniffingTestOptionEvent);
+        break;
     case SettingsOption:
         scene_manager_handle_custom_event(app->scene_manager, SettingsOptionEvent);
         break;
@@ -19,6 +23,9 @@ void app_scene_Menu_on_enter(void* context) {
     submenu_set_header(app->submenu, "MENU CANBUS");
 
     submenu_add_item(app->submenu, "Sniffer", SniffingOption, basic_scenes_menu_callback, app);
+
+    submenu_add_item(
+        app->submenu, "TestSniffing", SniffingTestOption, basic_scenes_menu_callback, app);
 
     submenu_add_item(app->submenu, "Settings", SettingsOption, basic_scenes_menu_callback, app);
 
@@ -36,7 +43,10 @@ bool app_scene_Menu_on_event(void* context, SceneManagerEvent event) {
             scene_manager_next_scene(app->scene_manager, AppScenesniffingOption);
             consumed = true;
             break;
-
+        case SniffingTestOptionEvent:
+            scene_manager_next_scene(app->scene_manager, AppScenesniffingTestOption);
+            consumed = true;
+            break;
         case SettingsOptionEvent:
             scene_manager_next_scene(app->scene_manager, AppScenesettingsOption);
             consumed = true;

@@ -29,16 +29,20 @@ typedef struct {
     VariableItemList* varList;
     TextBox* textBox;
     FuriString* text;
+    FuriString* textLabel;
 } App;
 
 // This is for the menu Options
-typedef enum { SniffingOption, SettingsOption } MainMenuOptions;
-typedef enum { SniffingOptionEvent, SettingsOptionEvent } MainMenuEvents;
+typedef enum { SniffingOption, SniffingTestOption, SettingsOption } MainMenuOptions;
+typedef enum { SniffingOptionEvent, SniffingTestOptionEvent, SettingsOptionEvent } MainMenuEvents;
 
 // This is for the Setting Options
 typedef enum { Refresh } SnifferEvents;
 typedef enum { BitrateOption, CristyalClkOption } OptionSettings;
 typedef enum { BitrateOptionEvent, CristyalClkOptionEvent } SettingsMenuEvent;
+
+// This is for SniffingTest Options
+typedef enum { GoViewEvent, RefreshTest } SniffingTestEvents;
 
 // Views in the App
 typedef enum {
