@@ -1,5 +1,7 @@
 #include "../app_user.h"
 
+bool condition = true;
+
 static void callback_interrupt(void* context) {
     App* app = context;
     furi_thread_flags_set(furi_thread_get_id(app->thread), WorkerflagReceived);
@@ -8,10 +10,9 @@ static void callback_interrupt(void* context) {
 static int32_t workerSniffing(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
-    CANFRAME* frame = app->can_frame;
+    CANFRAME frame = app->can_frame;
 
     uint32_t currentId = 0;
-    uint32_t listId[64];
     uint8_t numOfDevices = 0;
     bool first = true;
 
@@ -32,34 +33,39 @@ static int32_t workerSniffing(void* context) {
             furi_thread_flags_wait(WORKER_ALL_RX_EVENTS, FuriFlagWaitAny, FuriWaitForever);
         if(events & WorkerflagStop) break;
         if(events & WorkerflagReceived) {
-            if(readMSG(mcp_can, frame) == ERROR_OK) {
-                currentId = frame->canId;
-                log_info("direccion leida");
+            if(readMSG(mcp_can, &frame) == ERROR_OK) {
+                currentId = frame.canId;
             }
 
             if(first) {
-                listId[0] = currentId;
+                app->frameArray[0] = frame;
+                app->index_aux = numOfDevices;
                 numOfDevices++;
                 first = false;
+
                 furi_string_reset(app->textLabel);
                 furi_string_cat_printf(app->textLabel, "0x%lx", currentId);
                 view_dispatcher_send_custom_event(app->view_dispatcher, RefreshTest);
             } else {
-                log_info("Size: %u", numOfDevices);
-
                 for(uint8_t i = 0; i < numOfDevices; i++) {
-                    if(listId[i] == currentId) {
+                    if(app->frameArray[i].canId == currentId) {
+                        app->frameArray[i] = frame;
                         new = false;
                         break;
                     }
                 }
 
                 if(new) {
-                    listId[numOfDevices] = currentId;
+                    app->frameArray[numOfDevices] = frame;
+                    app->index_aux = numOfDevices;
                     numOfDevices++;
                     furi_string_reset(app->textLabel);
                     furi_string_cat_printf(app->textLabel, "0x%lx", currentId);
                     view_dispatcher_send_custom_event(app->view_dispatcher, RefreshTest);
+                }
+
+                if(frame.canId == app->frameArray[app->index].canId) {
+                    view_dispatcher_send_custom_event(app->view_dispatcher, ShowData);
                 }
             }
         }
@@ -71,18 +77,21 @@ static int32_t workerSniffing(void* context) {
 }
 
 void sniffingTest_callback(void* context, uint32_t index) {
-    UNUSED(context);
-    UNUSED(index);
+    App* app = context;
+    app->index = index;
+    scene_manager_handle_custom_event(app->scene_manager, EntryEvent);
 }
 
 void app_scene_SniffingTest_on_enter(void* context) {
     App* app = context;
 
-    app->thread = furi_thread_alloc_ex("SniffingWork", 1024, workerSniffing, app);
-    furi_thread_start(app->thread);
-
-    submenu_reset(app->submenu);
-    submenu_set_header(app->submenu, "CANBUS ADDRESS");
+    if(condition) {
+        app->thread = furi_thread_alloc_ex("SniffingWork", 1024, workerSniffing, app);
+        furi_thread_start(app->thread);
+        submenu_reset(app->submenu);
+        submenu_set_header(app->submenu, "CANBUS ADDRESS");
+    }
+    condition = true;
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
 }
 
@@ -94,7 +103,18 @@ bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
         switch(event.event) {
         case RefreshTest:
             submenu_add_item(
-                app->submenu, furi_string_get_cstr(app->textLabel), 0, sniffingTest_callback, app);
+                app->submenu,
+                furi_string_get_cstr(app->textLabel),
+                app->index_aux,
+                sniffingTest_callback,
+                app);
+
+            log_info("val_asign: %lx", app->index_aux);
+            break;
+        case EntryEvent:
+            condition = false;
+            scene_manager_next_scene(app->scene_manager, AppSceneboxSniffing);
+            consumed = true;
             break;
         default:
             break;
@@ -108,11 +128,97 @@ bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
 
 void app_scene_SniffingTest_on_exit(void* context) {
     App* app = context;
+    if(condition) {
+        furi_thread_flags_set(furi_thread_get_id(app->thread), WorkerflagStop);
+        furi_thread_join(app->thread);
+        furi_thread_free(app->thread);
 
-    furi_thread_flags_set(furi_thread_get_id(app->thread), WorkerflagStop);
-    furi_thread_join(app->thread);
-    furi_thread_free(app->thread);
+        furi_string_reset(app->textLabel);
+        submenu_reset(app->submenu);
+    }
+}
 
-    furi_string_reset(app->textLabel);
-    submenu_reset(app->submenu);
+//-------------------------- FOR THE SNIFFING BOX --------------------------------------------------------
+
+void app_scene_BoxSniffing_on_enter(void* context) {
+    App* app = context;
+
+    text_box_set_font(app->textBox, TextBoxFontText);
+
+    furi_string_cat_printf(
+        app->text,
+        "ADDR: %lx DLC: %u \n",
+        app->frameArray[app->index].canId,
+        app->frameArray[app->index].len);
+
+    furi_string_cat_printf(
+        app->text,
+        "[0]:  %x [1]:  %x [2]:  %x [3]:  %x \n[4]:  %x [5]:  %x [6]:  %x [7]:  %x",
+        app->frameArray[app->index].buffer[0],
+        app->frameArray[app->index].buffer[1],
+        app->frameArray[app->index].buffer[2],
+        app->frameArray[app->index].buffer[3],
+        app->frameArray[app->index].buffer[4],
+        app->frameArray[app->index].buffer[5],
+        app->frameArray[app->index].buffer[6],
+        app->frameArray[app->index].buffer[7]);
+
+    log_info("Item: %lx pos: %lx", app->frameArray[app->index].canId, app->index);
+
+    text_box_reset(app->textBox);
+    view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
+    text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
+    text_box_set_focus(app->textBox, TextBoxFocusEnd);
+}
+
+bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    bool consumed = false;
+    if(event.event == ShowData) {
+        log_info(
+            "ADDR: %lx DLC: %u",
+            app->frameArray[app->index].canId,
+            app->frameArray[app->index].len);
+        log_info(
+            "[0]: %x [1]: %x [2]: %x [3]: %x [4]: %x [5]: %x [6]: %x [7]: %x",
+            app->frameArray[app->index].buffer[0],
+            app->frameArray[app->index].buffer[1],
+            app->frameArray[app->index].buffer[2],
+            app->frameArray[app->index].buffer[3],
+            app->frameArray[app->index].buffer[4],
+            app->frameArray[app->index].buffer[5],
+            app->frameArray[app->index].buffer[6],
+            app->frameArray[app->index].buffer[7]);
+
+        furi_string_reset(app->text);
+
+        furi_string_cat_printf(
+            app->text,
+            "ADDR: %lx DLC: %u \n",
+            app->frameArray[app->index].canId,
+            app->frameArray[app->index].len);
+
+        furi_string_cat_printf(
+            app->text,
+            "[0]:  %x [1]:  %x [2]:  %x [3]:  %x \n[4]:  %x [5]:  %x [6]:  %x [7]:  %x",
+            app->frameArray[app->index].buffer[0],
+            app->frameArray[app->index].buffer[1],
+            app->frameArray[app->index].buffer[2],
+            app->frameArray[app->index].buffer[3],
+            app->frameArray[app->index].buffer[4],
+            app->frameArray[app->index].buffer[5],
+            app->frameArray[app->index].buffer[6],
+            app->frameArray[app->index].buffer[7]);
+
+        text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
+        text_box_set_focus(app->textBox, TextBoxFocusEnd);
+        consumed = true;
+    }
+    return consumed;
+}
+
+void app_scene_BoxSniffing_on_exit(void* context) {
+    App* app = context;
+    furi_string_reset(app->text);
+    text_box_reset(app->textBox);
 }

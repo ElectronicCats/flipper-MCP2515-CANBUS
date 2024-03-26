@@ -46,7 +46,7 @@ static App* app_alloc() {
 
     app->mcp_can = mcp_alloc(MCP_NORMAL, MCP_16MHZ, MCP_500KBPS);
 
-    app->can_frame = malloc(sizeof(CANFRAME));
+    app->frameArray = (CANFRAME*)malloc(100 * sizeof(CANFRAME));
 
     return app;
 }
@@ -62,6 +62,8 @@ static void app_free(App* app) {
 
     furi_string_free(app->text);
     furi_string_free(app->textLabel);
+
+    free(app->frameArray);
 
     free(app);
 }

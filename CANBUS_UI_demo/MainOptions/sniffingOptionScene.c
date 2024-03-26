@@ -8,9 +8,7 @@ static void callback_interrupt(void* context) {
 static int32_t sniffing_worker(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
-    CANFRAME* frame = app->can_frame;
-
-    UNUSED(frame);
+    CANFRAME frame = app->can_frame;
 
     ERROR_CAN debugStatus = mcp2515_init(mcp_can);
 
@@ -35,20 +33,20 @@ static int32_t sniffing_worker(void* context) {
         if(events & WorkerflagStop) {
             break;
         } else if(events & WorkerflagReceived) {
-            if((readMSG(mcp_can, frame) == ERROR_OK) && (error_msg == false)) {
-                furi_string_cat_printf(app->text, "addr:%lx    ERROR: OK\n", frame->canId);
-                furi_string_cat_printf(app->text, "DATA[%x]    req:%x\n", frame->len, frame->req);
-                for(uint8_t i = 0; i < frame->len; i++) {
-                    furi_string_cat_printf(app->text, "%x  ", frame->buffer[i]);
+            if((readMSG(mcp_can, &frame) == ERROR_OK) && (error_msg == false)) {
+                furi_string_cat_printf(app->text, "addr:%lx    ERROR: OK\n", frame.canId);
+                furi_string_cat_printf(app->text, "DATA[%x]    req:%x\n", frame.len, frame.req);
+                for(uint8_t i = 0; i < frame.len; i++) {
+                    furi_string_cat_printf(app->text, "%x  ", frame.buffer[i]);
                 }
                 furi_string_cat_printf(app->text, "\n");
             }
 
-            if((readMSG(mcp_can, frame) == ERROR_OK) && (error_msg == true)) {
-                furi_string_cat_printf(app->text, "addr:%lx  ERROR: %x\n", frame->canId, error);
-                furi_string_cat_printf(app->text, "DATA[%x]    req:%x\n", frame->len, frame->req);
-                for(uint8_t i = 0; i < frame->len; i++) {
-                    furi_string_cat_printf(app->text, "%x  ", frame->buffer[i]);
+            if((readMSG(mcp_can, &frame) == ERROR_OK) && (error_msg == true)) {
+                furi_string_cat_printf(app->text, "addr:%lx  ERROR: %x\n", frame.canId, error);
+                furi_string_cat_printf(app->text, "DATA[%x]    req:%x\n", frame.len, frame.req);
+                for(uint8_t i = 0; i < frame.len; i++) {
+                    furi_string_cat_printf(app->text, "%x  ", frame.buffer[i]);
                 }
                 furi_string_cat_printf(app->text, "\n");
             }

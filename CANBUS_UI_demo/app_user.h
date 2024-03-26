@@ -20,7 +20,7 @@ typedef enum {
 
 typedef struct {
     MCP2515* mcp_can;
-    CANFRAME* can_frame;
+    CANFRAME can_frame;
     FuriThread* thread;
     SceneManager* scene_manager;
     ViewDispatcher* view_dispatcher;
@@ -30,6 +30,9 @@ typedef struct {
     TextBox* textBox;
     FuriString* text;
     FuriString* textLabel;
+    CANFRAME* frameArray;
+    uint32_t index;
+    uint32_t index_aux;
 } App;
 
 // This is for the menu Options
@@ -42,7 +45,7 @@ typedef enum { BitrateOption, CristyalClkOption } OptionSettings;
 typedef enum { BitrateOptionEvent, CristyalClkOptionEvent } SettingsMenuEvent;
 
 // This is for SniffingTest Options
-typedef enum { GoViewEvent, RefreshTest } SniffingTestEvents;
+typedef enum { RefreshTest, EntryEvent, ShowData } SniffingTestEvents;
 
 // Views in the App
 typedef enum {
