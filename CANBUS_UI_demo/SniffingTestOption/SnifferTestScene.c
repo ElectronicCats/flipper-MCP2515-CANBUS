@@ -55,7 +55,7 @@ static int32_t workerSniffing(void* context) {
                     }
                 }
 
-                if(new) {
+                if(new&& condition) {
                     app->frameArray[numOfDevices] = frame;
                     app->index_aux = numOfDevices;
                     numOfDevices++;
@@ -108,8 +108,6 @@ bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
                 app->index_aux,
                 sniffingTest_callback,
                 app);
-
-            log_info("val_asign: %lx", app->index_aux);
             break;
         case EntryEvent:
             condition = false;
@@ -163,8 +161,6 @@ void app_scene_BoxSniffing_on_enter(void* context) {
         app->frameArray[app->index].buffer[6],
         app->frameArray[app->index].buffer[7]);
 
-    log_info("Item: %lx pos: %lx", app->frameArray[app->index].canId, app->index);
-
     text_box_reset(app->textBox);
     view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
     text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
@@ -175,21 +171,6 @@ bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
     if(event.event == ShowData) {
-        log_info(
-            "ADDR: %lx DLC: %u",
-            app->frameArray[app->index].canId,
-            app->frameArray[app->index].len);
-        log_info(
-            "[0]: %x [1]: %x [2]: %x [3]: %x [4]: %x [5]: %x [6]: %x [7]: %x",
-            app->frameArray[app->index].buffer[0],
-            app->frameArray[app->index].buffer[1],
-            app->frameArray[app->index].buffer[2],
-            app->frameArray[app->index].buffer[3],
-            app->frameArray[app->index].buffer[4],
-            app->frameArray[app->index].buffer[5],
-            app->frameArray[app->index].buffer[6],
-            app->frameArray[app->index].buffer[7]);
-
         furi_string_reset(app->text);
 
         furi_string_cat_printf(
