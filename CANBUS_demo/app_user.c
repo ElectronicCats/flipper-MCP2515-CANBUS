@@ -23,7 +23,7 @@ int app_main(void* p) {
     UNUSED(error);
 
     ERROR_CAN debugStatus = ERROR_OK;
-    MCP2515* mcp_can = mcp_alloc(MCP_LISTENONLY, MCP_16MHZ, MCP_500KBPS);
+    MCP2515* mcp_can = mcp_alloc(MCP_NORMAL, MCP_16MHZ, MCP_500KBPS);
     debugStatus = mcp2515_init(mcp_can);
 
     furi_hal_gpio_init(&gpio_swclk, GpioModeInterruptFall, GpioPullNo, GpioSpeedVeryHigh);
@@ -38,12 +38,12 @@ int app_main(void* p) {
 
     while(furi_hal_gpio_read(&gpio_button_back) && run) {
         if(interrupt) {
-            msg_ok = checkError(mcp_can);
+            msg_ok = check_error(mcp_can);
             error = get_error(mcp_can);
             interrupt = false;
         }
 
-        if((readMSG(mcp_can, frame) == ERROR_OK) && (msg_ok == ERROR_OK)) {
+        if((read_can_message(mcp_can, frame) == ERROR_OK) && (msg_ok == ERROR_OK)) {
             log_info(
                 "MSG OK  id: %li \tlen: %u\tdata: %u\t%u\t%u\t%u\t%u\t%u\t%u\t%u",
                 frame->canId,
@@ -56,7 +56,7 @@ int app_main(void* p) {
                 frame->buffer[5],
                 frame->buffer[6],
                 frame->buffer[7]);
-        } else if((readMSG(mcp_can, frame) == ERROR_OK) && (msg_ok == ERROR_FAIL)) {
+        } else if((read_can_message(mcp_can, frame) == ERROR_OK) && (msg_ok == ERROR_FAIL)) {
             log_exception(
                 "MSG ERROR: %u \tid: %li \tlen: %u\tdata: %u\t%u\t%u\t%u\t%u\t%u\t%u\t%u",
                 error,
@@ -76,7 +76,7 @@ int app_main(void* p) {
 
     furi_hal_gpio_remove_int_callback(&gpio_swclk);
 
-    freeMCP2515(mcp_can);
+    free_mcp2515(mcp_can);
 
     return 0;
 }

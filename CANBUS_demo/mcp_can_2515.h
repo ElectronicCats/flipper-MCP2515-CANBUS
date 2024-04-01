@@ -47,10 +47,11 @@ static const uint8_t CANSTAT_ICOD = 0x0E;
 */
 
 /* 
-    The clock frequency of the MCP2515 module is 16MHZ but if anyone change of module you can use another clock value
-    At the moment the library only have a bitrate of 1000KBPS, 500KBPS, 250 KBPS, 125 KBPS
+*  The clock frequency of the MCP2515 module is 16MHZ but if anyone change of module you can use another clock value
+*   At the moment the library only have a bitrate of 1000KBPS, 500KBPS, 250 KBPS, 125 KBPS
 */
-// 16MHZ
+
+// These are to config the clock in 16MHz
 #define MCP_16MHz_1000kBPS_CFG1 (0x00)
 #define MCP_16MHz_1000kBPS_CFG2 (0xD0)
 #define MCP_16MHz_1000kBPS_CFG3 (0x82)
@@ -67,7 +68,7 @@ static const uint8_t CANSTAT_ICOD = 0x0E;
 #define MCP_16MHz_125kBPS_CFG2 (0xF0)
 #define MCP_16MHz_125kBPS_CFG3 (0x86)
 
-// 8MHZ
+// These are to config the clock in 8MHz
 #define MCP_8MHz_1000kBPS_CFG1 (0x00)
 #define MCP_8MHz_1000kBPS_CFG2 (0xC0)
 #define MCP_8MHz_1000kBPS_CFG3 (0x80)
@@ -84,8 +85,7 @@ static const uint8_t CANSTAT_ICOD = 0x0E;
 #define MCP_8MHz_125kBPS_CFG2 (0xB1)
 #define MCP_8MHz_125kBPS_CFG3 (0x85)
 
-// 20 MHZ
-
+// These are to config the clock in 20MHz
 #define MCP_20MHz_1000kBPS_CFG1 (0x00)
 #define MCP_20MHz_1000kBPS_CFG2 (0xD9)
 #define MCP_20MHz_1000kBPS_CFG3 (0x82)
@@ -164,7 +164,7 @@ typedef enum {
     MCP_BxRTSM_MASK = 0x07,
 } TXBnCRTL;
 
-// CANINTF Register bits
+// CANINTF bits
 typedef enum {
     MCP_RX0IF = 0x01,
     MCP_RX1IF = 0x02,
@@ -291,7 +291,7 @@ enum INSTRUCTION {
     INSTRUCTION_RESET = 0xC0
 };
 
-// ERROR Can
+// CAN ERRORS
 typedef enum {
     ERROR_OK = 0,
     ERROR_FAIL = 1,
@@ -309,12 +309,14 @@ typedef enum {
     MCP_1000KBPS,
 } MCP_BITRATE;
 
+// MCP CLOCKS
 typedef enum {
     MCP_8MHZ,
     MCP_16MHZ,
     MCP_20MHZ,
 } MCP_CLOCK;
 
+// This a struct to define the Can Frame
 typedef struct {
     uint32_t canId;
     uint8_t ext;
@@ -322,15 +324,19 @@ typedef struct {
     uint8_t len;
     uint8_t buffer[MAX_LEN];
 } CANFRAME;
+
+// This Struct is to cinfig and work with the MCP2515 device
 typedef struct {
     MCP_MODE mode;
     FuriHalSpiBusHandle* spi;
     MCP_BITRATE bitRate;
     MCP_CLOCK clck;
 } MCP2515;
-// -----------------------------------------------------------------------
-// FUNCTIONS TO WORK WITH THE MCP2515
-// -----------------------------------------------------------------------
+
+/*  This are the function that we can work
+*   in the main code to config, write and read 
+*   the CANBUS network.
+*/
 
 // Config the paramaters of MCP2515
 MCP2515* mcp_alloc(MCP_MODE mode, MCP_CLOCK clck, MCP_BITRATE bitrate);
@@ -339,22 +345,22 @@ MCP2515* mcp_alloc(MCP_MODE mode, MCP_CLOCK clck, MCP_BITRATE bitrate);
 ERROR_CAN mcp2515_init(MCP2515* mcp_can);
 
 // To close the MCP2515
-void freeMCP2515(MCP2515* mcp_can);
+void free_mcp2515(MCP2515* mcp_can);
 
 // This is to get the status
 bool mcp_get_status(FuriHalSpiBusHandle* spi, uint8_t* data);
 
 // The modes we want to work
-bool setConfigMode(MCP2515* mcp_can);
-bool setNormalMode(MCP2515* mcp_can);
-bool setListenOnlyMode(MCP2515* mcp_can);
-bool setSleepMode(MCP2515* mcp_can);
-bool setLoopBackMode(MCP2515* mcp_can);
+bool set_config_mode(MCP2515* mcp_can);
+bool set_normal_mode(MCP2515* mcp_can);
+bool set_listen_only_mode(MCP2515* mcp_can);
+bool set_sleep_mode(MCP2515* mcp_can);
+bool set_loop_back_mode(MCP2515* mcp_can);
 
 // To read and write a message
 uint8_t get_error(MCP2515* mcp_can);
-ERROR_CAN checkError(MCP2515* mcp_can);
-ERROR_CAN checkReceive(MCP2515* mcp_can);
-ERROR_CAN readMSG(MCP2515* mcp_can, CANFRAME* frame); // Read a CAN BUS message
+ERROR_CAN check_error(MCP2515* mcp_can);
+ERROR_CAN check_receive(MCP2515* mcp_can);
+ERROR_CAN read_can_message(MCP2515* mcp_can, CANFRAME* frame); // Read a CAN BUS message
 
 #endif
