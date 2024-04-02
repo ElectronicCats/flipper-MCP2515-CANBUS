@@ -33,7 +33,7 @@ static int32_t sniffing_worker(void* context) {
         if(events & WorkerflagStop) {
             break;
         } else if(events & WorkerflagReceived) {
-            if((readMSG(mcp_can, &frame) == ERROR_OK) && (error_msg == false)) {
+            if((read_can_message(mcp_can, &frame) == ERROR_OK) && (error_msg == false)) {
                 furi_string_cat_printf(app->text, "addr:%lx    ERROR: OK\n", frame.canId);
                 furi_string_cat_printf(app->text, "DATA[%x]    req:%x\n", frame.len, frame.req);
                 for(uint8_t i = 0; i < frame.len; i++) {
@@ -42,7 +42,7 @@ static int32_t sniffing_worker(void* context) {
                 furi_string_cat_printf(app->text, "\n");
             }
 
-            if((readMSG(mcp_can, &frame) == ERROR_OK) && (error_msg == true)) {
+            if((read_can_message(mcp_can, &frame) == ERROR_OK) && (error_msg == true)) {
                 furi_string_cat_printf(app->text, "addr:%lx  ERROR: %x\n", frame.canId, error);
                 furi_string_cat_printf(app->text, "DATA[%x]    req:%x\n", frame.len, frame.req);
                 for(uint8_t i = 0; i < frame.len; i++) {
@@ -56,7 +56,7 @@ static int32_t sniffing_worker(void* context) {
     }
 
     furi_hal_gpio_remove_int_callback(&gpio_swclk);
-    freeMCP2515(mcp_can);
+    free_mcp2515(mcp_can);
     return 0;
 }
 

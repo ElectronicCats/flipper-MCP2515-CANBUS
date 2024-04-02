@@ -33,7 +33,7 @@ static int32_t workerSniffing(void* context) {
             furi_thread_flags_wait(WORKER_ALL_RX_EVENTS, FuriFlagWaitAny, FuriWaitForever);
         if(events & WorkerflagStop) break;
         if(events & WorkerflagReceived) {
-            if(readMSG(mcp_can, &frame) == ERROR_OK) {
+            if(read_can_message(mcp_can, &frame) == ERROR_OK) {
                 currentId = frame.canId;
             }
 
@@ -72,7 +72,7 @@ static int32_t workerSniffing(void* context) {
     }
 
     furi_hal_gpio_remove_int_callback(&gpio_swclk);
-    freeMCP2515(mcp_can);
+    free_mcp2515(mcp_can);
     return 0;
 }
 
