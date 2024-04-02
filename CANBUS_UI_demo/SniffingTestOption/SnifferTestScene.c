@@ -143,23 +143,17 @@ void app_scene_BoxSniffing_on_enter(void* context) {
 
     text_box_set_font(app->textBox, TextBoxFontText);
 
+    furi_string_reset(app->text);
+
     furi_string_cat_printf(
         app->text,
         "ADDR: %lx DLC: %u \n",
         app->frameArray[app->index].canId,
         app->frameArray[app->index].len);
 
-    furi_string_cat_printf(
-        app->text,
-        "[0]:  %x [1]:  %x [2]:  %x [3]:  %x \n[4]:  %x [5]:  %x [6]:  %x [7]:  %x",
-        app->frameArray[app->index].buffer[0],
-        app->frameArray[app->index].buffer[1],
-        app->frameArray[app->index].buffer[2],
-        app->frameArray[app->index].buffer[3],
-        app->frameArray[app->index].buffer[4],
-        app->frameArray[app->index].buffer[5],
-        app->frameArray[app->index].buffer[6],
-        app->frameArray[app->index].buffer[7]);
+    for(uint8_t i = 0; i < (app->frameArray[app->index].len); i++) {
+        furi_string_cat_printf(app->text, "[%u]:  %x ", i, app->frameArray[app->index].buffer[i]);
+    }
 
     text_box_reset(app->textBox);
     view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
@@ -179,17 +173,10 @@ bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
             app->frameArray[app->index].canId,
             app->frameArray[app->index].len);
 
-        furi_string_cat_printf(
-            app->text,
-            "[0]:  %x [1]:  %x [2]:  %x [3]:  %x \n[4]:  %x [5]:  %x [6]:  %x [7]:  %x",
-            app->frameArray[app->index].buffer[0],
-            app->frameArray[app->index].buffer[1],
-            app->frameArray[app->index].buffer[2],
-            app->frameArray[app->index].buffer[3],
-            app->frameArray[app->index].buffer[4],
-            app->frameArray[app->index].buffer[5],
-            app->frameArray[app->index].buffer[6],
-            app->frameArray[app->index].buffer[7]);
+        for(uint8_t i = 0; i < (app->frameArray[app->index].len); i++) {
+            furi_string_cat_printf(
+                app->text, "[%u]:  %x ", i, app->frameArray[app->index].buffer[i]);
+        }
 
         text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
         text_box_set_focus(app->textBox, TextBoxFocusEnd);
