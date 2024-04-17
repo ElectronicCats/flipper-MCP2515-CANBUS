@@ -2,8 +2,6 @@
 #include "furi_hal.h"
 #include "mcp_can_2515.h"
 
-#define pinInterrupt &gpio_swclk;
-
 static bool interrupt = false;
 
 void callback_interrupt(void* context) {
@@ -15,10 +13,24 @@ int app_main(void* p) {
     UNUSED(p);
 
     CANFRAME* frame = malloc(sizeof(CANFRAME));
+
+    frame->canId = 3000;
+    frame->data_lenght = 3;
+    frame->ext = 1;
+    frame->req = 1;
+
+    for(uint8_t i = 0; i < frame->data_lenght; i++) {
+        frame->buffer[i] = 10;
+    }
+
     bool run = true;
     ERROR_CAN msg_ok = ERROR_OK;
     uint8_t error = 0;
 
+    uint8_t buff[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+    UNUSED(buff);
+    UNUSED(frame);
     UNUSED(msg_ok);
     UNUSED(error);
 
@@ -38,30 +50,14 @@ int app_main(void* p) {
 
     while(furi_hal_gpio_read(&gpio_button_back) && run) {
         if(interrupt) {
-            msg_ok = check_error(mcp_can);
-            error = get_error(mcp_can);
             interrupt = false;
         }
 
-        if((read_can_message(mcp_can, frame) == ERROR_OK) && (msg_ok == ERROR_OK)) {
+        if((read_can_message(mcp_can, frame) == ERROR_OK)) {
             log_info(
                 "MSG OK  id: %li \tlen: %u\tdata: %u\t%u\t%u\t%u\t%u\t%u\t%u\t%u",
                 frame->canId,
-                frame->len,
-                frame->buffer[0],
-                frame->buffer[1],
-                frame->buffer[2],
-                frame->buffer[3],
-                frame->buffer[4],
-                frame->buffer[5],
-                frame->buffer[6],
-                frame->buffer[7]);
-        } else if((read_can_message(mcp_can, frame) == ERROR_OK) && (msg_ok == ERROR_FAIL)) {
-            log_exception(
-                "MSG ERROR: %u \tid: %li \tlen: %u\tdata: %u\t%u\t%u\t%u\t%u\t%u\t%u\t%u",
-                error,
-                frame->canId,
-                frame->len,
+                frame->data_lenght,
                 frame->buffer[0],
                 frame->buffer[1],
                 frame->buffer[2],
@@ -71,12 +67,30 @@ int app_main(void* p) {
                 frame->buffer[6],
                 frame->buffer[7]);
         }
+
+        if(!(furi_hal_gpio_read(&gpio_button_right))) {
+            log_info("clicked");
+
+            ERROR_CAN err = send_can_frame(mcp_can, frame);
+
+            if(err == ERROR_OK) {
+                log_info("Sent Ok");
+                log_info("Frame = %u", frame->data_lenght);
+            } else {
+                log_exception("Sent Error: %u", err);
+                log_info("Frame = %u", frame->data_lenght);
+            }
+
+            furi_delay_ms(1000);
+        }
+
         furi_delay_ms(10);
     }
 
     furi_hal_gpio_remove_int_callback(&gpio_swclk);
 
     free_mcp2515(mcp_can);
+    free(frame);
 
     return 0;
 }

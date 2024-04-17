@@ -41,6 +41,7 @@ static const uint8_t CANSTAT_ICOD = 0x0E;
 #define CLKOUT_PS2 0x01
 #define CLKOUT_PS4 0x02
 #define CLKOUT_PS8 0x03
+#define TIMEOUT 50
 
 /*
 *   CAN CLOCK CONFIGURATION
@@ -298,7 +299,9 @@ typedef enum {
     ERROR_ALLTXBUSY = 2,
     ERROR_FAILINIT = 3,
     ERROR_FAILTX = 4,
-    ERROR_NOMSG = 5
+    ERROR_NOMSG = 5,
+    ERROR_GET_TXB_FTIMEOUT = 6,
+    ERROR_SEND_MSG_TIMEOUT = 7,
 } ERROR_CAN;
 
 // MCP2515 BITRATES VALUES
@@ -321,7 +324,7 @@ typedef struct {
     uint32_t canId;
     uint8_t ext;
     uint8_t req;
-    uint8_t len;
+    uint8_t data_lenght;
     uint8_t buffer[MAX_LEN];
 } CANFRAME;
 
@@ -363,4 +366,5 @@ ERROR_CAN check_error(MCP2515* mcp_can);
 ERROR_CAN check_receive(MCP2515* mcp_can);
 ERROR_CAN read_can_message(MCP2515* mcp_can, CANFRAME* frame); // Read a CAN BUS message
 
+ERROR_CAN send_can_frame(MCP2515* mcp_can, CANFRAME* frame); // Send a CANBUS Frame
 #endif
