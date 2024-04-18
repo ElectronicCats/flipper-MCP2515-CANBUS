@@ -458,7 +458,6 @@ void write_buffer(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
 
     for(uint8_t i = 0; i < data_lenght; i++) {
         set_register(spi, address + i, frame->buffer[i]);
-        log_info("REGISTER [%u] configure: %u", address + i, frame->buffer[i]);
     }
 }
 
@@ -478,13 +477,6 @@ ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame) {
     uint8_t free_buffer = 0;
     uint16_t time_waiting = 0;
 
-    log_warning(
-        "From frame ID: %lu\tEXT: %u\t REQ: %u \t DLC: %u",
-        auxiliar_frame.canId,
-        auxiliar_frame.ext,
-        auxiliar_frame.req,
-        auxiliar_frame.data_lenght);
-
     do {
         res = get_next_buffer_free(spi, &free_buffer);
         furi_delay_ms(1);
@@ -492,15 +484,6 @@ ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame) {
     } while((res == ERROR_ALLTXBUSY) && (time_waiting < 1000));
 
     if(res != ERROR_OK) return res;
-
-    log_warning(
-        "From frame ID: %lu\tEXT: %u\t REQ: %u \t DLC: %u",
-        auxiliar_frame.canId,
-        auxiliar_frame.ext,
-        auxiliar_frame.req,
-        auxiliar_frame.data_lenght);
-
-    log_warning("Free_buffer: %u", free_buffer);
 
     write_id(spi, free_buffer, &auxiliar_frame);
 

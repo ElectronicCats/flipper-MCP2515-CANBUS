@@ -20,7 +20,7 @@ int app_main(void* p) {
     frame_2->ext = 1;
     frame_2->req = 0;
 
-    for(uint8_t i = 0; i < frame->data_lenght; i++) {
+    for(uint8_t i = 0; i < frame_2->data_lenght; i++) {
         frame_2->buffer[i] = i;
     }
 
@@ -46,11 +46,7 @@ int app_main(void* p) {
     }
 
     while(furi_hal_gpio_read(&gpio_button_back) && run) {
-        if(interrupt) {
-            interrupt = false;
-        }
-
-        if((read_can_message(mcp_can, frame) == ERROR_OK)) {
+        if((interrupt) && ((read_can_message(mcp_can, frame) == ERROR_OK))) {
             log_info(
                 "MSG OK  id: %li \tlen: %u\tdata: %u\t%u\t%u\t%u\t%u\t%u\t%u\t%u",
                 frame->canId,
@@ -63,10 +59,11 @@ int app_main(void* p) {
                 frame->buffer[5],
                 frame->buffer[6],
                 frame->buffer[7]);
+            interrupt = false;
         }
 
         if(!(furi_hal_gpio_read(&gpio_button_right))) {
-            send_can_frame(mcp_can, frame);
+            send_can_frame(mcp_can, frame_2);
             furi_delay_ms(1000);
         }
 
