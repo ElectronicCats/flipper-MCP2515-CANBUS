@@ -12,8 +12,6 @@
 
 ADD_SCENE(app, Menu, MainMenu)
 
-ADD_SCENE(app, Sniffing, sniffingOption)
-
 ADD_SCENE(app, SniffingTest, sniffingTestOption)
 ADD_SCENE(app, BoxSniffing, boxSniffing)
 

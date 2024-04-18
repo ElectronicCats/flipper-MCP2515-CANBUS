@@ -16,10 +16,10 @@ static int32_t workerSniffing(void* context) {
     uint8_t numOfDevices = 0;
     bool first = true;
 
-    ERROR_CAN debugStatus = mcp2515_init(mcp_can);
-
     furi_hal_gpio_init(&gpio_swclk, GpioModeInterruptFall, GpioPullNo, GpioSpeedVeryHigh);
     furi_hal_gpio_add_int_callback(&gpio_swclk, callback_interrupt, app);
+
+    ERROR_CAN debugStatus = mcp2515_init(mcp_can);
 
     if(debugStatus == ERROR_OK) {
         log_info("MCP START OK");
@@ -149,9 +149,9 @@ void app_scene_BoxSniffing_on_enter(void* context) {
         app->text,
         "ADDR: %lx DLC: %u \n",
         app->frameArray[app->index].canId,
-        app->frameArray[app->index].len);
+        app->frameArray[app->index].data_lenght);
 
-    for(uint8_t i = 0; i < (app->frameArray[app->index].len); i++) {
+    for(uint8_t i = 0; i < (app->frameArray[app->index].data_lenght); i++) {
         furi_string_cat_printf(app->text, "[%u]:  %x ", i, app->frameArray[app->index].buffer[i]);
     }
 
@@ -171,9 +171,9 @@ bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
             app->text,
             "ADDR: %lx DLC: %u \n",
             app->frameArray[app->index].canId,
-            app->frameArray[app->index].len);
+            app->frameArray[app->index].data_lenght);
 
-        for(uint8_t i = 0; i < (app->frameArray[app->index].len); i++) {
+        for(uint8_t i = 0; i < (app->frameArray[app->index].data_lenght); i++) {
             furi_string_cat_printf(
                 app->text, "[%u]:  %x ", i, app->frameArray[app->index].buffer[i]);
         }

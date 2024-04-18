@@ -36,7 +36,7 @@ typedef struct {
 } App;
 
 // This is for the menu Options
-typedef enum { SniffingOption, SniffingTestOption, SettingsOption } MainMenuOptions;
+typedef enum { SniffingTestOption, SettingsOption } MainMenuOptions;
 typedef enum { SniffingOptionEvent, SniffingTestOptionEvent, SettingsOptionEvent } MainMenuEvents;
 
 // This is for the Setting Options
