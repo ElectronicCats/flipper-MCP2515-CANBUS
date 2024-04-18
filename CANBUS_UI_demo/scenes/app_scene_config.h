@@ -16,5 +16,6 @@ ADD_SCENE(app, SniffingTest, sniffingTestOption)
 ADD_SCENE(app, BoxSniffing, boxSniffing)
 
 ADD_SCENE(app, SenderTest, senderTest)
+ADD_SCENE(app, input_text, input_text_option)
 
 ADD_SCENE(app, Settings, settingsOption)

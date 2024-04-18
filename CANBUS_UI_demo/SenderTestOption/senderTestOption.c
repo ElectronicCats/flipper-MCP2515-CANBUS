@@ -1,6 +1,5 @@
 #include "../app_user.h"
 
-
 // Options Callback
 void callback_sender_options(VariableItem* Item) {
     UNUSED(Item);
@@ -89,4 +88,24 @@ bool app_scene_SenderTest_on_event(void* context, SceneManagerEvent event) {
 void app_scene_SenderTest_on_exit(void* context) {
     App* app = context;
     variable_item_list_reset(app->varList);
+}
+
+// ---------------------------- WARNING TO GET THE ID'S ------------------------
+
+// ---------------------------- TO SET THE VALUE OF THE FRAME ------------------
+
+void app_scene_input_text_on_enter(void* context) {
+    UNUSED(context);
+}
+
+bool app_scene_input_text_on_event(void* context, SceneManagerEvent event) {
+    UNUSED(context);
+    UNUSED(event);
+    bool consumed = false;
+
+    return consumed;
+}
+
+void app_scene_input_text_on_exit(void* context) {
+    UNUSED(context);
 }
