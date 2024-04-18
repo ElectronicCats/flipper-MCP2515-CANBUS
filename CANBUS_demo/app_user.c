@@ -15,9 +15,9 @@ int app_main(void* p) {
     CANFRAME* frame = malloc(sizeof(CANFRAME));
 
     frame->canId = 3000;
-    frame->data_lenght = 3;
+    frame->data_lenght = 5;
     frame->ext = 1;
-    frame->req = 1;
+    frame->req = 0;
 
     for(uint8_t i = 0; i < frame->data_lenght; i++) {
         frame->buffer[i] = 10;
@@ -49,7 +49,7 @@ int app_main(void* p) {
     }
 
     while(furi_hal_gpio_read(&gpio_button_back) && run) {
-        if(interrupt) {
+        /*if(interrupt) {
             interrupt = false;
         }
 
@@ -66,21 +66,10 @@ int app_main(void* p) {
                 frame->buffer[5],
                 frame->buffer[6],
                 frame->buffer[7]);
-        }
+        }*/
 
         if(!(furi_hal_gpio_read(&gpio_button_right))) {
-            log_info("clicked");
-
-            ERROR_CAN err = send_can_frame(mcp_can, frame);
-
-            if(err == ERROR_OK) {
-                log_info("Sent Ok");
-                log_info("Frame = %u", frame->data_lenght);
-            } else {
-                log_exception("Sent Error: %u", err);
-                log_info("Frame = %u", frame->data_lenght);
-            }
-
+            send_can_frame(mcp_can, frame);
             furi_delay_ms(1000);
         }
 
