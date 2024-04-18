@@ -13,24 +13,21 @@ int app_main(void* p) {
     UNUSED(p);
 
     CANFRAME* frame = malloc(sizeof(CANFRAME));
+    CANFRAME* frame_2 = malloc(sizeof(CANFRAME));
 
-    frame->canId = 3000;
-    frame->data_lenght = 5;
-    frame->ext = 1;
-    frame->req = 0;
+    frame_2->canId = 3000;
+    frame_2->data_lenght = 5;
+    frame_2->ext = 1;
+    frame_2->req = 0;
 
     for(uint8_t i = 0; i < frame->data_lenght; i++) {
-        frame->buffer[i] = i;
+        frame_2->buffer[i] = i;
     }
 
     bool run = true;
     ERROR_CAN msg_ok = ERROR_OK;
     uint8_t error = 0;
 
-    uint8_t buff[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-    UNUSED(buff);
-    UNUSED(frame);
     UNUSED(msg_ok);
     UNUSED(error);
 
@@ -49,7 +46,7 @@ int app_main(void* p) {
     }
 
     while(furi_hal_gpio_read(&gpio_button_back) && run) {
-        /*if(interrupt) {
+        if(interrupt) {
             interrupt = false;
         }
 
@@ -66,7 +63,7 @@ int app_main(void* p) {
                 frame->buffer[5],
                 frame->buffer[6],
                 frame->buffer[7]);
-        }*/
+        }
 
         if(!(furi_hal_gpio_read(&gpio_button_right))) {
             send_can_frame(mcp_can, frame);
