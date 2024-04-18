@@ -18,6 +18,7 @@ static void app_tick_event(void* context) {
     UNUSED(app);
 }
 
+
 static App* app_alloc() {
     App* app = malloc(sizeof(App));
     app->scene_manager = scene_manager_alloc(&app_scene_handlers, app);
