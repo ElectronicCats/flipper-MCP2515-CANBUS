@@ -411,9 +411,10 @@ static ERROR_CAN get_next_buffer_free(FuriHalSpiBusHandle* spi, uint8_t* buffer_
     }
     return ERROR_ALLTXBUSY;
 }
-/*
-static void
-    write_id(FuriHalSpiBusHandle* spi, uint8_t address, uint32_t can_id, uint8_t extension) {
+
+static void write_id(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
+    uint32_t can_id = frame->canId;
+    uint8_t extension = frame->ext;
     uint16_t canid;
     uint8_t tbufdata[4];
 
@@ -441,44 +442,74 @@ static void
         set_register(spi, address + i, tbufdata[i]);
     }
 }
-*//*
-static void write_dlc_register(
-    FuriHalSpiBusHandle* spi,
-    uint8_t address,
-    uint8_t data_lenght,
-    uint8_t request) {
+
+static void write_dlc_register(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
+    uint8_t data_lenght = frame->data_lenght;
+    uint8_t request = frame->req;
+
     if(request == 1) data_lenght |= MCP_RTR_MASK;
     set_register(spi, address + 4, data_lenght);
     log_info("REGISTER [%u] configure: %u", address + 4, data_lenght);
 }
-*/
 
-ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame) {
+static void write_buffer(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
+    uint8_t data_lenght = frame->data_lenght;
+
+    address = address + 5;
+
+    for(uint8_t i = 0; i < data_lenght; i++) {
+        set_register(spi, address + i, frame->buffer[i]);
+        log_info("REGISTER [%u] configure: %u", address + i, frame->buffer[i]);
+    }
+}
+
+static ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame) {
+    static CANFRAME auxiliar_frame;
+    memset(&auxiliar_frame, 0, sizeof(CANFRAME));
+    auxiliar_frame.canId = frame->canId;
+    auxiliar_frame.data_lenght = frame->data_lenght;
+    auxiliar_frame.ext = frame->ext;
+    auxiliar_frame.req = frame->req;
+
+    for(uint8_t i = 0; i < auxiliar_frame.data_lenght; i++) {
+        auxiliar_frame.buffer[i] = frame->buffer[i];
+    }
+
     ERROR_CAN res;
     uint8_t free_buffer = 0;
-    log_warning(
-        "From variables ID: %lu\tEXT: %u\t REQ: %u \t DLC: %u",
-        frame->canId,
-        frame->ext,
-        frame->req,
-        frame->data_lenght);
+    uint16_t time_waiting = 0;
 
-    res = get_next_buffer_free(spi, &free_buffer);
+    log_warning(
+        "From frame ID: %lu\tEXT: %u\t REQ: %u \t DLC: %u",
+        auxiliar_frame.canId,
+        auxiliar_frame.ext,
+        auxiliar_frame.req,
+        auxiliar_frame.data_lenght);
+
+    do {
+        res = get_next_buffer_free(spi, &free_buffer);
+        furi_delay_ms(1);
+        time_waiting++;
+    } while((res == ERROR_ALLTXBUSY) && (time_waiting < 1000));
+
     if(res != ERROR_OK) return res;
 
     log_warning(
-        "From variables ID: %lu\tEXT: %u\t REQ: %u \t DLC: %u",
-        frame->canId,
-        frame->ext,
-        frame->req,
-        frame->data_lenght);
+        "From frame ID: %lu\tEXT: %u\t REQ: %u \t DLC: %u",
+        auxiliar_frame.canId,
+        auxiliar_frame.ext,
+        auxiliar_frame.req,
+        auxiliar_frame.data_lenght);
 
     log_warning("Free_buffer: %u", free_buffer);
 
-    // write_dlc_register(spi, free_buffer, data_lenght, request);
-    // write_id(spi, free_buffer, can_id, extension);
+    write_id(spi, free_buffer, &auxiliar_frame);
 
-    // modify_register(spi, free_buffer - 1, MCP_TXB_TXREQ_M, MCP_TXB_TXREQ_M);
+    write_dlc_register(spi, free_buffer, &auxiliar_frame);
+
+    write_buffer(spi, free_buffer, &auxiliar_frame);
+
+    modify_register(spi, free_buffer - 1, MCP_TXB_TXREQ_M, MCP_TXB_TXREQ_M);
 
     return ERROR_OK;
 }

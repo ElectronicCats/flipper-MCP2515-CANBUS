@@ -20,7 +20,7 @@ int app_main(void* p) {
     frame->req = 0;
 
     for(uint8_t i = 0; i < frame->data_lenght; i++) {
-        frame->buffer[i] = 10;
+        frame->buffer[i] = i;
     }
 
     bool run = true;

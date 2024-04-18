@@ -107,7 +107,7 @@ static const uint8_t CANSTAT_ICOD = 0x0E;
 *   Begin mt
 */
 
-#define TIMEOUTVALUE 2500 // In microseconds
+#define TIMEOUTVALUE 1000 // In microseconds
 #define MCP_SIDH 0
 #define MCP_SIDL 1
 #define MCP_EID8 2
