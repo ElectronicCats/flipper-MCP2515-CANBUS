@@ -402,7 +402,6 @@ ERROR_CAN get_next_buffer_free(FuriHalSpiBusHandle* spi, uint8_t* buffer_address
 
     for(uint8_t i = 0; i < 3; i++) {
         read_register(spi, number_of_buffers[i], &buffer_control_value);
-        log_info("REGISTER [%u] configure: %u", number_of_buffers[i], buffer_control_value);
         if(buffer_control_value == 0) {
             *buffer_address = number_of_buffers[i] + 1;
             return ERROR_OK;
@@ -416,8 +415,6 @@ void write_id(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
     uint8_t extension = frame->ext;
     uint16_t canid;
     uint8_t tbufdata[4];
-
-    log_warning(" ID : %lu", can_id);
 
     canid = (uint16_t)(can_id & 0x0FFFF);
 
@@ -437,7 +434,6 @@ void write_id(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
     }
 
     for(uint8_t i = 0; i < 4; i++) {
-        log_info("REGISTER [%u] configure: %u", address + i, tbufdata[i]);
         set_register(spi, address + i, tbufdata[i]);
     }
 }
@@ -448,7 +444,6 @@ void write_dlc_register(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* fra
 
     if(request == 1) data_lenght |= MCP_RTR_MASK;
     set_register(spi, address + 4, data_lenght);
-    log_info("REGISTER [%u] configure: %u", address + 4, data_lenght);
 }
 
 void write_buffer(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
