@@ -12,8 +12,6 @@ static int32_t workerSniffing(void* context) {
     MCP2515* mcp_can = app->mcp_can;
     CANFRAME frame = app->can_frame;
 
-    memset(&(app->frameArray), 0, sizeof(app->frameArray));
-
     uint32_t current_id = 0;
     uint8_t num_of_devices = 0;
     bool first = true;

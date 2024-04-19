@@ -18,7 +18,6 @@ static void app_tick_event(void* context) {
     UNUSED(app);
 }
 
-
 static App* app_alloc() {
     App* app = malloc(sizeof(App));
     app->scene_manager = scene_manager_alloc(&app_scene_handlers, app);
@@ -42,6 +41,14 @@ static App* app_alloc() {
     app->textBox = text_box_alloc();
     view_dispatcher_add_view(app->view_dispatcher, TextBoxView, text_box_get_view(app->textBox));
 
+    app->dialog_info = dialog_ex_alloc();
+    view_dispatcher_add_view(
+        app->view_dispatcher, DialogInfoView, dialog_ex_get_view(app->dialog_info));
+
+    app->input_byte_value = byte_input_alloc();
+    view_dispatcher_add_view(
+        app->view_dispatcher, InputByteView, byte_input_get_view(app->input_byte_value));
+
     app->text = furi_string_alloc();
     app->textLabel = furi_string_alloc();
 
@@ -49,17 +56,29 @@ static App* app_alloc() {
 
     app->frameArray = (CANFRAME*)malloc(100 * sizeof(CANFRAME));
 
+    app->frame_to_send = malloc(sizeof(CANFRAME));
+
     return app;
 }
 
 static void app_free(App* app) {
     furi_assert(app);
+
+    view_dispatcher_remove_view(app->view_dispatcher, SubmenuView);
     view_dispatcher_remove_view(app->view_dispatcher, ViewWidget);
+    view_dispatcher_remove_view(app->view_dispatcher, TextBoxView);
+    view_dispatcher_remove_view(app->view_dispatcher, VarListView);
+    view_dispatcher_remove_view(app->view_dispatcher, DialogInfoView);
+    view_dispatcher_remove_view(app->view_dispatcher, InputByteView);
+
     scene_manager_free(app->scene_manager);
     view_dispatcher_free(app->view_dispatcher);
+
     widget_free(app->widget);
     submenu_free(app->submenu);
     text_box_free(app->textBox);
+    dialog_ex_free(app->dialog_info);
+    byte_input_free(app->input_byte_value);
 
     furi_string_free(app->text);
     furi_string_free(app->textLabel);

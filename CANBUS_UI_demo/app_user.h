@@ -7,6 +7,9 @@
 #include <gui/modules/submenu.h>
 #include <gui/modules/variable_item_list.h>
 #include <gui/modules/text_box.h>
+#include <gui/modules/dialog_ex.h>
+#include <gui/modules/byte_input.h>
+
 #include "scenes/app_scene_functions.h"
 
 #include "libraries/mcp_can_2515.h"
@@ -21,6 +24,9 @@ typedef enum {
 typedef struct {
     MCP2515* mcp_can;
     CANFRAME can_frame;
+    CANFRAME* frameArray;
+    CANFRAME* frame_to_send;
+
     FuriThread* thread;
     SceneManager* scene_manager;
     ViewDispatcher* view_dispatcher;
@@ -28,11 +34,15 @@ typedef struct {
     Submenu* submenu;
     VariableItemList* varList;
     TextBox* textBox;
+    DialogEx* dialog_info;
+    ByteInput* input_byte_value;
+
     FuriString* text;
     FuriString* textLabel;
-    CANFRAME* frameArray;
+
     uint32_t sniffer_index;
     uint32_t sniffer_index_aux;
+
     uint8_t num_of_devices;
     uint8_t sender_selected_item;
 } App;
@@ -55,4 +65,6 @@ typedef enum {
     ViewWidget,
     VarListView,
     TextBoxView,
+    DialogInfoView,
+    InputByteView,
 } scenesViews;
