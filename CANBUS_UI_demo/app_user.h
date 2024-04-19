@@ -31,8 +31,10 @@ typedef struct {
     FuriString* text;
     FuriString* textLabel;
     CANFRAME* frameArray;
-    uint32_t index;
-    uint32_t index_aux;
+    uint32_t sniffer_index;
+    uint32_t sniffer_index_aux;
+    uint8_t num_of_devices;
+    uint8_t sender_selected_item;
 } App;
 
 // This is for the menu Options

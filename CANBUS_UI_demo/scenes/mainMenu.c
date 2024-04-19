@@ -35,6 +35,8 @@ void app_scene_Menu_on_enter(void* context) {
     submenu_set_selected_item(app->submenu, menu_selector);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
+
+    app->sender_selected_item = 0;
 }
 
 bool app_scene_Menu_on_event(void* context, SceneManagerEvent event) {

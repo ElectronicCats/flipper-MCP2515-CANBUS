@@ -12,8 +12,10 @@ static int32_t workerSniffing(void* context) {
     MCP2515* mcp_can = app->mcp_can;
     CANFRAME frame = app->can_frame;
 
-    uint32_t currentId = 0;
-    uint8_t numOfDevices = 0;
+    memset(&(app->frameArray), 0, sizeof(app->frameArray));
+
+    uint32_t current_id = 0;
+    uint8_t num_of_devices = 0;
     bool first = true;
 
     furi_hal_gpio_init(&gpio_swclk, GpioModeInterruptFall, GpioPullNo, GpioSpeedVeryHigh);
@@ -34,21 +36,22 @@ static int32_t workerSniffing(void* context) {
         if(events & WorkerflagStop) break;
         if(events & WorkerflagReceived) {
             if(read_can_message(mcp_can, &frame) == ERROR_OK) {
-                currentId = frame.canId;
+                current_id = frame.canId;
             }
 
             if(first) {
                 app->frameArray[0] = frame;
-                app->index_aux = numOfDevices;
-                numOfDevices++;
+                app->sniffer_index_aux = num_of_devices;
+                num_of_devices++;
                 first = false;
 
                 furi_string_reset(app->textLabel);
-                furi_string_cat_printf(app->textLabel, "0x%lx", currentId);
+                furi_string_cat_printf(app->textLabel, "0x%lx", current_id);
                 view_dispatcher_send_custom_event(app->view_dispatcher, RefreshTest);
+                app->num_of_devices = num_of_devices;
             } else {
-                for(uint8_t i = 0; i < numOfDevices; i++) {
-                    if(app->frameArray[i].canId == currentId) {
+                for(uint8_t i = 0; i < num_of_devices; i++) {
+                    if(app->frameArray[i].canId == current_id) {
                         app->frameArray[i] = frame;
                         new = false;
                         break;
@@ -56,15 +59,16 @@ static int32_t workerSniffing(void* context) {
                 }
 
                 if(new&& condition) {
-                    app->frameArray[numOfDevices] = frame;
-                    app->index_aux = numOfDevices;
-                    numOfDevices++;
+                    app->frameArray[num_of_devices] = frame;
+                    app->sniffer_index_aux = num_of_devices;
+                    num_of_devices++;
                     furi_string_reset(app->textLabel);
-                    furi_string_cat_printf(app->textLabel, "0x%lx", currentId);
+                    furi_string_cat_printf(app->textLabel, "0x%lx", current_id);
                     view_dispatcher_send_custom_event(app->view_dispatcher, RefreshTest);
+                    app->num_of_devices = num_of_devices;
                 }
 
-                if(frame.canId == app->frameArray[app->index].canId) {
+                if(frame.canId == app->frameArray[app->sniffer_index].canId) {
                     view_dispatcher_send_custom_event(app->view_dispatcher, ShowData);
                 }
             }
@@ -78,7 +82,7 @@ static int32_t workerSniffing(void* context) {
 
 void sniffingTest_callback(void* context, uint32_t index) {
     App* app = context;
-    app->index = index;
+    app->sniffer_index = index;
     scene_manager_handle_custom_event(app->scene_manager, EntryEvent);
 }
 
@@ -105,7 +109,7 @@ bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
             submenu_add_item(
                 app->submenu,
                 furi_string_get_cstr(app->textLabel),
-                app->index_aux,
+                app->sniffer_index_aux,
                 sniffingTest_callback,
                 app);
             break;
@@ -148,11 +152,12 @@ void app_scene_BoxSniffing_on_enter(void* context) {
     furi_string_cat_printf(
         app->text,
         "ADDR: %lx DLC: %u \n",
-        app->frameArray[app->index].canId,
-        app->frameArray[app->index].data_lenght);
+        app->frameArray[app->sniffer_index].canId,
+        app->frameArray[app->sniffer_index].data_lenght);
 
-    for(uint8_t i = 0; i < (app->frameArray[app->index].data_lenght); i++) {
-        furi_string_cat_printf(app->text, "[%u]:  %x ", i, app->frameArray[app->index].buffer[i]);
+    for(uint8_t i = 0; i < (app->frameArray[app->sniffer_index].data_lenght); i++) {
+        furi_string_cat_printf(
+            app->text, "[%u]:  %x ", i, app->frameArray[app->sniffer_index].buffer[i]);
     }
 
     text_box_reset(app->textBox);
@@ -170,12 +175,12 @@ bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
         furi_string_cat_printf(
             app->text,
             "ADDR: %lx DLC: %u \n",
-            app->frameArray[app->index].canId,
-            app->frameArray[app->index].data_lenght);
+            app->frameArray[app->sniffer_index].canId,
+            app->frameArray[app->sniffer_index].data_lenght);
 
-        for(uint8_t i = 0; i < (app->frameArray[app->index].data_lenght); i++) {
+        for(uint8_t i = 0; i < (app->frameArray[app->sniffer_index].data_lenght); i++) {
             furi_string_cat_printf(
-                app->text, "[%u]:  %x ", i, app->frameArray[app->index].buffer[i]);
+                app->text, "[%u]:  %x ", i, app->frameArray[app->sniffer_index].buffer[i]);
         }
 
         text_box_set_text(app->textBox, furi_string_get_cstr(app->text));

@@ -10,9 +10,9 @@ static const char* clockValues[] = {"8MHz", "16MHz", "20MHz"};
 void callback_options(VariableItem* item) {
     App* app = variable_item_get_context(item);
     uint8_t index = variable_item_get_current_value_index(item);
-    uint8_t selectedIndex = variable_item_list_get_selected_item_index(app->varList);
+    uint8_t selected_index = variable_item_list_get_selected_item_index(app->varList);
 
-    switch(selectedIndex) {
+    switch(selected_index) {
     case BitrateOption:
         variable_item_set_current_value_text(item, bitratesValues[index]);
         currentBitrate = index;
