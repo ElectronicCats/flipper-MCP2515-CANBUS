@@ -9,6 +9,7 @@
 #include <gui/modules/text_box.h>
 #include <gui/modules/dialog_ex.h>
 #include <gui/modules/byte_input.h>
+#include <gui/modules/text_input.h>
 
 #include "scenes/app_scene_functions.h"
 
@@ -55,6 +56,7 @@ typedef enum { SniffingOptionEvent, SenderOptionEvent, SettingsOptionEvent } Mai
 typedef enum { Refresh } SnifferEvents;
 typedef enum { BitrateOption, CristyalClkOption } OptionSettings;
 typedef enum { BitrateOptionEvent, CristyalClkOptionEvent } SettingsMenuEvent;
+typedef enum { ChooseIdEvent, SetIdEvent, ReturnEvent } SenderEvents;
 
 // This is for SniffingTest Options
 typedef enum { RefreshTest, EntryEvent, ShowData } SniffingTestEvents;
