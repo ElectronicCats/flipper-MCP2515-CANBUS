@@ -35,7 +35,6 @@ typedef struct {
     Submenu* submenu;
     VariableItemList* varList;
     TextBox* textBox;
-    DialogEx* dialog_info;
     ByteInput* input_byte_value;
 
     FuriString* text;

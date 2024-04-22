@@ -41,10 +41,6 @@ static App* app_alloc() {
     app->textBox = text_box_alloc();
     view_dispatcher_add_view(app->view_dispatcher, TextBoxView, text_box_get_view(app->textBox));
 
-    app->dialog_info = dialog_ex_alloc();
-    view_dispatcher_add_view(
-        app->view_dispatcher, DialogInfoView, dialog_ex_get_view(app->dialog_info));
-
     app->input_byte_value = byte_input_alloc();
     view_dispatcher_add_view(
         app->view_dispatcher, InputByteView, byte_input_get_view(app->input_byte_value));
@@ -68,7 +64,6 @@ static void app_free(App* app) {
     view_dispatcher_remove_view(app->view_dispatcher, ViewWidget);
     view_dispatcher_remove_view(app->view_dispatcher, TextBoxView);
     view_dispatcher_remove_view(app->view_dispatcher, VarListView);
-    view_dispatcher_remove_view(app->view_dispatcher, DialogInfoView);
     view_dispatcher_remove_view(app->view_dispatcher, InputByteView);
 
     scene_manager_free(app->scene_manager);
@@ -77,7 +72,6 @@ static void app_free(App* app) {
     widget_free(app->widget);
     submenu_free(app->submenu);
     text_box_free(app->textBox);
-    dialog_ex_free(app->dialog_info);
     byte_input_free(app->input_byte_value);
 
     furi_string_free(app->text);
