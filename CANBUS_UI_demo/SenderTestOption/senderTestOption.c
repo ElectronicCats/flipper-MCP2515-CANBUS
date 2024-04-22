@@ -264,6 +264,22 @@ void app_scene_SenderTest_on_exit(void* context) {
 
 // ---------------------------- WARNING TO GET THE ID'S ------------------------
 
+void app_scene_warning_log_on_enter(void* context) {
+    UNUSED(context);
+}
+
+bool app_scene_warning_log_on_event(void* context, SceneManagerEvent event) {
+    UNUSED(context);
+    UNUSED(event);
+    bool consumed = false;
+
+    return consumed;
+}
+
+void app_scene_warning_log_on_exit(void* context) {
+    UNUSED(context);
+}
+
 // ---------------------------- MENU OF THE CAN ID's ---------------------------
 
 void app_scene_id_list_on_enter(void* context) {
@@ -295,15 +311,19 @@ void app_scene_input_text_on_enter(void* context) {
 
     uint32_t state = scene_manager_get_scene_state(app->scene_manager, AppSceneinput_text_option);
 
+    app->sender_selected_item = state;
+
     switch(state) {
     case SET_ID:
         byte_input_set_result_callback(
             scene, input_byte_sender_callback, NULL, app, app->sender_id_compose, 4);
+        byte_input_set_header_text(app->input_byte_value, "SET ADDRESS");
         break;
 
     case SET_DATA:
         byte_input_set_result_callback(
             scene, input_byte_sender_callback, NULL, app, app->frame_to_send->buffer, 8);
+        byte_input_set_header_text(app->input_byte_value, "SET ALL DATA");
         break;
 
     default:
@@ -315,6 +335,10 @@ void app_scene_input_text_on_enter(void* context) {
                 app,
                 &(app->frame_to_send->buffer[state - 6]),
                 1);
+
+            furi_string_reset(app->text);
+            furi_string_cat_printf(app->text, "SET BYTE [%lu]", state - 6);
+            byte_input_set_header_text(app->input_byte_value, furi_string_get_cstr(app->text));
         }
         break;
     }
