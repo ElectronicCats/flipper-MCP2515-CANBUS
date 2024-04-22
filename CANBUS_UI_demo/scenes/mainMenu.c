@@ -3,6 +3,19 @@
 // This variable works to get the value of the selector and set it when the user enter at the Scene
 static uint8_t menu_selector = 0;
 
+// This function works to reset the values in the sender Option
+void reset_sender_values(void* context) {
+    App* app = context;
+    app->sender_selected_item = 0;
+    app->frame_to_send->canId = 0;
+    app->frame_to_send->data_lenght = 0;
+    app->frame_to_send->req = 0;
+    app->frame_to_send->ext = 0;
+    for(uint8_t i = 0; i < 8; i++) app->frame_to_send->buffer[i] = 0;
+
+    for(uint8_t i = 0; i < 4; i++) app->sender_id_compose[i] = 0;
+}
+
 void basic_scenes_menu_callback(void* context, uint32_t index) {
     App* app = context;
     switch(index) {
@@ -36,7 +49,7 @@ void app_scene_Menu_on_enter(void* context) {
 
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
 
-    app->sender_selected_item = 0;
+    reset_sender_values(app);
 }
 
 bool app_scene_Menu_on_event(void* context, SceneManagerEvent event) {

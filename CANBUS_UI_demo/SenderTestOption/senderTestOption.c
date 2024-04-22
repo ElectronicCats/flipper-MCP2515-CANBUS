@@ -9,8 +9,6 @@ typedef enum {
     SET_DATA = 4,
 } list_of_items;
 
-uint8_t address[4] = {0, 0, 0, 0};
-
 // Option callback using button OK
 void callback_input_sender_options(void* context, uint32_t index) {
     App* app = context;
@@ -35,21 +33,17 @@ void callback_sender_options(VariableItem* item) {
     App* app = variable_item_get_context(item);
     uint8_t selected_index = variable_item_list_get_selected_item_index(app->varList);
     uint8_t index_item = variable_item_get_current_value_index(item);
-    app->sender_selected_item = selected_index;
 
     switch(selected_index) {
     case SET_DATA_LENGHT:
         furi_string_reset(app->text);
         furi_string_cat_printf(app->text, "%u", index_item);
         variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-        app->frame_to_send->data_lenght = index_item;
         break;
     case SET_REQ:
         furi_string_reset(app->text);
         furi_string_cat_printf(app->text, "%u", index_item);
         variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-        app->frame_to_send->req = index_item;
-        log_info("for sender req: %u", app->frame_to_send->req);
         break;
     default:
         break;
@@ -61,13 +55,9 @@ void app_scene_SenderTest_on_enter(void* context) {
     App* app = context;
     VariableItem* item;
 
-    app->frame_to_send->canId = address[3] | (address[2] << 8) | (address[1] << 16) |
-                                (address[0] << 24);
-
-    log_info("data [0]: %u", address[0]);
-    log_info("data [1]: %u", address[1]);
-    log_info("data [2]: %u", address[2]);
-    log_info("data [3]: %u", address[3]);
+    app->frame_to_send->canId = app->sender_id_compose[3] | (app->sender_id_compose[2] << 8) |
+                                (app->sender_id_compose[1] << 16) |
+                                (app->sender_id_compose[0] << 24);
 
     uint8_t data_lenght = app->frame_to_send->data_lenght;
     uint32_t can_id = app->frame_to_send->canId;
@@ -242,7 +232,8 @@ void app_scene_input_text_on_enter(void* context) {
 
     switch(state) {
     case SET_ID:
-        byte_input_set_result_callback(scene, input_byte_sender_callback, NULL, app, address, 4);
+        byte_input_set_result_callback(
+            scene, input_byte_sender_callback, NULL, app, app->sender_id_compose, 4);
         break;
 
     case SET_DATA:
