@@ -18,7 +18,33 @@ typedef enum {
     SET_EIGHTH_DATA
 } list_of_items;
 
+typedef enum {
+    SEND_OK,
+    SEND_ERROR,
+} sender_status;
+
 // Threads To work ------------------------------------------------------------------------------------
+
+static int32_t sender_on_work(void* context) {
+    App* app = context;
+    app->mcp_can->mode = MCP_NORMAL;
+    ERROR_CAN error = mcp2515_init(app->mcp_can);
+
+    furi_delay_ms(10);
+
+    if(error == ERROR_OK) {
+        error = send_can_frame(app->mcp_can, app->frame_to_send);
+    }
+
+    if(error != ERROR_OK) {
+        scene_manager_handle_custom_event(app->scene_manager, SEND_ERROR);
+    } else {
+        scene_manager_handle_custom_event(app->scene_manager, SEND_OK);
+    }
+    free_mcp2515(app->mcp_can);
+
+    return 0;
+}
 
 // Scenes ---------------------------------------------------------------------------------------------
 
@@ -27,6 +53,9 @@ void callback_input_sender_options(void* context, uint32_t index) {
     App* app = context;
     app->sender_selected_item = index;
     switch(index) {
+    case SEND_MESSAGE:
+        scene_manager_next_scene(app->scene_manager, AppSceneSendMessage);
+        break;
     case CHOOSE_ID:
         if(app->num_of_devices > 0) {
             scene_manager_next_scene(app->scene_manager, AppSceneidListOption);
@@ -125,6 +154,11 @@ void app_scene_SenderTest_on_enter(void* context) {
     uint8_t data_lenght = app->frame_to_send->data_lenght;
     uint32_t can_id = app->frame_to_send->canId;
     uint8_t request = app->frame_to_send->req;
+
+    app->sender_id_compose[3] = can_id;
+    app->sender_id_compose[2] = can_id >> 8;
+    app->sender_id_compose[1] = can_id >> 16;
+    app->sender_id_compose[0] = can_id >> 24;
 
     variable_item_list_reset(app->varList);
 
@@ -255,6 +289,48 @@ bool app_scene_SenderTest_on_event(void* context, SceneManagerEvent event) {
 void app_scene_SenderTest_on_exit(void* context) {
     App* app = context;
     variable_item_list_reset(app->varList);
+}
+
+// -----------------------------  SCENE TO SEND THE FRAME ---------------------
+
+void app_scene_send_message_on_enter(void* context) {
+    App* app = context;
+
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "Wait to send it Message...");
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+
+    app->thread = furi_thread_alloc_ex("Sender_on_work", 1024, sender_on_work, app);
+    furi_thread_start(app->thread);
+}
+
+bool app_scene_send_message_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+
+    if(event.type == SceneManagerEventTypeCustom) {
+        if(event.event == SEND_OK) {
+            widget_reset(app->widget);
+            widget_add_string_element(
+                app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MESSAGE SEND OK");
+        } else {
+            widget_reset(app->widget);
+            widget_add_string_element(
+                app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MESSAGE SEND ERROR");
+        }
+    }
+
+    bool consumed = false;
+    return consumed;
+}
+
+void app_scene_send_message_on_exit(void* context) {
+    App* app = context;
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
+
+    widget_reset(app->widget);
 }
 
 // ---------------------------- WARNING TO GET THE ID'S ------------------------
