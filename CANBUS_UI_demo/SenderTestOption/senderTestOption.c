@@ -2,12 +2,25 @@
 
 // LIST
 typedef enum {
-    CHOOSE_ID = 0,
-    SET_ID = 1,
-    SET_DATA_LENGHT = 2,
-    SET_REQ = 3,
-    SET_DATA = 4,
+    SEND_MESSAGE,
+    CHOOSE_ID,
+    SET_ID,
+    SET_DATA_LENGHT,
+    SET_REQ,
+    SET_DATA,
+    SET_FIRST_DATA,
+    SET_SECOND_DATA,
+    SET_THIRD_DATA,
+    SET_FOURTH_DATA,
+    SET_FIFTH_DATA,
+    SET_SIXTH_DATA,
+    SET_SEVENTH_DATA,
+    SET_EIGHTH_DATA
 } list_of_items;
+
+// Threads To work ------------------------------------------------------------------------------------
+
+// Scenes ---------------------------------------------------------------------------------------------
 
 // Option callback using button OK
 void callback_input_sender_options(void* context, uint32_t index) {
@@ -20,6 +33,54 @@ void callback_input_sender_options(void* context, uint32_t index) {
 
     case SET_DATA:
         scene_manager_set_scene_state(app->scene_manager, AppSceneinput_text_option, SET_DATA);
+        scene_manager_next_scene(app->scene_manager, AppSceneinput_text_option);
+        break;
+
+    case SET_FIRST_DATA:
+        scene_manager_set_scene_state(
+            app->scene_manager, AppSceneinput_text_option, SET_FIRST_DATA);
+        scene_manager_next_scene(app->scene_manager, AppSceneinput_text_option);
+        break;
+
+    case SET_SECOND_DATA:
+        scene_manager_set_scene_state(
+            app->scene_manager, AppSceneinput_text_option, SET_SECOND_DATA);
+        scene_manager_next_scene(app->scene_manager, AppSceneinput_text_option);
+        break;
+
+    case SET_THIRD_DATA:
+        scene_manager_set_scene_state(
+            app->scene_manager, AppSceneinput_text_option, SET_THIRD_DATA);
+        scene_manager_next_scene(app->scene_manager, AppSceneinput_text_option);
+        break;
+
+    case SET_FOURTH_DATA:
+        scene_manager_set_scene_state(
+            app->scene_manager, AppSceneinput_text_option, SET_FOURTH_DATA);
+        scene_manager_next_scene(app->scene_manager, AppSceneinput_text_option);
+        break;
+
+    case SET_FIFTH_DATA:
+        scene_manager_set_scene_state(
+            app->scene_manager, AppSceneinput_text_option, SET_FIFTH_DATA);
+        scene_manager_next_scene(app->scene_manager, AppSceneinput_text_option);
+        break;
+
+    case SET_SIXTH_DATA:
+        scene_manager_set_scene_state(
+            app->scene_manager, AppSceneinput_text_option, SET_SIXTH_DATA);
+        scene_manager_next_scene(app->scene_manager, AppSceneinput_text_option);
+        break;
+
+    case SET_SEVENTH_DATA:
+        scene_manager_set_scene_state(
+            app->scene_manager, AppSceneinput_text_option, SET_SEVENTH_DATA);
+        scene_manager_next_scene(app->scene_manager, AppSceneinput_text_option);
+        break;
+
+    case SET_EIGHTH_DATA:
+        scene_manager_set_scene_state(
+            app->scene_manager, AppSceneinput_text_option, SET_EIGHTH_DATA);
         scene_manager_next_scene(app->scene_manager, AppSceneinput_text_option);
         break;
 
@@ -39,11 +100,13 @@ void callback_sender_options(VariableItem* item) {
         furi_string_reset(app->text);
         furi_string_cat_printf(app->text, "%u", index_item);
         variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+        app->frame_to_send->data_lenght = index_item;
         break;
     case SET_REQ:
         furi_string_reset(app->text);
         furi_string_cat_printf(app->text, "%u", index_item);
         variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+        app->frame_to_send->req = index_item;
         break;
     default:
         break;
@@ -63,16 +126,18 @@ void app_scene_SenderTest_on_enter(void* context) {
     uint32_t can_id = app->frame_to_send->canId;
     uint8_t request = app->frame_to_send->req;
 
-    log_info("Id: %lu", can_id);
-
     variable_item_list_reset(app->varList);
 
     // 0
+    item = variable_item_list_add(app->varList, "SEND MESSAGE", 0, callback_sender_options, app);
+    variable_item_set_current_value_index(item, 0);
+
+    // 1
     item = variable_item_list_add(app->varList, "Choose Id", 0, callback_sender_options, app);
     variable_item_set_current_value_index(item, 0);
     variable_item_set_current_value_text(item, "SEARCH");
 
-    // 1
+    // 2
     item = variable_item_list_add(app->varList, "Id", 0, callback_sender_options, app);
     variable_item_set_current_value_index(item, 0);
 
@@ -80,7 +145,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     furi_string_cat_printf(app->text, "0x%lx", can_id);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    // 2
+    // 3
     item = variable_item_list_add(app->varList, "DLC", 9, callback_sender_options, app);
     variable_item_set_current_value_index(item, data_lenght);
 
@@ -88,7 +153,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     furi_string_cat_printf(app->text, "%u", data_lenght);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    // 3
+    // 4
     item = variable_item_list_add(app->varList, "Request", 2, callback_sender_options, app);
     variable_item_set_current_value_index(item, request);
 
@@ -96,12 +161,12 @@ void app_scene_SenderTest_on_enter(void* context) {
     furi_string_cat_printf(app->text, "%u", request);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    // 4
-    item = variable_item_list_add(app->varList, "DATA", 2, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-    variable_item_set_current_value_text(item, "SET");
-
     // 5
+    item =
+        variable_item_list_add(app->varList, "CLIC TO SET DATA", 0, callback_sender_options, app);
+    variable_item_set_current_value_index(item, 0);
+
+    // 6
     item = variable_item_list_add(app->varList, "BYTE [0]", 0, callback_sender_options, app);
     variable_item_set_current_value_index(item, 0);
 
@@ -109,7 +174,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[0]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    // 6
+    // 7
     item = variable_item_list_add(app->varList, "BYTE [1]", 0, callback_sender_options, app);
     variable_item_set_current_value_index(item, 0);
 
@@ -117,7 +182,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[1]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    // 7
+    // 8
     item = variable_item_list_add(app->varList, "BYTE [2]", 0, callback_sender_options, app);
     variable_item_set_current_value_index(item, 0);
 
@@ -125,7 +190,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[2]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    // 8
+    // 9
     item = variable_item_list_add(app->varList, "BYTE [3]", 0, callback_sender_options, app);
     variable_item_set_current_value_index(item, 0);
 
@@ -133,7 +198,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[3]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    // 9
+    // 10
     item = variable_item_list_add(app->varList, "BYTE [4]", 0, callback_sender_options, app);
     variable_item_set_current_value_index(item, 0);
 
@@ -141,7 +206,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[4]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    // 10
+    // 11
     item = variable_item_list_add(app->varList, "BYTE [5]", 0, callback_sender_options, app);
     variable_item_set_current_value_index(item, 0);
 
@@ -149,7 +214,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[5]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    // 11
+    // 12
     item = variable_item_list_add(app->varList, "BYTE [6]", 0, callback_sender_options, app);
     variable_item_set_current_value_index(item, 0);
 
@@ -157,7 +222,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[6]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    // 12
+    // 13
     item = variable_item_list_add(app->varList, "BYTE [7]", 0, callback_sender_options, app);
     variable_item_set_current_value_index(item, 0);
 
@@ -242,6 +307,15 @@ void app_scene_input_text_on_enter(void* context) {
         break;
 
     default:
+        if(state > 5) {
+            byte_input_set_result_callback(
+                scene,
+                input_byte_sender_callback,
+                NULL,
+                app,
+                &(app->frame_to_send->buffer[state - 6]),
+                1);
+        }
         break;
     }
 
