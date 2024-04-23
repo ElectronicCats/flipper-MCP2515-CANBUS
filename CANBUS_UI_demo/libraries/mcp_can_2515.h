@@ -41,7 +41,7 @@ static const uint8_t CANSTAT_ICOD = 0x0E;
 #define CLKOUT_PS2 0x01
 #define CLKOUT_PS4 0x02
 #define CLKOUT_PS8 0x03
-#define TIMEOUT 50
+#define TIMEOUT 2500
 
 /*
 *   CAN CLOCK CONFIGURATION

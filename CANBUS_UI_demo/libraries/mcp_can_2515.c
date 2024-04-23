@@ -412,6 +412,9 @@ ERROR_CAN get_next_buffer_free(FuriHalSpiBusHandle* spi, uint8_t* buffer_address
 
 void write_id(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
     uint32_t can_id = frame->canId;
+
+    if(can_id > (0x7FF)) frame->ext = 1;
+
     uint8_t extension = frame->ext;
     uint16_t canid;
     uint8_t tbufdata[4];
@@ -469,12 +472,13 @@ ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame) {
     }
 
     ERROR_CAN res;
+    uint8_t is_send_it = 0;
     uint8_t free_buffer = 0;
     uint16_t time_waiting = 0;
 
     do {
         res = get_next_buffer_free(spi, &free_buffer);
-        furi_delay_ms(1);
+        furi_delay_us(1);
         time_waiting++;
     } while((res == ERROR_ALLTXBUSY) && (time_waiting < 1000));
 
@@ -487,6 +491,20 @@ ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame) {
     write_buffer(spi, free_buffer, &auxiliar_frame);
 
     modify_register(spi, free_buffer - 1, MCP_TXB_TXREQ_M, MCP_TXB_TXREQ_M);
+
+    time_waiting = 0;
+    res = ERROR_ALLTXBUSY;
+
+    do {
+        read_register(spi, free_buffer - 1, &is_send_it);
+        if(is_send_it == 0) res = ERROR_OK;
+        furi_delay_us(1);
+        time_waiting++;
+    } while((res != ERROR_OK) && (time_waiting < TIMEOUT));
+
+    read_register(spi, free_buffer - 1, &is_send_it);
+
+    if(time_waiting == TIMEOUT) return ERROR_FAILTX;
 
     return ERROR_OK;
 }
