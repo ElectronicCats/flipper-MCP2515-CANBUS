@@ -18,6 +18,9 @@ void reset_sender_values(void* context) {
 
 void basic_scenes_menu_callback(void* context, uint32_t index) {
     App* app = context;
+
+    menu_selector = index;
+
     switch(index) {
     case SniffingTestOption:
         scene_manager_handle_custom_event(app->scene_manager, SniffingOptionEvent);
@@ -28,6 +31,8 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
         break;
     case SettingsOption:
         scene_manager_handle_custom_event(app->scene_manager, SettingsOptionEvent);
+        break;
+    default:
         break;
     }
 }
@@ -43,7 +48,11 @@ void app_scene_Menu_on_enter(void* context) {
 
     submenu_add_item(app->submenu, "Sender", SenderOption, basic_scenes_menu_callback, app);
 
+    submenu_add_item(app->submenu, "Read LOG", ReadLOGOption, basic_scenes_menu_callback, app);
+
     submenu_add_item(app->submenu, "Settings", SettingsOption, basic_scenes_menu_callback, app);
+
+    submenu_add_item(app->submenu, "About Us", AboutUsOption, basic_scenes_menu_callback, app);
 
     submenu_set_selected_item(app->submenu, menu_selector);
 
@@ -61,18 +70,15 @@ bool app_scene_Menu_on_event(void* context, SceneManagerEvent event) {
         switch(event.event) {
         case SniffingOptionEvent:
             scene_manager_next_scene(app->scene_manager, AppScenesniffingTestOption);
-            menu_selector = 0;
             consumed = true;
             break;
 
         case SenderOptionEvent:
             scene_manager_next_scene(app->scene_manager, AppScenesenderTest);
-            menu_selector = 1;
             break;
 
         case SettingsOptionEvent:
             scene_manager_next_scene(app->scene_manager, AppScenesettingsOption);
-            menu_selector = 2;
             consumed = true;
             break;
         default:
