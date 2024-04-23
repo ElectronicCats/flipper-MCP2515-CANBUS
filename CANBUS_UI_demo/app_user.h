@@ -61,7 +61,7 @@ typedef enum { SniffingOptionEvent, SenderOptionEvent, SettingsOptionEvent } Mai
 
 // This is for the Setting Options
 typedef enum { Refresh } SnifferEvents;
-typedef enum { BitrateOption, CristyalClkOption } OptionSettings;
+typedef enum { BitrateOption, CristyalClkOption, SaveLogsOption } OptionSettings;
 typedef enum { BitrateOptionEvent, CristyalClkOptionEvent } SettingsMenuEvent;
 typedef enum { ChooseIdEvent, SetIdEvent, ReturnEvent } SenderEvents;
 
