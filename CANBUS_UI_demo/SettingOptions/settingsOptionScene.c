@@ -44,9 +44,8 @@ void app_scene_Settings_on_enter(void* context) {
     variable_item_set_current_value_text(item, bitratesValues[currentBitrate]);
 
     // Second Item
-    item = variable_item_list_add(
-        app->varList, "Clock", COUNT_OF(clockValues), callback_options, app);
-    variable_item_set_current_value_index(item, currentClock);
+    item = variable_item_list_add(app->varList, "Clock", 0, callback_options, app);
+    variable_item_set_current_value_index(item, 0);
     variable_item_set_current_value_text(item, clockValues[currentClock]);
 
     variable_item_list_set_selected_item(app->varList, 0);
