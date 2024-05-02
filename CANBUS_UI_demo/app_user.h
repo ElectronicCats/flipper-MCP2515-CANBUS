@@ -1,8 +1,11 @@
 #include <furi.h>
 #include <furi_hal.h>
 #include <gui/gui.h>
+
 #include <gui/view_dispatcher.h>
 #include <gui/scene_manager.h>
+#include <storage/storage.h>
+#include <dialogs/dialogs.h>
 #include <gui/modules/widget.h>
 #include <gui/modules/submenu.h>
 #include <gui/modules/variable_item_list.h>
@@ -14,6 +17,10 @@
 #include "scenes/app_scene_functions.h"
 
 #include "libraries/mcp_can_2515.h"
+
+#define PATHAPP "apps_data/canbus"
+#define PATHAPPEXT EXT_PATH(PATHAPP)
+#define PATHLOGS PATHAPPEXT "/logs"
 
 typedef enum {
     WorkerflagStop = (1 << 0),
@@ -39,6 +46,14 @@ typedef struct {
 
     FuriString* text;
     FuriString* textLabel;
+    FuriString* data;
+
+    Storage* storage;
+    DialogsApp* dialogs;
+    File* log_file;
+    char log_file_path[100];
+    bool log_file_ready;
+    uint8_t save_logs;
 
     uint32_t sniffer_index;
     uint32_t sniffer_index_aux;
@@ -65,6 +80,9 @@ typedef enum { BitrateOption, CristyalClkOption, SaveLogsOption } OptionSettings
 typedef enum { BitrateOptionEvent, CristyalClkOptionEvent } SettingsMenuEvent;
 typedef enum { ChooseIdEvent, SetIdEvent, ReturnEvent } SenderEvents;
 
+// These are the options to save
+typedef enum { NoSave, SaveAll, OnlyAddress } SaveOptions;
+
 // This is for SniffingTest Options
 typedef enum { RefreshTest, EntryEvent, ShowData } SniffingTestEvents;
 
@@ -77,3 +95,9 @@ typedef enum {
     DialogInfoView,
     InputByteView,
 } scenesViews;
+
+char* sequential_file_resolve_path(
+    Storage* storage,
+    const char* dir,
+    const char* prefix,
+    const char* extension);

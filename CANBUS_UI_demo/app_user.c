@@ -1,5 +1,15 @@
 #include "app_user.h"
 
+void makePaths(App* app) {
+    furi_assert(app);
+    if(!storage_simply_mkdir(app->storage, PATHAPPEXT)) {
+        dialog_message_show_storage_error(app->dialogs, "Cannot create\napp folder");
+    }
+    if(!storage_simply_mkdir(app->storage, PATHLOGS)) {
+        dialog_message_show_storage_error(app->dialogs, "Cannot create\nlogs folder");
+    }
+}
+
 static bool app_scene_costum_callback(void* context, uint32_t costum_event) {
     furi_assert(context);
     App* app = context;
@@ -45,14 +55,21 @@ static App* app_alloc() {
     view_dispatcher_add_view(
         app->view_dispatcher, InputByteView, byte_input_get_view(app->input_byte_value));
 
+    app->dialogs = furi_record_open(RECORD_DIALOGS);
+    app->storage = furi_record_open(RECORD_STORAGE);
+    app->log_file = storage_file_alloc(app->storage);
+
     app->text = furi_string_alloc();
     app->textLabel = furi_string_alloc();
+    app->data = furi_string_alloc();
 
     app->mcp_can = mcp_alloc(MCP_NORMAL, MCP_16MHZ, MCP_500KBPS);
 
     app->frameArray = (CANFRAME*)malloc(100 * sizeof(CANFRAME));
 
     app->frame_to_send = malloc(sizeof(CANFRAME));
+
+    makePaths(app);
 
     return app;
 }
@@ -76,6 +93,16 @@ static void app_free(App* app) {
 
     furi_string_free(app->text);
     furi_string_free(app->textLabel);
+    furi_string_free(app->data);
+
+    app->log_file_ready = false;
+    if(app->log_file && storage_file_is_open(app->log_file)) {
+        storage_file_close(app->log_file);
+    }
+
+    storage_file_free(app->log_file);
+    furi_record_close(RECORD_STORAGE);
+    furi_record_close(RECORD_DIALOGS);
 
     free(app->frameArray);
 
@@ -94,6 +121,7 @@ int app_main(void* p) {
     scene_manager_next_scene(app->scene_manager, AppSceneMainMenu);
 
     view_dispatcher_run(app->view_dispatcher);
+    furi_record_close(RECORD_GUI);
 
     app_free(app);
 

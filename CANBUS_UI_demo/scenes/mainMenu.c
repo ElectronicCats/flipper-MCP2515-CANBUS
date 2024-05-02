@@ -3,6 +3,35 @@
 // This variable works to get the value of the selector and set it when the user enter at the Scene
 static uint8_t menu_selector = 0;
 
+// This is to open the files
+bool OpenLogFile(App* app) {
+    // browse for files
+    FuriString* predefined_filepath = furi_string_alloc_set_str(PATHLOGS);
+    FuriString* selected_filepath = furi_string_alloc();
+    DialogsFileBrowserOptions browser_options;
+    dialog_file_browser_set_basic_options(&browser_options, ".log", NULL);
+    if(!dialog_file_browser_show(
+           app->dialogs, selected_filepath, predefined_filepath, &browser_options)) {
+        return false;
+    }
+    if(storage_file_open(
+           app->log_file, furi_string_get_cstr(selected_filepath), FSAM_READ, FSOM_OPEN_EXISTING)) {
+        app->save_logs = false;
+        furi_string_reset(app->data);
+        char buf[storage_file_size(app->log_file)];
+        storage_file_read(app->log_file, buf, sizeof(buf));
+        buf[sizeof(buf)] = '\0';
+        furi_string_cat_str(app->data, buf);
+    } else {
+        dialog_message_show_storage_error(app->dialogs, "Cannot open File");
+        return false;
+    }
+    storage_file_close(app->log_file);
+    furi_string_free(selected_filepath);
+    furi_string_free(predefined_filepath);
+    return true;
+}
+
 // This function works to reset the values in the sender Option
 void reset_sender_values(void* context) {
     App* app = context;
@@ -31,6 +60,12 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
         break;
     case SettingsOption:
         scene_manager_handle_custom_event(app->scene_manager, SettingsOptionEvent);
+        break;
+
+    case ReadLOGOption:
+        if(OpenLogFile(app)) {
+            log_info("Entro");
+        }
         break;
     default:
         break;
