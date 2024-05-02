@@ -2,7 +2,10 @@
 
 void app_scene_read_logs_on_enter(void* context) {
     App* app = context;
-    UNUSED(app);
+    text_box_set_font(app->textBox, TextBoxFontText);
+    text_box_reset(app->textBox);
+    view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
+    text_box_set_text(app->textBox, furi_string_get_cstr(app->data));
 }
 
 bool app_scene_read_logs_on_event(void* context, SceneManagerEvent event) {
@@ -15,5 +18,6 @@ bool app_scene_read_logs_on_event(void* context, SceneManagerEvent event) {
 
 void app_scene_read_logs_on_exit(void* context) {
     App* app = context;
-    UNUSED(app);
+    furi_string_reset(app->data);
+    text_box_reset(app->textBox);
 }

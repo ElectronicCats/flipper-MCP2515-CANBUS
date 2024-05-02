@@ -64,7 +64,7 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
 
     case ReadLOGOption:
         if(OpenLogFile(app)) {
-            log_info("Entro");
+            scene_manager_handle_custom_event(app->scene_manager, ReadLOGOptionEvent);
         }
         break;
     default:
@@ -116,6 +116,12 @@ bool app_scene_Menu_on_event(void* context, SceneManagerEvent event) {
             scene_manager_next_scene(app->scene_manager, AppScenesettingsOption);
             consumed = true;
             break;
+
+        case ReadLOGOptionEvent:
+            scene_manager_next_scene(app->scene_manager, AppSceneReadLogs);
+            consumed = true;
+            break;
+
         default:
             break;
         }

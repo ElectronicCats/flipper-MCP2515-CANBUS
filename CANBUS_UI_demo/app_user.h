@@ -72,7 +72,7 @@ typedef enum {
     AboutUsOption,
 } MainMenuOptions;
 
-typedef enum { SniffingOptionEvent, SenderOptionEvent, SettingsOptionEvent } MainMenuEvents;
+typedef enum { SniffingOptionEvent, SenderOptionEvent, SettingsOptionEvent, ReadLOGOptionEvent } MainMenuEvents;
 
 // This is for the Setting Options
 typedef enum { Refresh } SnifferEvents;

@@ -21,6 +21,6 @@ ADD_SCENE(app, warning_log, warningLogSender)
 ADD_SCENE(app, id_list, idListOption)
 ADD_SCENE(app, input_text, inputTextOption)
 
-ADD_SCENE(app, read_logs, readLogs)
+ADD_SCENE(app, read_logs, ReadLogs)
 
 ADD_SCENE(app, Settings, settingsOption)
