@@ -2,6 +2,7 @@
 
 bool condition = true;
 
+// --------------------- Functons to save the logs --------------------------------------------------
 char* sequential_file_resolve_path(
     Storage* storage,
     const char* dir,
@@ -82,7 +83,7 @@ void save_address_data_on_log(App* app) {
     uint32_t can_id = app->frameArray[app->sniffer_index].canId;
     strcpy(
         app->log_file_path,
-        sequential_file_resolve_path_address(app->storage, can_id, PATHLOGS, "L", "log"));
+        sequential_file_resolve_path_address(app->storage, can_id, PATHLOGS, "L", "txt"));
     if(app->log_file_path != NULL) {
         if(storage_file_open(app->log_file, app->log_file_path, FSAM_WRITE, FSOM_CREATE_ALWAYS)) {
             app->log_file_ready = true;
@@ -103,9 +104,9 @@ void close_file_on_data_log(App* app) {
 
 static void write_data_on_file(CANFRAME frame, File* file) {
     FuriString* text_file = furi_string_alloc();
-    furi_string_cat_printf(text_file, "id: %lx\tlen: %u\t ", frame.canId, frame.data_lenght);
+    furi_string_cat_printf(text_file, "id: %lx   len: %u   ", frame.canId, frame.data_lenght);
     for(uint8_t i = 0; i < (frame.data_lenght); i++) {
-        furi_string_cat_printf(text_file, "[%u]: %u \t", i, frame.buffer[i]);
+        furi_string_cat_printf(text_file, "[%u]: %u   ", i, frame.buffer[i]);
     }
     furi_string_cat_printf(text_file, " \n ");
     storage_file_write(file, furi_string_get_cstr(text_file), furi_string_size(text_file));
