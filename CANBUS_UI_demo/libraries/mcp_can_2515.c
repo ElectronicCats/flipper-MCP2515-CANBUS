@@ -114,18 +114,37 @@ void read_Id(FuriHalSpiBusHandle* spi, uint8_t addr, uint32_t* id, uint8_t* ext)
 }
 
 // To set the Mode
-bool set_mode(FuriHalSpiBusHandle* spi, MCP_MODE newmode) {
-    bool ret = true;
-    uint8_t readStatus = 0;
-    read_register(spi, MCP_CANSTAT, &readStatus);
+bool set_mode(FuriHalSpiBusHandle* spi, MCP_MODE new_mode) {
+    bool ret = false;
+    uint8_t read_status = 0;
+    uint8_t time_out = 0;
 
-    modify_register(spi, MCP_CANCTRL, CANCTRL_REQOP, newmode);
+    do {
+        modify_register(spi, MCP_CANCTRL, CANCTRL_REQOP, MODE_CONFIG);
+        read_register(spi, MCP_CANSTAT, &read_status);
 
-    read_register(spi, MCP_CANSTAT, &readStatus);
+        read_status &= CANSTAT_OPM;
+        if(read_status == MODE_CONFIG) ret = true;
+        furi_delay_ms(1);
+        time_out++;
+    } while((ret != true) && (time_out < 200));
 
-    readStatus &= CANSTAT_OPM;
+    if((ret != true) || (time_out >= 200)) {
+        return false;
+    }
 
-    ret = readStatus == newmode;
+    time_out = 0;
+
+    do {
+        modify_register(spi, MCP_CANCTRL, CANCTRL_REQOP, new_mode);
+        read_register(spi, MCP_CANSTAT, &read_status);
+
+        read_status &= CANSTAT_OPM;
+        if(read_status == new_mode) return true;
+        furi_delay_ms(1);
+        time_out++;
+    } while((ret != true) && (time_out < 200));
+
     return ret;
 }
 
