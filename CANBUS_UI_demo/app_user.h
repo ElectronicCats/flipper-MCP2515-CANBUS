@@ -35,6 +35,11 @@ typedef struct {
     CANFRAME* frameArray;
     CANFRAME* frame_to_send;
 
+    FuriTimer* timer;
+    uint32_t time;
+    uint32_t times[100];
+    uint32_t current_time[100];
+
     FuriThread* thread;
     SceneManager* scene_manager;
     ViewDispatcher* view_dispatcher;
@@ -72,7 +77,12 @@ typedef enum {
     AboutUsOption,
 } MainMenuOptions;
 
-typedef enum { SniffingOptionEvent, SenderOptionEvent, SettingsOptionEvent, ReadLOGOptionEvent } MainMenuEvents;
+typedef enum {
+    SniffingOptionEvent,
+    SenderOptionEvent,
+    SettingsOptionEvent,
+    ReadLOGOptionEvent
+} MainMenuEvents;
 
 // This is for the Setting Options
 typedef enum { Refresh } SnifferEvents;

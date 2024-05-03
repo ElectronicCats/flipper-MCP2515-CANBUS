@@ -115,6 +115,11 @@ static void write_data_on_file(CANFRAME frame, File* file) {
 }
 
 // --------------------------- Thread on work ------------------------------------------------------
+static void timer_callback(void* context) {
+    App* app = context;
+    app->time++;
+}
+
 static void callback_interrupt(void* context) {
     App* app = context;
     furi_thread_flags_set(furi_thread_get_id(app->thread), WorkerflagReceived);
@@ -124,6 +129,7 @@ static int32_t worker_sniffing(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
     CANFRAME frame = app->can_frame;
+    app->timer = furi_timer_alloc(timer_callback, FuriTimerTypePeriodic, app);
 
     uint32_t current_id = 0;
     uint8_t num_of_devices = 0;
@@ -139,6 +145,8 @@ static int32_t worker_sniffing(void* context) {
     } else {
         log_exception("MCP SET FAILURE");
     }
+
+    furi_timer_start(app->timer, 1);
 
     while(1) {
         bool new = true;
@@ -157,6 +165,8 @@ static int32_t worker_sniffing(void* context) {
             if(first) {
                 app->frameArray[0] = frame;
                 app->sniffer_index_aux = num_of_devices;
+                app->times[num_of_devices] = 0;
+                app->current_time[num_of_devices] = app->time;
                 num_of_devices++;
                 first = false;
 
@@ -168,6 +178,8 @@ static int32_t worker_sniffing(void* context) {
                 for(uint8_t i = 0; i < num_of_devices; i++) {
                     if(app->frameArray[i].canId == current_id) {
                         app->frameArray[i] = frame;
+                        app->times[i] = (app->time - app->current_time[i]);
+                        app->current_time[i] = app->time;
                         new = false;
                         break;
                     }
@@ -176,6 +188,8 @@ static int32_t worker_sniffing(void* context) {
                 if(new&& condition) {
                     app->frameArray[num_of_devices] = frame;
                     app->sniffer_index_aux = num_of_devices;
+                    app->times[num_of_devices] = 0;
+                    app->current_time[num_of_devices] = app->time;
                     num_of_devices++;
                     furi_string_reset(app->textLabel);
                     furi_string_cat_printf(app->textLabel, "0x%lx", current_id);
@@ -190,6 +204,8 @@ static int32_t worker_sniffing(void* context) {
         }
     }
 
+    furi_timer_stop(app->timer);
+    furi_timer_free(app->timer);
     furi_hal_gpio_remove_int_callback(&gpio_swclk);
     free_mcp2515(mcp_can);
     return 0;
@@ -283,6 +299,8 @@ void app_scene_BoxSniffing_on_enter(void* context) {
             app->text, "[%u]:  %x ", i, app->frameArray[app->sniffer_index].buffer[i]);
     }
 
+    furi_string_cat_printf(app->text, "\ntime: %li ms", app->times[app->sniffer_index]);
+
     text_box_reset(app->textBox);
     view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
     text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
@@ -305,6 +323,8 @@ bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
             furi_string_cat_printf(
                 app->text, "[%u]:  %x ", i, app->frameArray[app->sniffer_index].buffer[i]);
         }
+
+        furi_string_cat_printf(app->text, "\ntime: %li ms", app->times[app->sniffer_index]);
 
         if(app->log_file_ready) {
             write_data_on_file(app->frameArray[app->sniffer_index], app->log_file);
