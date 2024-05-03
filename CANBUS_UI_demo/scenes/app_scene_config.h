@@ -14,6 +14,7 @@ ADD_SCENE(app, Menu, MainMenu)
 
 ADD_SCENE(app, SniffingTest, sniffingTestOption)
 ADD_SCENE(app, BoxSniffing, boxSniffing)
+ADD_SCENE(app, device_no_connected, DeviceNoConnected)
 
 ADD_SCENE(app, SenderTest, senderTest)
 ADD_SCENE(app, send_message, SendMessage)

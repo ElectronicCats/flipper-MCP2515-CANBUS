@@ -22,6 +22,8 @@
 #define PATHAPPEXT EXT_PATH(PATHAPP)
 #define PATHLOGS PATHAPPEXT "/logs"
 
+#define DEVICE_NO_CONNECTED (0xFF)
+
 typedef enum {
     WorkerflagStop = (1 << 0),
     WorkerflagReceived = (1 << 1),
@@ -85,7 +87,6 @@ typedef enum {
 } MainMenuEvents;
 
 // This is for the Setting Options
-typedef enum { Refresh } SnifferEvents;
 typedef enum { BitrateOption, CristyalClkOption, SaveLogsOption } OptionSettings;
 typedef enum { BitrateOptionEvent, CristyalClkOptionEvent } SettingsMenuEvent;
 typedef enum { ChooseIdEvent, SetIdEvent, ReturnEvent } SenderEvents;

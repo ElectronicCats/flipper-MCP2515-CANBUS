@@ -134,6 +134,7 @@ static int32_t worker_sniffing(void* context) {
     uint32_t current_id = 0;
     uint8_t num_of_devices = 0;
     uint32_t time_select = 0;
+    bool run = true;
     bool first = true;
 
     furi_hal_gpio_init(&gpio_swclk, GpioModeInterruptFall, GpioPullNo, GpioSpeedVeryHigh);
@@ -141,15 +142,14 @@ static int32_t worker_sniffing(void* context) {
 
     ERROR_CAN debugStatus = mcp2515_init(mcp_can);
 
-    if(debugStatus == ERROR_OK) {
-        log_info("MCP START OK");
-    } else {
-        log_exception("MCP SET FAILURE");
+    if(debugStatus != ERROR_OK) {
+        run = false;
+        view_dispatcher_send_custom_event(app->view_dispatcher, DEVICE_NO_CONNECTED);
     }
 
     furi_timer_start(app->timer, 1);
 
-    while(1) {
+    while(run) {
         bool new = true;
         uint32_t events =
             furi_thread_flags_wait(WORKER_ALL_RX_EVENTS, FuriFlagWaitAny, FuriWaitForever);
@@ -233,7 +233,14 @@ void app_scene_SniffingTest_on_enter(void* context) {
         submenu_set_header(app->submenu, "CANBUS ADDRESS");
         if(app->save_logs == SaveAll) save_data_on_log(app);
     }
+
     condition = true;
+
+    if(scene_manager_get_scene_state(app->scene_manager, AppScenesniffingTestOption) == 1) {
+        scene_manager_previous_scene(app->scene_manager);
+        scene_manager_set_scene_state(app->scene_manager, AppScenesniffingTestOption, 0);
+    }
+
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
 }
 
@@ -254,6 +261,10 @@ bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
         case EntryEvent:
             condition = false;
             scene_manager_next_scene(app->scene_manager, AppSceneboxSniffing);
+            consumed = true;
+            break;
+        case DEVICE_NO_CONNECTED:
+            scene_manager_next_scene(app->scene_manager, AppSceneDeviceNoConnected);
             consumed = true;
             break;
         default:
@@ -335,4 +346,33 @@ void app_scene_BoxSniffing_on_exit(void* context) {
     close_file_on_data_log(app);
     furi_string_reset(app->text);
     text_box_reset(app->textBox);
+}
+
+//-------------------------- FOR THE UNPLUG DEVICE --------------------------------------------------------
+
+void app_scene_device_no_connected_on_enter(void* context) {
+    App* app = context;
+    widget_reset(app->widget);
+
+    widget_add_string_element(
+        app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "DEVICE NO");
+
+    widget_add_string_element(
+        app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+}
+
+bool app_scene_device_no_connected_on_event(void* context, SceneManagerEvent event) {
+    UNUSED(context);
+    UNUSED(event);
+    bool consumed = false;
+
+    return consumed;
+}
+
+void app_scene_device_no_connected_on_exit(void* context) {
+    App* app = context;
+    widget_reset(app->widget);
+    scene_manager_set_scene_state(app->scene_manager, AppScenesniffingTestOption, 1);
 }

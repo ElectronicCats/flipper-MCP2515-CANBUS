@@ -36,6 +36,7 @@ static int32_t sender_on_work(void* context) {
         error = send_can_frame(app->mcp_can, app->frame_to_send);
     }
 
+    furi_delay_ms(1000);
     if(error != ERROR_OK) {
         scene_manager_handle_custom_event(app->scene_manager, SEND_ERROR);
     } else {
