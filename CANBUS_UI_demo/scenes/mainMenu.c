@@ -17,11 +17,11 @@ bool OpenLogFile(App* app) {
     if(storage_file_open(
            app->log_file, furi_string_get_cstr(selected_filepath), FSAM_READ, FSOM_OPEN_EXISTING)) {
         app->save_logs = false;
-        furi_string_reset(app->data);
+        furi_string_reset(app->text);
         char buf[storage_file_size(app->log_file)];
         storage_file_read(app->log_file, buf, sizeof(buf));
         buf[sizeof(buf)] = '\0';
-        furi_string_cat_str(app->data, buf);
+        furi_string_cat_str(app->text, buf);
     } else {
         dialog_message_show_storage_error(app->dialogs, "Cannot open File");
         return false;
