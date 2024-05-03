@@ -279,13 +279,7 @@ void app_scene_SniffingTest_on_exit(void* context) {
 
 //-------------------------- FOR THE SNIFFING BOX --------------------------------------------------------
 
-void app_scene_BoxSniffing_on_enter(void* context) {
-    App* app = context;
-
-    text_box_set_font(app->textBox, TextBoxFontText);
-
-    if(app->save_logs == OnlyAddress) save_address_data_on_log(app);
-
+void draw_box_text(App* app) {
     furi_string_reset(app->text);
 
     furi_string_cat_printf(
@@ -300,38 +294,30 @@ void app_scene_BoxSniffing_on_enter(void* context) {
     }
 
     furi_string_cat_printf(app->text, "\ntime: %li ms", app->times[app->sniffer_index]);
-
-    text_box_reset(app->textBox);
-    view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
     text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
     text_box_set_focus(app->textBox, TextBoxFocusEnd);
+}
+
+void app_scene_BoxSniffing_on_enter(void* context) {
+    App* app = context;
+
+    text_box_set_font(app->textBox, TextBoxFontText);
+
+    if(app->save_logs == OnlyAddress) save_address_data_on_log(app);
+
+    text_box_reset(app->textBox);
+    draw_box_text(app);
+    view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
 }
 
 bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
     if(event.event == ShowData) {
-        furi_string_reset(app->text);
-
-        furi_string_cat_printf(
-            app->text,
-            "ADDR: %lx DLC: %u \n",
-            app->frameArray[app->sniffer_index].canId,
-            app->frameArray[app->sniffer_index].data_lenght);
-
-        for(uint8_t i = 0; i < (app->frameArray[app->sniffer_index].data_lenght); i++) {
-            furi_string_cat_printf(
-                app->text, "[%u]:  %x ", i, app->frameArray[app->sniffer_index].buffer[i]);
-        }
-
-        furi_string_cat_printf(app->text, "\ntime: %li ms", app->times[app->sniffer_index]);
-
+        draw_box_text(app);
         if(app->log_file_ready) {
             write_data_on_file(app->frameArray[app->sniffer_index], app->log_file);
         }
-
-        text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
-        text_box_set_focus(app->textBox, TextBoxFocusEnd);
         consumed = true;
     }
     return consumed;
