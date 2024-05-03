@@ -102,20 +102,20 @@ void close_file_on_data_log(App* app) {
     }
 }
 
-static void write_data_on_file(CANFRAME frame, File* file) {
+static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
     FuriString* text_file = furi_string_alloc();
-    furi_string_cat_printf(text_file, "id:%lx \tlen: %u \t", frame.canId, frame.data_lenght);
+    furi_string_cat_printf(text_file, "id:%lx \t\tlen: %u \t", frame.canId, frame.data_lenght);
     for(uint8_t i = 0; i < (frame.data_lenght); i++) {
-        furi_string_cat_printf(text_file, "[%u]:%u \t", i, frame.buffer[i]);
+        furi_string_cat_printf(text_file, "[%u]:%u \t\t", i, frame.buffer[i]);
     }
-    furi_string_cat_str(text_file, "\n");
+    furi_string_cat_printf(text_file, " Time(ms): %li\n", time);
     storage_file_write(file, furi_string_get_cstr(text_file), furi_string_size(text_file));
     furi_string_reset(text_file);
     furi_string_free(text_file);
 }
 
 // --------------------------- Thread on work ------------------------------------------------------
-static void timer_callback(void* context) {
+void timer_callback(void* context) {
     App* app = context;
     app->time++;
 }
@@ -133,6 +133,7 @@ static int32_t worker_sniffing(void* context) {
 
     uint32_t current_id = 0;
     uint8_t num_of_devices = 0;
+    uint32_t time_select = 0;
     bool first = true;
 
     furi_hal_gpio_init(&gpio_swclk, GpioModeInterruptFall, GpioPullNo, GpioSpeedVeryHigh);
@@ -158,10 +159,6 @@ static int32_t worker_sniffing(void* context) {
                 current_id = frame.canId;
             }
 
-            if(app->log_file_ready && (app->save_logs == SaveAll)) {
-                write_data_on_file(frame, app->log_file);
-            }
-
             if(first) {
                 app->frameArray[0] = frame;
                 app->sniffer_index_aux = num_of_devices;
@@ -174,12 +171,14 @@ static int32_t worker_sniffing(void* context) {
                 furi_string_cat_printf(app->textLabel, "0x%lx", current_id);
                 view_dispatcher_send_custom_event(app->view_dispatcher, RefreshTest);
                 app->num_of_devices = num_of_devices;
+                time_select = num_of_devices;
             } else {
                 for(uint8_t i = 0; i < num_of_devices; i++) {
                     if(app->frameArray[i].canId == current_id) {
                         app->frameArray[i] = frame;
                         app->times[i] = (app->time - app->current_time[i]);
                         app->current_time[i] = app->time;
+                        time_select = i;
                         new = false;
                         break;
                     }
@@ -195,11 +194,16 @@ static int32_t worker_sniffing(void* context) {
                     furi_string_cat_printf(app->textLabel, "0x%lx", current_id);
                     view_dispatcher_send_custom_event(app->view_dispatcher, RefreshTest);
                     app->num_of_devices = num_of_devices;
+                    time_select = num_of_devices;
                 }
 
                 if(frame.canId == app->frameArray[app->sniffer_index].canId) {
                     view_dispatcher_send_custom_event(app->view_dispatcher, ShowData);
                 }
+            }
+
+            if(app->log_file_ready && (app->save_logs == SaveAll)) {
+                write_data_on_file(frame, app->log_file, app->times[time_select]);
             }
         }
     }
@@ -316,7 +320,10 @@ bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
     if(event.event == ShowData) {
         draw_box_text(app);
         if(app->log_file_ready) {
-            write_data_on_file(app->frameArray[app->sniffer_index], app->log_file);
+            write_data_on_file(
+                app->frameArray[app->sniffer_index],
+                app->log_file,
+                app->times[app->sniffer_index]);
         }
         consumed = true;
     }
