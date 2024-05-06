@@ -127,9 +127,9 @@ bool set_mode(FuriHalSpiBusHandle* spi, MCP_MODE new_mode) {
         if(read_status == MODE_CONFIG) ret = true;
         furi_delay_ms(1);
         time_out++;
-    } while((ret != true) && (time_out < 200));
+    } while((ret != true) && (time_out < 50));
 
-    if((ret != true) || (time_out >= 200)) {
+    if((ret != true) || (time_out >= 50)) {
         return false;
     }
 
@@ -143,7 +143,7 @@ bool set_mode(FuriHalSpiBusHandle* spi, MCP_MODE new_mode) {
         if(read_status == new_mode) return true;
         furi_delay_ms(1);
         time_out++;
-    } while((ret != true) && (time_out < 200));
+    } while((ret != true) && (time_out < 50));
 
     return ret;
 }

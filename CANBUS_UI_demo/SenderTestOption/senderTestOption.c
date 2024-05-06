@@ -28,22 +28,25 @@ typedef enum {
 static int32_t sender_on_work(void* context) {
     App* app = context;
     app->mcp_can->mode = MCP_NORMAL;
-    ERROR_CAN error = mcp2515_init(app->mcp_can);
+    ERROR_CAN debug = ERROR_OK;
+    ERROR_CAN error = ERROR_OK;
+    debug = mcp2515_init(app->mcp_can);
 
     furi_delay_ms(10);
 
-    if(error == ERROR_OK) {
+    if(debug == ERROR_OK) {
         error = send_can_frame(app->mcp_can, app->frame_to_send);
-    }
+        furi_delay_ms(500);
 
-    furi_delay_ms(1000);
-    if(error != ERROR_OK) {
-        scene_manager_handle_custom_event(app->scene_manager, SEND_ERROR);
+        if(error != ERROR_OK)
+            scene_manager_handle_custom_event(app->scene_manager, SEND_ERROR);
+        else
+            scene_manager_handle_custom_event(app->scene_manager, SEND_OK);
     } else {
-        scene_manager_handle_custom_event(app->scene_manager, SEND_OK);
+        scene_manager_handle_custom_event(app->scene_manager, DEVICE_NO_CONNECTED);
     }
-    free_mcp2515(app->mcp_can);
 
+    free_mcp2515(app->mcp_can);
     return 0;
 }
 
@@ -309,20 +312,37 @@ void app_scene_send_message_on_enter(void* context) {
 
 bool app_scene_send_message_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
+    bool consumed = false;
 
     if(event.type == SceneManagerEventTypeCustom) {
-        if(event.event == SEND_OK) {
+        switch(event.event) {
+        case SEND_OK:
             widget_reset(app->widget);
             widget_add_string_element(
                 app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MESSAGE SEND OK");
-        } else {
+            break;
+
+        case SEND_ERROR:
             widget_reset(app->widget);
             widget_add_string_element(
                 app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MESSAGE SEND ERROR");
+            break;
+
+        case DEVICE_NO_CONNECTED:
+            widget_reset(app->widget);
+
+            widget_add_string_element(
+                app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "DEVICE NO");
+
+            widget_add_string_element(
+                app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
+            break;
+
+        default:
+            break;
         }
     }
 
-    bool consumed = false;
     return consumed;
 }
 
