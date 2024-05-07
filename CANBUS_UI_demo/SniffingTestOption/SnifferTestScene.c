@@ -115,10 +115,6 @@ static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
 }
 
 // --------------------------- Thread on work ------------------------------------------------------
-void timer_callback(void* context) {
-    App* app = context;
-    app->time++;
-}
 
 static void callback_interrupt(void* context) {
     App* app = context;
@@ -129,7 +125,6 @@ static int32_t worker_sniffing(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
     CANFRAME frame = app->can_frame;
-    app->timer = furi_timer_alloc(timer_callback, FuriTimerTypePeriodic, app);
 
     uint32_t current_id = 0;
     uint8_t num_of_devices = 0;
@@ -140,14 +135,13 @@ static int32_t worker_sniffing(void* context) {
     furi_hal_gpio_init(&gpio_swclk, GpioModeInterruptFall, GpioPullNo, GpioSpeedVeryHigh);
     furi_hal_gpio_add_int_callback(&gpio_swclk, callback_interrupt, app);
 
+    mcp_can->mode = MCP_LISTENONLY;
     ERROR_CAN debugStatus = mcp2515_init(mcp_can);
 
     if(debugStatus != ERROR_OK) {
         run = false;
         view_dispatcher_send_custom_event(app->view_dispatcher, DEVICE_NO_CONNECTED);
     }
-
-    furi_timer_start(app->timer, 1);
 
     while(run) {
         bool new = true;
@@ -163,7 +157,7 @@ static int32_t worker_sniffing(void* context) {
                 app->frameArray[0] = frame;
                 app->sniffer_index_aux = num_of_devices;
                 app->times[num_of_devices] = 0;
-                app->current_time[num_of_devices] = app->time;
+                app->current_time[num_of_devices] = furi_get_tick();
                 num_of_devices++;
                 first = false;
 
@@ -178,8 +172,8 @@ static int32_t worker_sniffing(void* context) {
                 for(uint8_t i = 0; i < num_of_devices; i++) {
                     if(app->frameArray[i].canId == current_id) {
                         app->frameArray[i] = frame;
-                        app->times[i] = (app->time - app->current_time[i]);
-                        app->current_time[i] = app->time;
+                        app->times[i] = (furi_get_tick() - app->current_time[i]);
+                        app->current_time[i] = furi_get_tick();
                         time_select = i;
                         new = false;
                         break;
@@ -190,7 +184,7 @@ static int32_t worker_sniffing(void* context) {
                     app->frameArray[num_of_devices] = frame;
                     app->sniffer_index_aux = num_of_devices;
                     app->times[num_of_devices] = 0;
-                    app->current_time[num_of_devices] = app->time;
+                    app->current_time[num_of_devices] = furi_get_tick();
                     num_of_devices++;
                     furi_string_reset(app->textLabel);
                     furi_string_cat_printf(app->textLabel, "0x%lx", current_id);
@@ -209,9 +203,6 @@ static int32_t worker_sniffing(void* context) {
             }
         }
     }
-
-    furi_timer_stop(app->timer);
-    furi_timer_free(app->timer);
     furi_hal_gpio_remove_int_callback(&gpio_swclk);
     free_mcp2515(mcp_can);
     return 0;
