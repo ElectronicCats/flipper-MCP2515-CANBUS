@@ -95,7 +95,7 @@ typedef enum { ChooseIdEvent, SetIdEvent, ReturnEvent } SenderEvents;
 typedef enum { NoSave, SaveAll, OnlyAddress } SaveOptions;
 
 // This is for SniffingTest Options
-typedef enum { RefreshTest, EntryEvent, ShowData } SniffingTestEvents;
+typedef enum { RefreshTest, EntryEvent, ShowData, SaveDataOk } SniffingTestEvents;
 
 // Views in the App
 typedef enum {

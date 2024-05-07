@@ -95,7 +95,6 @@ static void app_free(App* app) {
     furi_string_free(app->textLabel);
     furi_string_free(app->data);
 
-    app->log_file_ready = false;
     if(app->log_file && storage_file_is_open(app->log_file)) {
         storage_file_close(app->log_file);
     }

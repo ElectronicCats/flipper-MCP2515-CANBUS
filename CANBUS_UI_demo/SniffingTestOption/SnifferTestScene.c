@@ -169,6 +169,8 @@ static int32_t worker_sniffing(void* context) {
 
                 furi_string_reset(app->textLabel);
                 furi_string_cat_printf(app->textLabel, "0x%lx", current_id);
+
+                view_dispatcher_send_custom_event(app->view_dispatcher, SaveDataOk);
                 view_dispatcher_send_custom_event(app->view_dispatcher, RefreshTest);
                 app->num_of_devices = num_of_devices;
                 time_select = num_of_devices;
@@ -231,7 +233,6 @@ void app_scene_SniffingTest_on_enter(void* context) {
         furi_thread_start(app->thread);
         submenu_reset(app->submenu);
         submenu_set_header(app->submenu, "CANBUS ADDRESS");
-        if(app->save_logs == SaveAll) save_data_on_log(app);
     }
 
     condition = true;
@@ -258,11 +259,17 @@ bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
                 sniffingTest_callback,
                 app);
             break;
+
         case EntryEvent:
             condition = false;
             scene_manager_next_scene(app->scene_manager, AppSceneboxSniffing);
             consumed = true;
             break;
+
+        case SaveDataOk:
+            if(app->save_logs == SaveAll) save_data_on_log(app);
+            break;
+
         case DEVICE_NO_CONNECTED:
             scene_manager_next_scene(app->scene_manager, AppSceneDeviceNoConnected);
             consumed = true;
@@ -286,7 +293,10 @@ void app_scene_SniffingTest_on_exit(void* context) {
 
         furi_string_reset(app->textLabel);
 
-        if(app->save_logs == SaveAll) close_file_on_data_log(app);
+        if((app->save_logs == SaveAll) && (app->log_file_ready)) {
+            close_file_on_data_log(app);
+            app->log_file_ready = false;
+        }
 
         submenu_reset(app->submenu);
     }
