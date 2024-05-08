@@ -10,7 +10,6 @@
 #include <gui/modules/submenu.h>
 #include <gui/modules/variable_item_list.h>
 #include <gui/modules/text_box.h>
-#include <gui/modules/dialog_ex.h>
 #include <gui/modules/byte_input.h>
 #include <gui/modules/text_input.h>
 
@@ -96,6 +95,9 @@ typedef enum { NoSave, SaveAll, OnlyAddress } SaveOptions;
 
 // This is for SniffingTest Options
 typedef enum { RefreshTest, EntryEvent, ShowData, SaveDataOk } SniffingTestEvents;
+
+// These are the events in AboutOption
+typedef enum { LeftButtonEvent, RightButtonEvent } ButtonPressedEvent;
 
 // Views in the App
 typedef enum {

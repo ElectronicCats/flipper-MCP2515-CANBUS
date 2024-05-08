@@ -128,7 +128,7 @@ bool app_scene_Menu_on_event(void* context, SceneManagerEvent event) {
             break;
 
         case AboutUsEvent:
-            // scene_manager_next_scene(app->scene_manager, AppSceneAboutUs);
+            scene_manager_next_scene(app->scene_manager, AppSceneAboutUs);
             consumed = true;
             break;
 
