@@ -82,7 +82,8 @@ typedef enum {
     SniffingOptionEvent,
     SenderOptionEvent,
     SettingsOptionEvent,
-    ReadLOGOptionEvent
+    ReadLOGOptionEvent,
+    AboutUsEvent,
 } MainMenuEvents;
 
 // This is for the Setting Options
