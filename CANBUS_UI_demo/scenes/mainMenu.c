@@ -16,16 +16,24 @@ bool OpenLogFile(App* app) {
     }
     if(storage_file_open(
            app->log_file, furi_string_get_cstr(selected_filepath), FSAM_READ, FSOM_OPEN_EXISTING)) {
-        app->save_logs = false;
-        furi_string_reset(app->text);
-        char buf[storage_file_size(app->log_file)];
-        storage_file_read(app->log_file, buf, sizeof(buf));
-        buf[sizeof(buf)] = '\0';
-        furi_string_cat_str(app->text, buf);
+        app->size_of_storage = storage_file_size(app->log_file);
     } else {
         dialog_message_show_storage_error(app->dialogs, "Cannot open File");
         return false;
     }
+
+    if(app->size_of_storage > 25000) {
+        dialog_message_show_storage_error(
+            app->dialogs, "Cannot open File\nLarge Memory size\nOpen in a computer");
+        return false;
+    }
+
+    furi_string_reset(app->text);
+    char buf[storage_file_size(app->log_file)];
+    storage_file_read(app->log_file, buf, sizeof(buf));
+    buf[sizeof(buf)] = '\0';
+    furi_string_cat_str(app->text, buf);
+
     storage_file_close(app->log_file);
     furi_string_free(selected_filepath);
     furi_string_free(predefined_filepath);
@@ -64,7 +72,7 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
 
     case ReadLOGOption:
         if(OpenLogFile(app)) {
-            scene_manager_handle_custom_event(app->scene_manager, ReadLOGOptionEvent);
+            scene_manager_next_scene(app->scene_manager, AppSceneReadLogs);
         }
         break;
 

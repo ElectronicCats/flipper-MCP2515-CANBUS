@@ -66,6 +66,8 @@ typedef struct {
     uint8_t num_of_devices;
     uint8_t sender_selected_item;
     uint8_t sender_id_compose[4];
+
+    uint64_t size_of_storage;
 } App;
 
 // This is for the menu Options
