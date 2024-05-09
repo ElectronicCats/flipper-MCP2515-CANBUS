@@ -1,9 +1,0 @@
-App(
-    appid="app_user",
-    name="Test with Logs",
-    apptype=FlipperAppType.EXTERNAL,
-    entry_point="app_main",
-    requires=["gui"],
-    stack_size=2 * 1024,
-    fap_category="Misc",
-)
