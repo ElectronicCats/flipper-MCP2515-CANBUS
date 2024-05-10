@@ -99,7 +99,7 @@ typedef enum { NoSave, SaveAll, OnlyAddress } SaveOptions;
 typedef enum { RefreshTest, EntryEvent, ShowData, SaveDataOk } SniffingTestEvents;
 
 // These are the events in AboutOption
-typedef enum { LeftButtonEvent, RightButtonEvent } ButtonPressedEvent;
+typedef enum { ButtonGetPressed } ButtonPressedEvent;
 
 // Views in the App
 typedef enum {

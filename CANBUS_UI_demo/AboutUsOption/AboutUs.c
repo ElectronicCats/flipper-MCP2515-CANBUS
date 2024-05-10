@@ -1,20 +1,24 @@
 #include "../app_user.h"
 
-void button_callback(GuiButtonType result, InputType input, void* context) {
+static uint32_t state = 0;
+
+static void button_callback(GuiButtonType result, InputType input, void* context) {
     App* app = context;
-    UNUSED(app);
-    UNUSED(result);
 
-    if(input == InputTypeRelease) {
-        if(result == GuiButtonTypeRight)
-            scene_manager_handle_custom_event(app->scene_manager, RightButtonEvent);
-
-        if(result == GuiButtonTypeLeft)
-            scene_manager_handle_custom_event(app->scene_manager, LeftButtonEvent);
+    if(input == InputTypePress) {
+        if(result == GuiButtonTypeRight) {
+            state = state + 1;
+            scene_manager_handle_custom_event(app->scene_manager, ButtonGetPressed);
+        }
+        if(result == GuiButtonTypeLeft) {
+            state = state - 1;
+            scene_manager_handle_custom_event(app->scene_manager, ButtonGetPressed);
+        }
     }
+    log_info("%lu", state);
 }
 
-void draw_first_view(App* app) {
+static void draw_present_view(App* app) {
     widget_reset(app->widget);
     widget_add_string_element(
         app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "ELECTRONIC CATS");
@@ -24,7 +28,7 @@ void draw_first_view(App* app) {
     widget_add_button_element(app->widget, GuiButtonTypeRight, "Next", button_callback, app);
 }
 
-void draw_second_view(App* app) {
+static void draw_can_app_view(App* app) {
     widget_reset(app->widget);
     widget_add_string_element(
         app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "CANBUS APP");
@@ -35,27 +39,35 @@ void draw_second_view(App* app) {
     widget_add_button_element(app->widget, GuiButtonTypeLeft, "Prev", button_callback, app);
 }
 
-void draw_third_view(App* app) {
+static void draw_version_view(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "Version:");
+    widget_add_string_element(
+        app->widget, 65, 35, AlignCenter, AlignCenter, FontSecondary, "CANBUS APP V1.1.0.0");
+    widget_add_button_element(app->widget, GuiButtonTypeRight, "Next", button_callback, app);
+    widget_add_button_element(app->widget, GuiButtonTypeLeft, "Prev", button_callback, app);
+}
+
+static void draw_license_view(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MIT LICENSE");
+    widget_add_string_element(
+        app->widget, 65, 35, AlignCenter, AlignCenter, FontSecondary, "Copyright(c) 2024");
+    widget_add_button_element(app->widget, GuiButtonTypeRight, "Next", button_callback, app);
+    widget_add_button_element(app->widget, GuiButtonTypeLeft, "Prev", button_callback, app);
+}
+
+void draw_more_info_view(App* app) {
     widget_reset(app->widget);
     widget_add_string_element(
         app->widget, 65, 10, AlignCenter, AlignCenter, FontPrimary, "More info:");
     widget_add_string_element(
-        app->widget,
-        65,
-        25,
-        AlignCenter,
-        AlignCenter,
-        FontSecondary,
-        "https://github.com");
-    
+        app->widget, 65, 25, AlignCenter, AlignCenter, FontSecondary, "https://github.com");
+
     widget_add_string_element(
-        app->widget,
-        65,
-        35,
-        AlignCenter,
-        AlignCenter,
-        FontSecondary,
-        "/ElectronicCats");
+        app->widget, 65, 35, AlignCenter, AlignCenter, FontSecondary, "/ElectronicCats");
 
     widget_add_string_element(
         app->widget, 65, 45, AlignCenter, AlignCenter, FontSecondary, "/flipper-MCP2515-CANBUS");
@@ -64,28 +76,41 @@ void draw_third_view(App* app) {
 
 void app_scene_about_us_on_enter(void* context) {
     App* app = context;
+    state = 0;
     scene_manager_set_scene_state(app->scene_manager, AppSceneAboutUs, 0);
-    draw_first_view(app);
+    draw_present_view(app);
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }
 
 bool app_scene_about_us_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
-    uint32_t state = scene_manager_get_scene_state(app->scene_manager, AppSceneAboutUs);
-    if(event.type == SceneManagerEventTypeCustom) {
-        if(event.event == LeftButtonEvent) {
-            state = state - 1;
-            scene_manager_set_scene_state(app->scene_manager, AppSceneAboutUs, state);
-        }
-        if(event.event == RightButtonEvent) {
-            state = state + 1;
-            scene_manager_set_scene_state(app->scene_manager, AppSceneAboutUs, state);
-        }
 
-        if(state == 0) draw_first_view(app);
-        if(state == 1) draw_second_view(app);
-        if(state == 2) draw_third_view(app);
+    uint32_t state_2 = state;
+
+    log_info("%lu", state_2);
+
+    if(event.type == SceneManagerEventTypeCustom) {
+        switch(state_2) {
+        case 0:
+            draw_present_view(app);
+            break;
+        case 1:
+            draw_can_app_view(app);
+            break;
+        case 2:
+            draw_version_view(app);
+            break;
+        case 3:
+            draw_license_view(app);
+            break;
+        case 4:
+            draw_more_info_view(app);
+            break;
+        default:
+            break;
+        }
+        consumed = true;
     }
     return consumed;
 }
