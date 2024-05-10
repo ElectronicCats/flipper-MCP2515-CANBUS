@@ -209,7 +209,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     variable_item_set_current_value_index(item, 0);
 
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[0]);
+    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[0]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     // 7
@@ -217,7 +217,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     variable_item_set_current_value_index(item, 0);
 
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[1]);
+    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[1]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     // 8
@@ -225,7 +225,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     variable_item_set_current_value_index(item, 0);
 
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[2]);
+    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[2]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     // 9
@@ -233,7 +233,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     variable_item_set_current_value_index(item, 0);
 
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[3]);
+    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[3]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     // 10
@@ -241,7 +241,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     variable_item_set_current_value_index(item, 0);
 
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[4]);
+    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[4]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     // 11
@@ -249,7 +249,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     variable_item_set_current_value_index(item, 0);
 
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[5]);
+    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[5]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     // 12
@@ -257,7 +257,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     variable_item_set_current_value_index(item, 0);
 
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[6]);
+    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[6]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     // 13
@@ -265,7 +265,7 @@ void app_scene_SenderTest_on_enter(void* context) {
     variable_item_set_current_value_index(item, 0);
 
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", app->frame_to_send->buffer[7]);
+    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[7]);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     variable_item_list_set_enter_callback(app->varList, callback_input_sender_options, app);
