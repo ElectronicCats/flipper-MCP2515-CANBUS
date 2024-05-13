@@ -60,7 +60,6 @@ static App* app_alloc() {
     app->log_file = storage_file_alloc(app->storage);
 
     app->text = furi_string_alloc();
-    app->textLabel = furi_string_alloc();
     app->data = furi_string_alloc();
 
     app->mcp_can = mcp_alloc(MCP_NORMAL, MCP_16MHZ, MCP_500KBPS);
@@ -92,7 +91,6 @@ static void app_free(App* app) {
     byte_input_free(app->input_byte_value);
 
     furi_string_free(app->text);
-    furi_string_free(app->textLabel);
     furi_string_free(app->data);
 
     if(app->log_file && storage_file_is_open(app->log_file)) {

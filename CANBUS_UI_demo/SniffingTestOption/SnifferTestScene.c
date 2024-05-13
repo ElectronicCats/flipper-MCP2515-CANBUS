@@ -121,6 +121,25 @@ void sniffingTest_callback(void* context, uint32_t index) {
     scene_manager_handle_custom_event(app->scene_manager, EntryEvent);
 }
 
+void draw_box_text(App* app) {
+    furi_string_reset(app->text);
+
+    furi_string_cat_printf(
+        app->text,
+        "ADDR: %lx DLC: %u \n",
+        app->frameArray[app->sniffer_index].canId,
+        app->frameArray[app->sniffer_index].data_lenght);
+
+    for(uint8_t i = 0; i < (app->frameArray[app->sniffer_index].data_lenght); i++) {
+        furi_string_cat_printf(
+            app->text, "[%u]:  %x ", i, app->frameArray[app->sniffer_index].buffer[i]);
+    }
+
+    furi_string_cat_printf(app->text, "\ntime: %li ms", app->times[app->sniffer_index]);
+    text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
+    text_box_set_focus(app->textBox, TextBoxFocusEnd);
+}
+
 // --------------------------- Thread on work ------------------------------------------------------
 
 static void callback_interrupt(void* context) {
@@ -132,13 +151,14 @@ static int32_t worker_sniffing(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
     CANFRAME frame = app->can_frame;
+    FuriString* text_label = furi_string_alloc();
 
     uint8_t num_of_devices = 0;
     uint32_t time_select = 0;
     UNUSED(time_select);
 
     bool run = true;
-    bool first = true;
+    bool first_address = true;
 
     furi_hal_gpio_init(&gpio_swclk, GpioModeInterruptFall, GpioPullNo, GpioSpeedVeryHigh);
     furi_hal_gpio_add_int_callback(&gpio_swclk, callback_interrupt, app);
@@ -160,7 +180,7 @@ static int32_t worker_sniffing(void* context) {
         if(events & WorkerflagReceived) {
             read_can_message(mcp_can, &frame);
 
-            if(first) {
+            if(first_address) {
                 app->frameArray[num_of_devices] = frame;
                 app->times[num_of_devices] = 0;
                 app->sniffer_index_aux = num_of_devices;
@@ -168,7 +188,18 @@ static int32_t worker_sniffing(void* context) {
                 app->time = 0;
                 app->current_time[num_of_devices] = furi_get_tick();
                 num_of_devices++;
-                first = false;
+                first_address = false;
+
+                furi_string_reset(text_label);
+                furi_string_cat_printf(
+                    text_label, "0x%lu", app->frameArray[app->sniffer_index_aux].canId);
+
+                submenu_add_item(
+                    app->submenu,
+                    furi_string_get_cstr(text_label),
+                    app->sniffer_index_aux,
+                    sniffingTest_callback,
+                    app);
 
                 if(app->save_logs == SaveAll) {
                     save_data_on_log(app);
@@ -196,18 +227,16 @@ static int32_t worker_sniffing(void* context) {
                     app->current_time[num_of_devices] = furi_get_tick();
                     num_of_devices++;
 
-                    furi_string_reset(app->textLabel);
+                    furi_string_reset(text_label);
                     furi_string_cat_printf(
-                        app->textLabel, "0x%lu", app->frameArray[app->sniffer_index_aux].canId);
+                        text_label, "0x%lu", app->frameArray[app->sniffer_index_aux].canId);
 
                     submenu_add_item(
                         app->submenu,
-                        furi_string_get_cstr(app->textLabel),
+                        furi_string_get_cstr(text_label),
                         app->sniffer_index_aux,
                         sniffingTest_callback,
                         app);
-
-                    view_dispatcher_send_custom_event(app->view_dispatcher, RefreshTest);
                 }
 
                 if(app->log_file_ready && (app->save_logs == SaveAll)) {
@@ -222,9 +251,18 @@ static int32_t worker_sniffing(void* context) {
                     app->times[app->sniffer_index] =
                         furi_get_tick() - app->current_time[app->sniffer_index];
                     app->current_time[app->sniffer_index] = furi_get_tick();
-                    view_dispatcher_send_custom_event(app->view_dispatcher, ShowData);
+                    draw_box_text(app);
+
+                    if(app->log_file_ready && (app->save_logs == OnlyAddress)) {
+                        write_data_on_file(
+                            app->frameArray[app->sniffer_index],
+                            app->log_file,
+                            app->times[app->sniffer_index]);
+                    }
                 }
             }
+
+            app->num_of_devices = num_of_devices;
         }
     }
 
@@ -233,6 +271,7 @@ static int32_t worker_sniffing(void* context) {
         app->log_file_ready = false;
     }
 
+    furi_string_free(text_label);
     furi_hal_gpio_remove_int_callback(&gpio_swclk);
     free_mcp2515(mcp_can);
     return 0;
@@ -266,10 +305,6 @@ bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
     switch(event.type) {
     case SceneManagerEventTypeCustom:
         switch(event.event) {
-        case RefreshTest:
-
-            break;
-
         case EntryEvent:
             condition = false;
             scene_manager_next_scene(app->scene_manager, AppSceneboxSniffing);
@@ -296,32 +331,11 @@ void app_scene_SniffingTest_on_exit(void* context) {
         furi_thread_flags_set(furi_thread_get_id(app->thread), WorkerflagStop);
         furi_thread_join(app->thread);
         furi_thread_free(app->thread);
-
-        furi_string_reset(app->textLabel);
         submenu_reset(app->submenu);
     }
 }
 
 //-------------------------- FOR THE SNIFFING BOX --------------------------------------------------------
-
-void draw_box_text(App* app) {
-    furi_string_reset(app->text);
-
-    furi_string_cat_printf(
-        app->text,
-        "ADDR: %lx DLC: %u \n",
-        app->frameArray[app->sniffer_index].canId,
-        app->frameArray[app->sniffer_index].data_lenght);
-
-    for(uint8_t i = 0; i < (app->frameArray[app->sniffer_index].data_lenght); i++) {
-        furi_string_cat_printf(
-            app->text, "[%u]:  %x ", i, app->frameArray[app->sniffer_index].buffer[i]);
-    }
-
-    furi_string_cat_printf(app->text, "\ntime: %li ms", app->times[app->sniffer_index]);
-    text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
-    text_box_set_focus(app->textBox, TextBoxFocusEnd);
-}
 
 void app_scene_BoxSniffing_on_enter(void* context) {
     App* app = context;
@@ -338,16 +352,8 @@ void app_scene_BoxSniffing_on_enter(void* context) {
 bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
-    if(event.event == ShowData) {
-        draw_box_text(app);
-        if(app->log_file_ready) {
-            write_data_on_file(
-                app->frameArray[app->sniffer_index],
-                app->log_file,
-                app->times[app->sniffer_index]);
-        }
-        consumed = true;
-    }
+    UNUSED(app);
+    UNUSED(event);
     return consumed;
 }
 
