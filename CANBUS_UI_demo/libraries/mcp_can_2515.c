@@ -1,7 +1,7 @@
 #include "mcp_can_2515.h"
 
 // To read a register with SPI protocol
-bool read_register(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t* data) {
+static bool read_register(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t* data) {
     bool ret = true;
     uint8_t instruction[] = {INSTRUCTION_READ, address};
     furi_hal_spi_acquire(spi);
@@ -14,7 +14,7 @@ bool read_register(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t* data) {
 }
 
 // To read a register with SPI Protocol
-bool set_register(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t data) {
+static bool set_register(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t data) {
     bool ret = true;
     uint8_t instruction[] = {INSTRUCTION_WRITE, address, data};
     furi_hal_spi_acquire(spi);
@@ -24,7 +24,7 @@ bool set_register(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t data) {
 }
 
 // To write multiple registers
-bool set_registerS(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t* data) {
+static bool set_registerS(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t* data) {
     bool ret = true;
     uint8_t instruction[] = {INSTRUCTION_WRITE, address};
     uint8_t count = sizeof(data);
@@ -40,7 +40,8 @@ bool set_registerS(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t* data) {
 }
 
 // To modify the value of one bit from a register
-bool modify_register(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t mask, uint8_t data) {
+static bool
+    modify_register(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t mask, uint8_t data) {
     uint8_t instruction[] = {INSTRUCTION_BITMOD, address, mask, data};
     bool ret = true;
     furi_hal_spi_acquire(spi);

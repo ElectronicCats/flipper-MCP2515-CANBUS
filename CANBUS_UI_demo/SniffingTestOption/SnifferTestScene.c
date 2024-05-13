@@ -114,6 +114,13 @@ static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
     furi_string_free(text_file);
 }
 
+// Call backs
+void sniffingTest_callback(void* context, uint32_t index) {
+    App* app = context;
+    app->sniffer_index = index;
+    scene_manager_handle_custom_event(app->scene_manager, EntryEvent);
+}
+
 // --------------------------- Thread on work ------------------------------------------------------
 
 static void callback_interrupt(void* context) {
@@ -126,9 +133,10 @@ static int32_t worker_sniffing(void* context) {
     MCP2515* mcp_can = app->mcp_can;
     CANFRAME frame = app->can_frame;
 
-    uint32_t current_id = 0;
     uint8_t num_of_devices = 0;
     uint32_t time_select = 0;
+    UNUSED(time_select);
+
     bool run = true;
     bool first = true;
 
@@ -145,76 +153,92 @@ static int32_t worker_sniffing(void* context) {
 
     while(run) {
         bool new = true;
+
         uint32_t events =
             furi_thread_flags_wait(WORKER_ALL_RX_EVENTS, FuriFlagWaitAny, FuriWaitForever);
         if(events & WorkerflagStop) break;
         if(events & WorkerflagReceived) {
-            if(read_can_message(mcp_can, &frame) == ERROR_OK) {
-                current_id = frame.canId;
-            }
+            read_can_message(mcp_can, &frame);
 
             if(first) {
-                app->frameArray[0] = frame;
+                app->frameArray[num_of_devices] = frame;
+                app->times[num_of_devices] = 0;
                 app->sniffer_index_aux = num_of_devices;
                 app->times[num_of_devices] = 0;
+                app->time = 0;
                 app->current_time[num_of_devices] = furi_get_tick();
                 num_of_devices++;
                 first = false;
 
-                furi_string_reset(app->textLabel);
-                furi_string_cat_printf(app->textLabel, "0x%lx", current_id);
+                if(app->save_logs == SaveAll) {
+                    save_data_on_log(app);
+                }
+            }
 
-                view_dispatcher_send_custom_event(app->view_dispatcher, SaveDataOk);
-                view_dispatcher_send_custom_event(app->view_dispatcher, RefreshTest);
-                app->num_of_devices = num_of_devices;
-                time_select = num_of_devices;
-            } else {
+            if(condition) {
                 for(uint8_t i = 0; i < num_of_devices; i++) {
-                    if(app->frameArray[i].canId == current_id) {
+                    if(frame.canId == app->frameArray[i].canId) {
                         app->frameArray[i] = frame;
-                        app->times[i] = (furi_get_tick() - app->current_time[i]);
+                        app->times[i] = furi_get_tick() - app->current_time[i];
+                        app->time = app->times[i];
                         app->current_time[i] = furi_get_tick();
-                        time_select = i;
                         new = false;
                         break;
                     }
                 }
 
-                if(new&& condition) {
+                if(new && (num_of_devices < 100)) {
                     app->frameArray[num_of_devices] = frame;
+                    app->times[num_of_devices] = 0;
                     app->sniffer_index_aux = num_of_devices;
                     app->times[num_of_devices] = 0;
+                    app->time = 0;
                     app->current_time[num_of_devices] = furi_get_tick();
                     num_of_devices++;
+
                     furi_string_reset(app->textLabel);
-                    furi_string_cat_printf(app->textLabel, "0x%lx", current_id);
+                    furi_string_cat_printf(
+                        app->textLabel, "0x%lu", app->frameArray[app->sniffer_index_aux].canId);
+
+                    submenu_add_item(
+                        app->submenu,
+                        furi_string_get_cstr(app->textLabel),
+                        app->sniffer_index_aux,
+                        sniffingTest_callback,
+                        app);
+
                     view_dispatcher_send_custom_event(app->view_dispatcher, RefreshTest);
-                    app->num_of_devices = num_of_devices;
-                    time_select = num_of_devices;
                 }
 
+                if(app->log_file_ready && (app->save_logs == SaveAll)) {
+                    app->can_frame = frame;
+                    write_data_on_file(app->can_frame, app->log_file, app->time);
+                }
+            }
+
+            if(!condition) {
                 if(frame.canId == app->frameArray[app->sniffer_index].canId) {
+                    app->frameArray[app->sniffer_index] = frame;
+                    app->times[app->sniffer_index] =
+                        furi_get_tick() - app->current_time[app->sniffer_index];
+                    app->current_time[app->sniffer_index] = furi_get_tick();
                     view_dispatcher_send_custom_event(app->view_dispatcher, ShowData);
                 }
             }
-
-            if(app->log_file_ready && (app->save_logs == SaveAll)) {
-                write_data_on_file(frame, app->log_file, app->times[time_select]);
-            }
         }
     }
+
+    if((app->save_logs == SaveAll) && (app->log_file_ready)) {
+        close_file_on_data_log(app);
+        app->log_file_ready = false;
+    }
+
     furi_hal_gpio_remove_int_callback(&gpio_swclk);
     free_mcp2515(mcp_can);
     return 0;
 }
 
 // ------------------------------------------------------ SNIFFING MENU SCENE ---------------------------
-
-void sniffingTest_callback(void* context, uint32_t index) {
-    App* app = context;
-    app->sniffer_index = index;
-    scene_manager_handle_custom_event(app->scene_manager, EntryEvent);
-}
 
 void app_scene_SniffingTest_on_enter(void* context) {
     App* app = context;
@@ -243,22 +267,13 @@ bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
     case SceneManagerEventTypeCustom:
         switch(event.event) {
         case RefreshTest:
-            submenu_add_item(
-                app->submenu,
-                furi_string_get_cstr(app->textLabel),
-                app->sniffer_index_aux,
-                sniffingTest_callback,
-                app);
+
             break;
 
         case EntryEvent:
             condition = false;
             scene_manager_next_scene(app->scene_manager, AppSceneboxSniffing);
             consumed = true;
-            break;
-
-        case SaveDataOk:
-            if(app->save_logs == SaveAll) save_data_on_log(app);
             break;
 
         case DEVICE_NO_CONNECTED:
@@ -283,12 +298,6 @@ void app_scene_SniffingTest_on_exit(void* context) {
         furi_thread_free(app->thread);
 
         furi_string_reset(app->textLabel);
-
-        if((app->save_logs == SaveAll) && (app->log_file_ready)) {
-            close_file_on_data_log(app);
-            app->log_file_ready = false;
-        }
-
         submenu_reset(app->submenu);
     }
 }
