@@ -22,9 +22,10 @@ bool OpenLogFile(App* app) {
         return false;
     }
 
-    if(app->size_of_storage > 25000) {
+    if(app->size_of_storage > 20000) {
         dialog_message_show_storage_error(
             app->dialogs, "Cannot open File\nLarge Memory size\nOpen in a computer");
+        storage_file_close(app->log_file);
         return false;
     }
 
