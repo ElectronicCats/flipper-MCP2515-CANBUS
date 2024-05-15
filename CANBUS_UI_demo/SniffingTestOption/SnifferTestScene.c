@@ -192,7 +192,7 @@ static int32_t worker_sniffing(void* context) {
 
                 furi_string_reset(text_label);
                 furi_string_cat_printf(
-                    text_label, "0x%lu", app->frameArray[app->sniffer_index_aux].canId);
+                    text_label, "0x%lx", app->frameArray[app->sniffer_index_aux].canId);
 
                 submenu_add_item(
                     app->submenu,
@@ -229,7 +229,7 @@ static int32_t worker_sniffing(void* context) {
 
                     furi_string_reset(text_label);
                     furi_string_cat_printf(
-                        text_label, "0x%lu", app->frameArray[app->sniffer_index_aux].canId);
+                        text_label, "0x%lx", app->frameArray[app->sniffer_index_aux].canId);
 
                     submenu_add_item(
                         app->submenu,
