@@ -15,7 +15,6 @@ static void button_callback(GuiButtonType result, InputType input, void* context
             scene_manager_handle_custom_event(app->scene_manager, ButtonGetPressed);
         }
     }
-    log_info("%lu", state);
 }
 
 static void draw_present_view(App* app) {
@@ -77,7 +76,6 @@ void draw_more_info_view(App* app) {
 void app_scene_about_us_on_enter(void* context) {
     App* app = context;
     state = 0;
-    scene_manager_set_scene_state(app->scene_manager, AppSceneAboutUs, 0);
     draw_present_view(app);
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }
@@ -87,8 +85,6 @@ bool app_scene_about_us_on_event(void* context, SceneManagerEvent event) {
     bool consumed = false;
 
     uint32_t state_2 = state;
-
-    log_info("%lu", state_2);
 
     if(event.type == SceneManagerEventTypeCustom) {
         switch(state_2) {

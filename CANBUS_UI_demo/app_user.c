@@ -115,7 +115,7 @@ int app_main(void* p) {
 
     view_dispatcher_attach_to_gui(app->view_dispatcher, gui, ViewDispatcherTypeFullscreen);
 
-    scene_manager_next_scene(app->scene_manager, AppSceneMainMenu);
+    scene_manager_next_scene(app->scene_manager, app_scene_main_menu);
 
     view_dispatcher_run(app->view_dispatcher);
     furi_record_close(RECORD_GUI);

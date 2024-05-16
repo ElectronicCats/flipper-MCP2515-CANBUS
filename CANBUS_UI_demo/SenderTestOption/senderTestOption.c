@@ -58,67 +58,71 @@ void callback_input_sender_options(void* context, uint32_t index) {
     app->sender_selected_item = index;
     switch(index) {
     case SEND_MESSAGE:
-        scene_manager_next_scene(app->scene_manager, AppSceneSendMessage);
+        scene_manager_next_scene(app->scene_manager, app_scene_send_message);
         break;
     case CHOOSE_ID:
         if(app->num_of_devices > 0) {
-            scene_manager_next_scene(app->scene_manager, AppSceneidListOption);
+            scene_manager_next_scene(app->scene_manager, app_scene_id_list_option);
         } else {
-            scene_manager_next_scene(app->scene_manager, AppScenewarningLogSender);
+            scene_manager_next_scene(app->scene_manager, app_scene_warning_log_sender);
         }
         break;
     case SET_ID:
-        scene_manager_set_scene_state(app->scene_manager, AppSceneinputTextOption, SET_ID);
-        scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+        scene_manager_set_scene_state(app->scene_manager, app_scene_input_text_option, SET_ID);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
         break;
 
     case SET_DATA:
-        scene_manager_set_scene_state(app->scene_manager, AppSceneinputTextOption, SET_DATA);
-        scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+        scene_manager_set_scene_state(app->scene_manager, app_scene_input_text_option, SET_DATA);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
         break;
 
     case SET_FIRST_DATA:
-        scene_manager_set_scene_state(app->scene_manager, AppSceneinputTextOption, SET_FIRST_DATA);
-        scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+        scene_manager_set_scene_state(
+            app->scene_manager, app_scene_input_text_option, SET_FIRST_DATA);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
         break;
 
     case SET_SECOND_DATA:
         scene_manager_set_scene_state(
-            app->scene_manager, AppSceneinputTextOption, SET_SECOND_DATA);
-        scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+            app->scene_manager, app_scene_input_text_option, SET_SECOND_DATA);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
         break;
 
     case SET_THIRD_DATA:
-        scene_manager_set_scene_state(app->scene_manager, AppSceneinputTextOption, SET_THIRD_DATA);
-        scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+        scene_manager_set_scene_state(
+            app->scene_manager, app_scene_input_text_option, SET_THIRD_DATA);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
         break;
 
     case SET_FOURTH_DATA:
         scene_manager_set_scene_state(
-            app->scene_manager, AppSceneinputTextOption, SET_FOURTH_DATA);
-        scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+            app->scene_manager, app_scene_input_text_option, SET_FOURTH_DATA);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
         break;
 
     case SET_FIFTH_DATA:
-        scene_manager_set_scene_state(app->scene_manager, AppSceneinputTextOption, SET_FIFTH_DATA);
-        scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+        scene_manager_set_scene_state(
+            app->scene_manager, app_scene_input_text_option, SET_FIFTH_DATA);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
         break;
 
     case SET_SIXTH_DATA:
-        scene_manager_set_scene_state(app->scene_manager, AppSceneinputTextOption, SET_SIXTH_DATA);
-        scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+        scene_manager_set_scene_state(
+            app->scene_manager, app_scene_input_text_option, SET_SIXTH_DATA);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
         break;
 
     case SET_SEVENTH_DATA:
         scene_manager_set_scene_state(
-            app->scene_manager, AppSceneinputTextOption, SET_SEVENTH_DATA);
-        scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+            app->scene_manager, app_scene_input_text_option, SET_SEVENTH_DATA);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
         break;
 
     case SET_EIGHTH_DATA:
         scene_manager_set_scene_state(
-            app->scene_manager, AppSceneinputTextOption, SET_EIGHTH_DATA);
-        scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+            app->scene_manager, app_scene_input_text_option, SET_EIGHTH_DATA);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
         break;
 
     default:
@@ -151,7 +155,7 @@ void callback_sender_options(VariableItem* item) {
 }
 
 // Sender Scene On enter
-void app_scene_SenderTest_on_enter(void* context) {
+void app_scene_sender_on_enter(void* context) {
     App* app = context;
     VariableItem* item;
 
@@ -273,13 +277,13 @@ void app_scene_SenderTest_on_enter(void* context) {
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
 }
 
-bool app_scene_SenderTest_on_event(void* context, SceneManagerEvent event) {
+bool app_scene_sender_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
     if(event.type == SceneManagerEventTypeCustom) {
         switch(event.event) {
         case SET_ID:
-            scene_manager_next_scene(app->scene_manager, AppSceneinputTextOption);
+            scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
             consumed = true;
             break;
 
@@ -290,7 +294,7 @@ bool app_scene_SenderTest_on_event(void* context, SceneManagerEvent event) {
     return consumed;
 }
 
-void app_scene_SenderTest_on_exit(void* context) {
+void app_scene_sender_on_exit(void* context) {
     App* app = context;
     variable_item_list_reset(app->varList);
 }
@@ -456,7 +460,8 @@ void app_scene_input_text_on_enter(void* context) {
     App* app = context;
     ByteInput* scene = app->input_byte_value;
 
-    uint32_t state = scene_manager_get_scene_state(app->scene_manager, AppSceneinputTextOption);
+    uint32_t state =
+        scene_manager_get_scene_state(app->scene_manager, app_scene_input_text_option);
 
     app->sender_selected_item = state;
 

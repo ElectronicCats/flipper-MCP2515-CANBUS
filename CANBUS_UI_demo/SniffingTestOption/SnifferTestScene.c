@@ -115,7 +115,7 @@ static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
 }
 
 // Call backs
-void sniffingTest_callback(void* context, uint32_t index) {
+void sniffing_callback(void* context, uint32_t index) {
     App* app = context;
     app->sniffer_index = index;
     scene_manager_handle_custom_event(app->scene_manager, EntryEvent);
@@ -198,7 +198,7 @@ static int32_t worker_sniffing(void* context) {
                     app->submenu,
                     furi_string_get_cstr(text_label),
                     app->sniffer_index_aux,
-                    sniffingTest_callback,
+                    sniffing_callback,
                     app);
 
                 if(app->save_logs == SaveAll) {
@@ -235,7 +235,7 @@ static int32_t worker_sniffing(void* context) {
                         app->submenu,
                         furi_string_get_cstr(text_label),
                         app->sniffer_index_aux,
-                        sniffingTest_callback,
+                        sniffing_callback,
                         app);
                 }
 
@@ -279,7 +279,7 @@ static int32_t worker_sniffing(void* context) {
 
 // ------------------------------------------------------ SNIFFING MENU SCENE ---------------------------
 
-void app_scene_SniffingTest_on_enter(void* context) {
+void app_scene_sniffing_on_enter(void* context) {
     App* app = context;
 
     if(condition) {
@@ -291,15 +291,15 @@ void app_scene_SniffingTest_on_enter(void* context) {
 
     condition = true;
 
-    if(scene_manager_get_scene_state(app->scene_manager, AppScenesniffingTestOption) == 1) {
+    if(scene_manager_get_scene_state(app->scene_manager, app_scene_sniffing_option) == 1) {
         scene_manager_previous_scene(app->scene_manager);
-        scene_manager_set_scene_state(app->scene_manager, AppScenesniffingTestOption, 0);
+        scene_manager_set_scene_state(app->scene_manager, app_scene_sniffing_option, 0);
     }
 
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
 }
 
-bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
+bool app_scene_sniffing_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
     switch(event.type) {
@@ -307,12 +307,12 @@ bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
         switch(event.event) {
         case EntryEvent:
             condition = false;
-            scene_manager_next_scene(app->scene_manager, AppSceneboxSniffing);
+            scene_manager_next_scene(app->scene_manager, app_scene_box_sniffing);
             consumed = true;
             break;
 
         case DEVICE_NO_CONNECTED:
-            scene_manager_next_scene(app->scene_manager, AppSceneDeviceNoConnected);
+            scene_manager_next_scene(app->scene_manager, app_scene_device_no_connected);
             consumed = true;
             break;
         default:
@@ -325,7 +325,7 @@ bool app_scene_SniffingTest_on_event(void* context, SceneManagerEvent event) {
     return consumed;
 }
 
-void app_scene_SniffingTest_on_exit(void* context) {
+void app_scene_sniffing_on_exit(void* context) {
     App* app = context;
     if(condition) {
         furi_thread_flags_set(furi_thread_get_id(app->thread), WorkerflagStop);
@@ -337,7 +337,7 @@ void app_scene_SniffingTest_on_exit(void* context) {
 
 //-------------------------- FOR THE SNIFFING BOX --------------------------------------------------------
 
-void app_scene_BoxSniffing_on_enter(void* context) {
+void app_scene_box_sniffing_on_enter(void* context) {
     App* app = context;
 
     text_box_set_font(app->textBox, TextBoxFontText);
@@ -349,7 +349,7 @@ void app_scene_BoxSniffing_on_enter(void* context) {
     view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
 }
 
-bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
+bool app_scene_box_sniffing_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
     UNUSED(app);
@@ -357,7 +357,7 @@ bool app_scene_BoxSniffing_on_event(void* context, SceneManagerEvent event) {
     return consumed;
 }
 
-void app_scene_BoxSniffing_on_exit(void* context) {
+void app_scene_box_sniffing_on_exit(void* context) {
     App* app = context;
     close_file_on_data_log(app);
     furi_string_reset(app->text);
@@ -390,5 +390,5 @@ bool app_scene_device_no_connected_on_event(void* context, SceneManagerEvent eve
 void app_scene_device_no_connected_on_exit(void* context) {
     App* app = context;
     widget_reset(app->widget);
-    scene_manager_set_scene_state(app->scene_manager, AppScenesniffingTestOption, 1);
+    scene_manager_set_scene_state(app->scene_manager, app_scene_sniffing_option, 1);
 }

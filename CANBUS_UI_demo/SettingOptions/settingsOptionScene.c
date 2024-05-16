@@ -38,7 +38,7 @@ void callback_options(VariableItem* item) {
     }
 }
 
-void app_scene_Settings_on_enter(void* context) {
+void app_scene_settings_on_enter(void* context) {
     App* app = context;
     VariableItem* item;
 
@@ -64,14 +64,15 @@ void app_scene_Settings_on_enter(void* context) {
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
 }
 
-bool app_scene_Settings_on_event(void* context, SceneManagerEvent event) {
+bool app_scene_settings_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     UNUSED(event);
     UNUSED(app);
     bool consumed = false;
     return consumed;
 }
-void app_scene_Settings_on_exit(void* context) {
+
+void app_scene_settings_on_exit(void* context) {
     App* app = context;
     variable_item_list_reset(app->varList);
 }

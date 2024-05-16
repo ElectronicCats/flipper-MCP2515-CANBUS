@@ -5,10 +5,10 @@
 //  They have to be in order from the app_scene_config
 //--------------------------------------------------------------------
 
-#define ADD_SCENE(prefix, name, id) AppScene##id,
+#define ADD_SCENE(prefix, name, id) app_scene_##id,
 typedef enum {
 #include "app_scene_config.h"
-    AppSceneEnum,
+    app_scene_enum,
 } Appscenes;
 #undef ADD_SCENE
 

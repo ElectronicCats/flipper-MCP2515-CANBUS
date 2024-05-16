@@ -73,7 +73,7 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
 
     case ReadLOGOption:
         if(OpenLogFile(app)) {
-            scene_manager_next_scene(app->scene_manager, AppSceneReadLogs);
+            scene_manager_next_scene(app->scene_manager, app_scene_read_logs);
         }
         break;
 
@@ -86,7 +86,7 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
     }
 }
 
-void app_scene_Menu_on_enter(void* context) {
+void app_scene_menu_on_enter(void* context) {
     App* app = context;
     submenu_reset(app->submenu);
 
@@ -110,7 +110,7 @@ void app_scene_Menu_on_enter(void* context) {
     reset_sender_values(app);
 }
 
-bool app_scene_Menu_on_event(void* context, SceneManagerEvent event) {
+bool app_scene_menu_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
 
@@ -118,26 +118,26 @@ bool app_scene_Menu_on_event(void* context, SceneManagerEvent event) {
     case SceneManagerEventTypeCustom:
         switch(event.event) {
         case SniffingOptionEvent:
-            scene_manager_next_scene(app->scene_manager, AppScenesniffingTestOption);
+            scene_manager_next_scene(app->scene_manager, app_scene_sniffing_option);
             consumed = true;
             break;
 
         case SenderOptionEvent:
-            scene_manager_next_scene(app->scene_manager, AppScenesenderTest);
+            scene_manager_next_scene(app->scene_manager, app_scene_sender_option);
             break;
 
         case SettingsOptionEvent:
-            scene_manager_next_scene(app->scene_manager, AppScenesettingsOption);
+            scene_manager_next_scene(app->scene_manager, app_scene_settings_option);
             consumed = true;
             break;
 
         case ReadLOGOptionEvent:
-            scene_manager_next_scene(app->scene_manager, AppSceneReadLogs);
+            scene_manager_next_scene(app->scene_manager, app_scene_read_logs);
             consumed = true;
             break;
 
         case AboutUsEvent:
-            scene_manager_next_scene(app->scene_manager, AppSceneAboutUs);
+            scene_manager_next_scene(app->scene_manager, app_scene_about_us);
             consumed = true;
             break;
 
@@ -151,7 +151,7 @@ bool app_scene_Menu_on_event(void* context, SceneManagerEvent event) {
     return consumed;
 }
 
-void app_scene_Menu_on_exit(void* context) {
+void app_scene_menu_on_exit(void* context) {
     App* app = context;
     submenu_reset(app->submenu);
 }
