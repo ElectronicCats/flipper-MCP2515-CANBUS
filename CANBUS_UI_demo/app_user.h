@@ -13,7 +13,7 @@
 #include <gui/modules/byte_input.h>
 #include <gui/modules/text_input.h>
 
-#include "scenes/app_scene_functions.h"
+#include "scenes_config/app_scene_functions.h"
 
 #include "libraries/mcp_can_2515.h"
 
