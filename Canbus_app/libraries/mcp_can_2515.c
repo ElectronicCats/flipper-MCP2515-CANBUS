@@ -344,9 +344,9 @@ void read_canframe(FuriHalSpiBusHandle* spi, const uint8_t addr, CANFRAME* frame
     else
         frame->req = 0;
 
-    frame->data_lenght = len;
-
     len &= MCP_DLC_MASK;
+
+    frame->data_lenght = len;
 
     for(uint8_t i = 0; i < len; i++) {
         read_register(spi, addr + 5 + i, &data);
