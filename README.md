@@ -36,4 +36,4 @@ See the  [**community code of conduct**](https://github.com/ElectronicCats/elect
  </a>
 </p>
 
-Electronic Cats invests time and resources in providing this open-source design design, please support Electronic Cats and open-source hardware by purchasing products from Electronic Cats!
+Electronic Cats invests time and resources in providing this open-source design, please support Electronic Cats and open-source hardware by purchasing products from Electronic Cats!
