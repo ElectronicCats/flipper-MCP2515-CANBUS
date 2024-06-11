@@ -7,7 +7,7 @@ This app allows you to interact with CAN Bus networks. Now you can interact with
  </a>
 </p>
 
-Requires the [**Electronic Cats Flipper Add-On: CAN Bus**](https://electroniccats.com/?s=Flipper+Add-On&post_type=product&product_cat=).
+Requires the [**Electronic Cats Flipper Add-On: CAN Bus**](https://electroniccats.com/store/flipper-addon-canbus/).
 
 ## Features
   * Read and display data sniffed from CAN Bus networks.
