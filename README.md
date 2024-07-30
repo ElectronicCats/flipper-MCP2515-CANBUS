@@ -16,6 +16,11 @@ Requires the [**Electronic Cats Flipper Add-On: CAN Bus**](https://electroniccat
   * Packet injection.
   * Saves the recent packet structures, allowing you to modify & inject them again.
 
+>[!IMPORTANT]
+> To easily identify these lines in your setup:
+    CAN-High (CAN H) is represented by a white wire.
+    CAN-Low (CAN L) is represented by a black wire.
+
 ## How to contribute <img src="https://electroniccats.com/wp-content/uploads/2018/01/fav.png" alt="Electronic Cats Logo" height="35"/><img src="https://raw.githubusercontent.com/gist/ManulMax/2d20af60d709805c55fd784ca7cba4b9/raw/bcfeac7604f674ace63623106eb8bb8471d844a6/github.gif" alt="GitHub Logo" height="30"/>
 
 Contributions are welcome!
