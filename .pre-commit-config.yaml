@@ -1,0 +1,20 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+    -   id: trailing-whitespace
+    -   id: check-yaml
+    -   id: no-commit-to-branch # This hook prevents direct commits to main branch
+    -   id: end-of-file-fixer
+-   repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v18.1.2  # Use the sha / tag you want to point at
+    hooks:
+    -   id: clang-format
+        types_or: [c++, c]
+        args: ['--style=file']
+-   repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.2.0
+    hooks:
+    -   id: conventional-pre-commit
+        stages: [commit-msg]
+        args: []
