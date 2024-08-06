@@ -8,7 +8,7 @@
 #define ADD_SCENE(prefix, name, id) app_scene_##id,
 typedef enum {
 #include "app_scene_config.h"
-    app_scene_enum,
+  app_scene_enum,
 } Appscenes;
 #undef ADD_SCENE
 
@@ -19,13 +19,15 @@ typedef enum {
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-extern const SceneManagerHandlers app_scene_handlers; // We define the scene manager handler
+extern const SceneManagerHandlers
+    app_scene_handlers;  // We define the scene manager handler
 
 //---------------------------------------------------------------------
 //  This defines and name of the "on_enter" functions
 //---------------------------------------------------------------------
 
-#define ADD_SCENE(prefix, name, id) void prefix##_scene_##name##_on_enter(void*);
+#define ADD_SCENE(prefix, name, id) \
+  void prefix##_scene_##name##_on_enter(void*);
 #include "app_scene_config.h"
 #undef ADD_SCENE
 
@@ -34,7 +36,7 @@ extern const SceneManagerHandlers app_scene_handlers; // We define the scene man
 //---------------------------------------------------------------------
 
 #define ADD_SCENE(prefix, name, id) \
-    bool prefix##_scene_##name##_on_event(void* context, SceneManagerEvent event);
+  bool prefix##_scene_##name##_on_event(void* context, SceneManagerEvent event);
 #include "app_scene_config.h"
 #undef ADD_SCENE
 
@@ -42,6 +44,7 @@ extern const SceneManagerHandlers app_scene_handlers; // We define the scene man
 //  This defines and name of the "on_exit" functions
 //---------------------------------------------------------------------
 
-#define ADD_SCENE(prefix, name, id) void prefix##_scene_##name##_on_exit(void* context);
+#define ADD_SCENE(prefix, name, id) \
+  void prefix##_scene_##name##_on_exit(void* context);
 #include "app_scene_config.h"
 #undef ADD_SCENE
