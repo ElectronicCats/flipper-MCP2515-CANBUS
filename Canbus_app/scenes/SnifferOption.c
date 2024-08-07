@@ -31,7 +31,7 @@ char* sequential_file_resolve_path_address(Storage* storage,
                                            const char* dir,
                                            const char* prefix,
                                            const char* extension) {
-  FuriHalRtcDateTime datatime;
+  DateTime datatime;
   furi_hal_rtc_get_datetime(&datatime);
   char file_path[256];
   int file_index = 0;
