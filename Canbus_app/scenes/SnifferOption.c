@@ -95,12 +95,13 @@ void close_file_on_data_log(App* app) {
 
 static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
   FuriString* text_file = furi_string_alloc();
-  furi_string_cat_printf(text_file, "id:%lx \t\tlen: %u \t", frame.canId,
+
+  furi_string_cat_printf(text_file, "(%li) %lx %u", time, frame.canId,
                          frame.data_lenght);
   for (uint8_t i = 0; i < (frame.data_lenght); i++) {
-    furi_string_cat_printf(text_file, "[%u]:%u \t\t", i, frame.buffer[i]);
+    furi_string_cat_printf(text_file, " %x", frame.buffer[i]);
   }
-  furi_string_cat_printf(text_file, " Time(ms): %li\n", time);
+  furi_string_cat_printf(text_file, "\n");
   storage_file_write(file, furi_string_get_cstr(text_file),
                      furi_string_size(text_file));
   furi_string_reset(text_file);
