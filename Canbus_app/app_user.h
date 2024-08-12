@@ -16,6 +16,7 @@
 #include "scenes_config/app_scene_functions.h"
 
 #include "libraries/mcp_can_2515.h"
+#include "obdii_data/pid_codes.h"
 
 #define PATHAPP    "apps_data/canbus"
 #define PATHAPPEXT EXT_PATH(PATHAPP)
