@@ -25,3 +25,4 @@ ADD_SCENE(app, about_us, about_us)
 
 // On development
 ADD_SCENE(app, obdii_menu, obdii_option)
+ADD_SCENE(app, engine_rpm_speed, engine_speed_option)
