@@ -2,8 +2,7 @@
 
 bool condition = true;
 
-// --------------------- Functons to save the logs
-// --------------------------------------------------
+// Function to save logs
 char* sequential_file_resolve_path(Storage* storage,
                                    const char* dir,
                                    const char* prefix,

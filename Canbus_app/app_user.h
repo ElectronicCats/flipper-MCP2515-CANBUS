@@ -74,15 +74,18 @@ typedef struct {
 typedef enum {
   SniffingTestOption,
   SenderOption,
+  ObdiiOption,
   ReadLOGOption,
   SettingsOption,
   AboutUsOption,
 } MainMenuOptions;
 
+// These are the events on the main menu
 typedef enum {
   SniffingOptionEvent,
   SenderOptionEvent,
   SettingsOptionEvent,
+  ObdiiOptionEvent,
   ReadLOGOptionEvent,
   AboutUsEvent,
 } MainMenuEvents;
@@ -93,7 +96,11 @@ typedef enum {
   CristyalClkOption,
   SaveLogsOption
 } OptionSettings;
+
+// These are the events on the settings menu
 typedef enum { BitrateOptionEvent, CristyalClkOptionEvent } SettingsMenuEvent;
+
+// These are the sender events
 typedef enum { ChooseIdEvent, SetIdEvent, ReturnEvent } SenderEvents;
 
 // These are the options to save

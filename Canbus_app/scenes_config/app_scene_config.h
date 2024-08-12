@@ -22,3 +22,6 @@ ADD_SCENE(app, input_text, input_text_option)
 ADD_SCENE(app, read_logs, read_logs)
 ADD_SCENE(app, settings, settings_option)
 ADD_SCENE(app, about_us, about_us)
+
+// On development
+ADD_SCENE(app, obdii_menu, obdii_option)
