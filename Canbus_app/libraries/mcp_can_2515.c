@@ -267,7 +267,7 @@ void mcp_set_bitrate(FuriHalSpiBusHandle* spi,
   switch (clk) {
     case MCP_8MHZ:
       switch (bitrate) {
-        case MCP_125KPS:
+        case MCP_125KBPS:
           cfg1 = MCP_8MHz_125kBPS_CFG1;
           cfg2 = MCP_8MHz_125kBPS_CFG2;
           cfg3 = MCP_8MHz_125kBPS_CFG3;
@@ -291,7 +291,7 @@ void mcp_set_bitrate(FuriHalSpiBusHandle* spi,
       break;
     case MCP_16MHZ:
       switch (bitrate) {
-        case MCP_125KPS:
+        case MCP_125KBPS:
           cfg1 = MCP_16MHz_125kBPS_CFG1;
           cfg2 = MCP_16MHz_125kBPS_CFG2;
           cfg3 = MCP_16MHz_125kBPS_CFG3;
@@ -316,7 +316,7 @@ void mcp_set_bitrate(FuriHalSpiBusHandle* spi,
 
     case MCP_20MHZ:
       switch (bitrate) {
-        case MCP_125KPS:
+        case MCP_125KBPS:
           cfg1 = MCP_20MHz_125kBPS_CFG1;
           cfg2 = MCP_20MHz_125kBPS_CFG2;
           cfg3 = MCP_20MHz_125kBPS_CFG3;

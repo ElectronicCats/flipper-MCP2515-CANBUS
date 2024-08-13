@@ -303,7 +303,7 @@ typedef enum {
 
 // MCP2515 BITRATES VALUES
 typedef enum {
-  MCP_125KPS,
+  MCP_125KBPS,
   MCP_250KBPS,
   MCP_500KBPS,
   MCP_1000KBPS,
