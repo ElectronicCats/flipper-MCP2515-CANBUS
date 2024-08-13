@@ -127,11 +127,43 @@ void read_Id(FuriHalSpiBusHandle* spi,
   }
 }
 
-// To set the Mode
-bool set_mode(FuriHalSpiBusHandle* spi, MCP_MODE new_mode) {
-  bool ret = false;
+// get actual mode of the MCP2515
+uint8_t get_mode(FuriHalSpiBusHandle* spi) {
+  uint8_t data = 0;
+  read_register(spi, MCP_CANSTAT, &data);
+  return data & CANSTAT_OPM;
+}
+
+// To set a new mode
+bool set_new_mode(MCP2515* mcp_can, MCP_MODE new_mode) {
+  FuriHalSpiBusHandle* spi = mcp_can->spi;
+
   uint8_t read_status = 0;
-  uint8_t time_out = 0;
+  bool ret = false;
+
+  if ((get_mode(spi) == MCP_SLEEP) && new_mode != MCP_SLEEP) {
+    uint8_t wake_up_enabled = 0;
+    read_register(spi, MCP_CANINTE, &wake_up_enabled);
+    wake_up_enabled &= MCP_WAKIF;
+
+    if (!wake_up_enabled) {
+      modify_register(spi, MCP_CANINTE, MCP_WAKIF, MCP_WAKIF);
+    }
+
+    if (get_mode(spi) != MCP_LISTENONLY) {
+      return false;
+    }
+
+    if (!wake_up_enabled) {
+      modify_register(spi, MCP_CANINTE, MCP_WAKIF, 1);
+    }
+
+    modify_register(spi, MCP_CANINTF, MCP_WAKIF, 0);
+  }
+
+  uint32_t time_out = furi_get_tick();
+
+  time_out = furi_get_tick();
 
   do {
     modify_register(spi, MCP_CANCTRL, CANCTRL_REQOP, MODE_CONFIG);
@@ -140,15 +172,10 @@ bool set_mode(FuriHalSpiBusHandle* spi, MCP_MODE new_mode) {
     read_status &= CANSTAT_OPM;
     if (read_status == MODE_CONFIG)
       ret = true;
-    furi_delay_ms(1);
-    time_out++;
-  } while ((ret != true) && (time_out < 50));
 
-  if ((ret != true) || (time_out >= 50)) {
-    return false;
-  }
+  } while ((ret != true) && ((furi_get_tick() - time_out) < 50));
 
-  time_out = 0;
+  time_out = furi_get_tick();
 
   do {
     modify_register(spi, MCP_CANCTRL, CANCTRL_REQOP, new_mode);
@@ -157,50 +184,52 @@ bool set_mode(FuriHalSpiBusHandle* spi, MCP_MODE new_mode) {
     read_status &= CANSTAT_OPM;
     if (read_status == new_mode)
       return true;
-    furi_delay_ms(1);
-    time_out++;
-  } while ((ret != true) && (time_out < 50));
+  } while ((furi_get_tick() - time_out) < 50);
 
-  return ret;
+  return false;
 }
 
 // To set Config mode
 bool set_config_mode(MCP2515* mcp_can) {
-  FuriHalSpiBusHandle* spi = mcp_can->spi;
   bool ret = true;
-  ret = set_mode(spi, MODE_CONFIG);
+  ret = set_new_mode(mcp_can, MODE_CONFIG);
+
+  if (ret)
+    mcp_can->mode = MODE_CONFIG;
+
   return ret;
 }
 
 // To set Normal Mode
 bool set_normal_mode(MCP2515* mcp_can) {
-  FuriHalSpiBusHandle* spi = mcp_can->spi;
   bool ret = true;
-  ret = set_mode(spi, MCP_NORMAL);
+  ret = set_new_mode(mcp_can, MCP_NORMAL);
+
+  if (ret)
+    mcp_can->mode = MCP_NORMAL;
+
   return ret;
 }
 
 // To set ListenOnly Mode
 bool set_listen_only_mode(MCP2515* mcp_can) {
-  FuriHalSpiBusHandle* spi = mcp_can->spi;
   bool ret = true;
-  ret = set_mode(spi, MCP_LISTENONLY);
+  ret = set_new_mode(mcp_can, MCP_LISTENONLY);
+
+  if (ret)
+    mcp_can->mode = MCP_LISTENONLY;
+
   return ret;
 }
 
 // To set Sleep Mode
 bool set_sleep_mode(MCP2515* mcp_can) {
-  FuriHalSpiBusHandle* spi = mcp_can->spi;
   bool ret = true;
-  ret = set_mode(spi, MCP_SLEEP);
-  return ret;
-}
+  ret = set_new_mode(mcp_can, MCP_SLEEP);
 
-// To set LoopBackMode
-bool set_loop_back_mode(MCP2515* mcp_can) {
-  FuriHalSpiBusHandle* spi = mcp_can->spi;
-  bool ret = true;
-  ret = set_mode(spi, MCP_LOOPBACK);
+  if (ret)
+    mcp_can->mode = MCP_SLEEP;
+
   return ret;
 }
 
@@ -593,7 +622,7 @@ ERROR_CAN mcp2515_start(MCP2515* mcp_can) {
 
   set_registers_init(mcp_can->spi);
 
-  ret = set_mode(mcp_can->spi, mcp_can->mode);
+  ret = set_new_mode(mcp_can, mcp_can->mode);
   if (!ret)
     return ERROR_FAILINIT;
 

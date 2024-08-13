@@ -350,6 +350,9 @@ void free_mcp2515(MCP2515* mcp_can);
 // This is to get the status
 bool mcp_get_status(FuriHalSpiBusHandle* spi, uint8_t* data);
 
+// To set a new mode
+bool set_new_mode(MCP2515* mcp_can, MCP_MODE new_mode);
+
 // The modes we want to work
 bool set_config_mode(MCP2515* mcp_can);
 bool set_normal_mode(MCP2515* mcp_can);
@@ -366,4 +369,5 @@ ERROR_CAN read_can_message(MCP2515* mcp_can,
 
 ERROR_CAN send_can_frame(MCP2515* mcp_can,
                          CANFRAME* frame);  // Send a CANBUS Frame
+
 #endif
