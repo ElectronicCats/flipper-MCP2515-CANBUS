@@ -185,10 +185,6 @@ typedef enum {
   MCP_LOOPBACK = 0x40,
   MCP_LISTENONLY = 0x60,
   MODE_CONFIG = 0x80,
-  MODE_POWERUP = 0xE0,
-  MODE_MASK = 0xE0,
-  MODE_ONESHOT = 0x08,
-
 } MCP_MODE;
 
 // MCP2515 registers
