@@ -143,6 +143,12 @@ typedef enum {
   MCP_RXB_IDE_M = 0x08, /* In RXBnSIDL   */
   MCP_RXB_RTR_M = 0x40, /* In RXBnDLC  */
   //
+  MCP_STAT_TXIF_MASK = 0xA8,
+  MCP_STAT_TX0IF = 0x08,
+  MCP_STAT_TX1IF = 0x20,
+  MCP_STAT_TX2IF = 0x80,
+
+  //
   MCP_STAT_RXIF_MASK = (0x03),
   MCP_STAT_RX0IF = (1 << 0),
   MCP_STAT_RX1IF = (1 << 1),
@@ -369,5 +375,16 @@ ERROR_CAN read_can_message(MCP2515* mcp_can,
 
 ERROR_CAN send_can_frame(MCP2515* mcp_can,
                          CANFRAME* frame);  // Send a CANBUS Frame
+
+/*
+
+    Functions in development
+
+*/
+
+void init_mask(MCP2515* mcp_can, uint8_t num_mask, uint32_t mask);
+void init_filter(MCP2515* mcp_can, uint8_t num_filter, uint32_t filter);
+
+ERROR_CAN read_message(MCP2515* mcp_can, CANFRAME* frame);
 
 #endif

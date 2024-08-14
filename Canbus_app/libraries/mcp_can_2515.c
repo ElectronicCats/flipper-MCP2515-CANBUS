@@ -27,24 +27,6 @@ static bool set_register(FuriHalSpiBusHandle* spi,
   return ret;
 }
 
-// To write multiple registers
-static bool set_registerS(FuriHalSpiBusHandle* spi,
-                          uint8_t address,
-                          uint8_t* data) {
-  bool ret = true;
-  uint8_t instruction[] = {INSTRUCTION_WRITE, address};
-  uint8_t count = sizeof(data);
-
-  for (int i = 0; i < count; i++) {
-    instruction[i + 2] = data[i];
-  }
-
-  furi_hal_spi_acquire(spi);
-  ret = furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
-  furi_hal_spi_release(spi);
-  return ret;
-}
-
 // To modify the value of one bit from a register
 static bool modify_register(FuriHalSpiBusHandle* spi,
                             uint8_t address,
@@ -81,9 +63,9 @@ bool mcp_get_status(FuriHalSpiBusHandle* spi, uint8_t* data) {
 
 // To init the buffer
 void write_mf(FuriHalSpiBusHandle* spi,
-              uint8_t adress,
+              uint8_t address,
               uint8_t ext,
-              uint8_t id) {
+              uint32_t id) {
   uint16_t canId = (uint16_t) (id & 0x0FFFF);
   uint8_t bufData[4];
 
@@ -96,14 +78,19 @@ void write_mf(FuriHalSpiBusHandle* spi,
     bufData[MCP_SIDL] |= MCP_TXB_EXIDE_M;
     bufData[MCP_SIDH] = (uint8_t) (canId >> 5);
   } else {
-    bufData[MCP_EID0] = (uint8_t) (canId & 0xFF);
-    bufData[MCP_EID8] = (uint8_t) (canId >> 8);
-    canId = (uint16_t) (id >> 16);
+    // bufData[MCP_EID0] = (uint8_t)(canId & 0xFF);
+    // bufData[MCP_EID8] = (uint8_t)(canId >> 8);
+    // canId = (uint16_t)(id >> 16);
+
     bufData[MCP_SIDL] = (uint8_t) ((canId & 0x07) << 5);
     bufData[MCP_SIDH] = (uint8_t) (canId >> 3);
+    bufData[MCP_EID0] = 0;
+    bufData[MCP_EID8] = 0;
   }
 
-  set_registerS(spi, adress, bufData);
+  for (uint8_t i = 0; i < 4; i++) {
+    set_register(spi, address + i, bufData[i]);
+  }
 }
 
 // This function works to get the Can Id from the buffer
@@ -374,54 +361,74 @@ void mcp_set_bitrate(FuriHalSpiBusHandle* spi,
   set_register(spi, MCP_CNF3, cfg3);
 }
 
-// This function Works to read the can frame from the buffer
-void read_canframe(FuriHalSpiBusHandle* spi,
-                   const uint8_t addr,
-                   CANFRAME* frame) {
-  uint8_t ctrl = 0, len = 0;
-  static uint8_t data = 0;
+// This function works to know if there is any message waiting
+uint8_t read_rx_tx_status(FuriHalSpiBusHandle* spi) {
+  uint8_t ret = 0;
 
-  read_Id(spi, addr, &frame->canId, &frame->ext);
+  mcp_get_status(spi, &ret);
 
-  read_register(spi, addr - 1, &ctrl);
+  ret &= (MCP_STAT_TXIF_MASK | MCP_STAT_RXIF_MASK);
 
-  read_register(spi, addr + 4, &(len));
+  ret = (ret & MCP_STAT_TX0IF ? MCP_TX0IF : 0) |
+        (ret & MCP_STAT_TX0IF ? MCP_TX1IF : 0) |
+        (ret & MCP_STAT_TX0IF ? MCP_TX2IF : 0) | (ret & MCP_STAT_RXIF_MASK);
 
-  if (ctrl & 0x08)
-    frame->req = 1;
-  else
-    frame->req = 0;
+  return ret;
+}
 
-  len &= MCP_DLC_MASK;
+// The function to read the message
+void read_frame(FuriHalSpiBusHandle* spi,
+                CANFRAME* frame,
+                uint8_t read_instruction) {
+  uint8_t data[4];
+  uint8_t data_ctrl = 0;
 
-  frame->data_lenght = len;
+  furi_hal_spi_acquire(spi);
+  furi_hal_spi_bus_tx(spi, &read_instruction, 1, TIMEOUT_SPI);
+  furi_hal_spi_bus_rx(spi, data, sizeof(data), TIMEOUT);
 
-  for (uint8_t i = 0; i < len; i++) {
-    read_register(spi, addr + 5 + i, &data);
-    frame->buffer[i] = data;
+  uint32_t id = (data[MCP_SIDH] << 3) + (data[MCP_SIDL] >> 5);
+  uint8_t ext = 0;
+
+  if ((data[MCP_SIDL] & MCP_TXB_EXIDE_M) == MCP_TXB_EXIDE_M) {
+    id = (id << 2) + (data[MCP_SIDL] & 0x03);
+    id = (id << 8) + data[MCP_EID8];
+    id = (id << 8) + data[MCP_EID0];
+    ext = 1;
   }
+
+  frame->canId = id;
+  frame->ext = ext;
+
+  furi_hal_spi_bus_rx(spi, &data_ctrl, 1, TIMEOUT);
+
+  frame->data_lenght = data_ctrl & MCP_DLC_MASK;
+  frame->req = (data_ctrl & MCP_RTR_MASK) ? 1 : 0;
+
+  for (uint8_t i = 0; i < frame->data_lenght; i++) {
+    furi_hal_spi_bus_rx(spi, &frame->buffer[i], 1, TIMEOUT);
+  }
+
+  furi_hal_spi_release(spi);
 }
 
 // This function Works to get the Can message
 ERROR_CAN read_can_message(MCP2515* mcp_can, CANFRAME* frame) {
-  FuriHalSpiBusHandle* spi = mcp_can->spi;
   ERROR_CAN ret = ERROR_OK;
-  static uint8_t status = 0;
+  FuriHalSpiBusHandle* spi = mcp_can->spi;
 
-  mcp_get_status(spi, &status);
+  UNUSED(frame);
+  uint8_t status = read_rx_tx_status(spi);
 
-  if (status & MCP_STAT_RX0IF) {
-    read_canframe(spi, MCP_RXB0SIDH, frame);
+  if (status & MCP_RX0IF) {
+    read_frame(spi, frame, INSTRUCTION_READ_RX0);
     modify_register(spi, MCP_CANINTF, MCP_RX0IF, 0);
-  }
 
-  else if (status & MCP_STAT_RX1IF) {
-    read_canframe(spi, MCP_RXB1SIDH, frame);
+  } else if (status & MCP_RX1IF) {
+    read_frame(spi, frame, INSTRUCTION_READ_RX1);
     modify_register(spi, MCP_CANINTF, MCP_RX1IF, 0);
-  } else {
+  } else
     ret = ERROR_NOMSG;
-  }
-
   return ret;
 }
 
