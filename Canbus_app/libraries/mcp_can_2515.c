@@ -337,7 +337,6 @@ void write_mf(FuriHalSpiBusHandle* spi,
               uint32_t id) {
   uint16_t canId = (uint16_t) (id & 0x0FFFF);
   uint8_t bufData[4];
-  uint8_t data[4];
 
   if (ext) {
     bufData[MCP_EID0] = (uint8_t) (canId & 0xFF);
@@ -359,15 +358,7 @@ void write_mf(FuriHalSpiBusHandle* spi,
   }
 
   for (uint8_t i = 0; i < 4; i++) {
-    log_info("WRITTING REG AT %u : %u", address + i, bufData[i]);
     set_register(spi, address + i, bufData[i]);
-  }
-
-  log_info("------------------------");
-
-  for (uint8_t i = 0; i < 4; i++) {
-    read_register(spi, address + i, &data[i]);
-    log_info("READING REG AT %u : %u", address + i, data[i]);
   }
 }
 
@@ -507,12 +498,10 @@ ERROR_CAN read_can_message(MCP2515* mcp_can, CANFRAME* frame) {
   if (status & MCP_RX0IF) {
     read_frame(spi, frame, INSTRUCTION_READ_RX0);
     modify_register(spi, MCP_CANINTF, MCP_RX0IF, 0);
-    log_info("RX0");
 
   } else if (status & MCP_RX1IF) {
     read_frame(spi, frame, INSTRUCTION_READ_RX1);
     modify_register(spi, MCP_CANINTF, MCP_RX1IF, 0);
-    log_info("RX1");
   } else
     ret = ERROR_NOMSG;
   return ret;

@@ -125,6 +125,7 @@ void app_scene_menu_on_enter(void* context) {
   view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
 
   reset_sender_values(app);
+  app->obdii_aux_index = 0;
 }
 
 bool app_scene_menu_on_event(void* context, SceneManagerEvent event) {

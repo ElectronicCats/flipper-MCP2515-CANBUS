@@ -72,4 +72,10 @@ typedef enum {
 } pid_typical_codes;
 /* HERE IS ALL THE INFORMATION I HAVE :)*/
 
+/*
+  Convertions
+*/
+
+uint16_t get_engine_speed(uint8_t value_a, uint8_t value_b);
+
 #endif
