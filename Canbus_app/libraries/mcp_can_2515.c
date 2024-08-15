@@ -61,38 +61,6 @@ bool mcp_get_status(FuriHalSpiBusHandle* spi, uint8_t* data) {
   return ret;
 }
 
-// To init the buffer
-void write_mf(FuriHalSpiBusHandle* spi,
-              uint8_t address,
-              uint8_t ext,
-              uint32_t id) {
-  uint16_t canId = (uint16_t) (id & 0x0FFFF);
-  uint8_t bufData[4];
-
-  if (ext) {
-    bufData[MCP_EID0] = (uint8_t) (canId & 0xFF);
-    bufData[MCP_EID8] = (uint8_t) (canId >> 8);
-    canId = (uint16_t) (id >> 16);
-    bufData[MCP_SIDL] = (uint8_t) (canId & 0x03);
-    bufData[MCP_SIDL] += (uint8_t) ((canId & 0x1C) << 3);
-    bufData[MCP_SIDL] |= MCP_TXB_EXIDE_M;
-    bufData[MCP_SIDH] = (uint8_t) (canId >> 5);
-  } else {
-    // bufData[MCP_EID0] = (uint8_t)(canId & 0xFF);
-    // bufData[MCP_EID8] = (uint8_t)(canId >> 8);
-    // canId = (uint16_t)(id >> 16);
-
-    bufData[MCP_SIDL] = (uint8_t) ((canId & 0x07) << 5);
-    bufData[MCP_SIDH] = (uint8_t) (canId >> 3);
-    bufData[MCP_EID0] = 0;
-    bufData[MCP_EID8] = 0;
-  }
-
-  for (uint8_t i = 0; i < 4; i++) {
-    set_register(spi, address + i, bufData[i]);
-  }
-}
-
 // This function works to get the Can Id from the buffer
 void read_Id(FuriHalSpiBusHandle* spi,
              uint8_t addr,
@@ -121,12 +89,23 @@ uint8_t get_mode(FuriHalSpiBusHandle* spi) {
   return data & CANSTAT_OPM;
 }
 
+// compare if the chip is the same mode
+bool is_mode(MCP2515* mcp_can, MCP_MODE mode) {
+  uint16_t data = get_mode(mcp_can->spi);
+  if (data == mode)
+    return true;
+  return false;
+}
+
 // To set a new mode
 bool set_new_mode(MCP2515* mcp_can, MCP_MODE new_mode) {
   FuriHalSpiBusHandle* spi = mcp_can->spi;
 
   uint8_t read_status = 0;
   bool ret = false;
+
+  if (get_mode(spi) == new_mode)
+    return false;
 
   if ((get_mode(spi) == MCP_SLEEP) && new_mode != MCP_SLEEP) {
     uint8_t wake_up_enabled = 0;
@@ -223,31 +202,6 @@ bool set_sleep_mode(MCP2515* mcp_can) {
 void init_can_buffer(FuriHalSpiBusHandle* spi) {
   uint8_t a1 = 0, a2 = 0, a3 = 0;
 
-  uint8_t std = 0;
-  uint8_t ext = 1;
-
-  uint32_t ulMask = 0x00, ulFilt = 0x00;
-
-  // ulMask ---------------------------
-
-  write_mf(spi, MCP_RXM0SIDH, ext, ulMask);
-
-  write_mf(spi, MCP_RXM1SIDH, ext, ulMask);
-
-  // ulFilt --------------------------
-
-  write_mf(spi, MCP_RXF0SIDH, ext, ulFilt);
-
-  write_mf(spi, MCP_RXF1SIDH, std, ulFilt);
-
-  write_mf(spi, MCP_RXF2SIDH, ext, ulFilt);
-
-  write_mf(spi, MCP_RXF3SIDH, std, ulFilt);
-
-  write_mf(spi, MCP_RXF4SIDH, ext, ulFilt);
-
-  write_mf(spi, MCP_RXF5SIDH, std, ulFilt);
-
   a1 = MCP_TXB0CTRL;
   a2 = MCP_TXB1CTRL;
   a3 = MCP_TXB2CTRL;
@@ -261,15 +215,30 @@ void init_can_buffer(FuriHalSpiBusHandle* spi) {
     a3++;
   }
 
-  set_register(spi, MCP_RXB0CTRL, 0);
-  set_register(spi, MCP_RXB1CTRL, 0);
+  // set_register(spi, MCP_RXB0CTRL, 0);
+  // set_register(spi, MCP_RXB1CTRL, 0);
+
+  set_register(spi, MCP_RXB0CTRL, 0x0E);
+  set_register(spi, MCP_RXB1CTRL, 0x0D);
+
+  // set_register(spi, MCP_CANINTE, MCP_RX0IF | MCP_RX1IF);
+
+  // modify_register(spi, MCP_RXB0CTRL, MCP_RXB_RX_MASK | MCP_RXB_BUKT_MASK,
+  // MCP_RXB_RX_STDEXT | MCP_RXB_RX_STD);
+
+  // modify_register(spi, MCP_RXB1CTRL, MCP_RXB_RX_MASK, MCP_RXB_RX_STDEXT);
 }
 
 // This function works to set Registers to initialize the MCP2515
 void set_registers_init(FuriHalSpiBusHandle* spi) {
   set_register(spi, MCP_CANINTE, MCP_RX0IF | MCP_RX1IF);
 
-  set_register(spi, MCP_BFPCTRL, MCP_BxBFS_MASK | MCP_BxBFE_MASK);
+  // set_register(spi, MCP_BFPCTRL, MCP_BxBFS_MASK | MCP_BxBFE_MASK); //<---
+  // This works to put the RXBnF pins in output
+
+  set_register(
+      spi, MCP_BFPCTRL,
+      MCP_BxBFM_MASK);  // <--- This works to set the RXBnF pins as an interrupt
 
   set_register(spi, MCP_TXRTSCTRL, 0x00);
 }
@@ -361,6 +330,122 @@ void mcp_set_bitrate(FuriHalSpiBusHandle* spi,
   set_register(spi, MCP_CNF3, cfg3);
 }
 
+// To write the mask-filters for the chip
+void write_mf(FuriHalSpiBusHandle* spi,
+              uint8_t address,
+              uint8_t ext,
+              uint32_t id) {
+  uint16_t canId = (uint16_t) (id & 0x0FFFF);
+  uint8_t bufData[4];
+  uint8_t data[4];
+
+  if (ext) {
+    bufData[MCP_EID0] = (uint8_t) (canId & 0xFF);
+    bufData[MCP_EID8] = (uint8_t) (canId >> 8);
+    canId = (uint16_t) (id >> 16);
+    bufData[MCP_SIDL] = (uint8_t) (canId & 0x03);
+    bufData[MCP_SIDL] += (uint8_t) ((canId & 0x1C) << 3);
+    bufData[MCP_SIDL] |= MCP_TXB_EXIDE_M;
+    bufData[MCP_SIDH] = (uint8_t) (canId >> 5);
+  } else {
+    // bufData[MCP_EID0] = (uint8_t)(canId & 0xFF);
+    // bufData[MCP_EID8] = (uint8_t)(canId >> 8);
+    // canId = (uint16_t)(id >> 16);
+
+    bufData[MCP_SIDL] = (uint8_t) ((canId & 0x07) << 5);
+    bufData[MCP_SIDH] = (uint8_t) (canId >> 3);
+    bufData[MCP_EID0] = 0;
+    bufData[MCP_EID8] = 0;
+  }
+
+  for (uint8_t i = 0; i < 4; i++) {
+    log_info("WRITTING REG AT %u : %u", address + i, bufData[i]);
+    set_register(spi, address + i, bufData[i]);
+  }
+
+  log_info("------------------------");
+
+  for (uint8_t i = 0; i < 4; i++) {
+    read_register(spi, address + i, &data[i]);
+    log_info("READING REG AT %u : %u", address + i, data[i]);
+  }
+}
+
+// To set a Mask
+void init_mask(MCP2515* mcp_can, uint8_t num_mask, uint32_t mask) {
+  FuriHalSpiBusHandle* spi = mcp_can->spi;
+
+  uint8_t ext = 0;
+
+  MCP_MODE last_mode = mcp_can->mode;
+
+  set_config_mode(mcp_can);
+
+  if (num_mask > 1)
+    return;
+
+  if (mask > 0x7FF)
+    ext = 1;
+
+  if (num_mask == 0) {
+    write_mf(spi, MCP_RXM0SIDH, ext, mask);
+  }
+
+  if (num_mask == 1) {
+    write_mf(spi, MCP_RXM1SIDH, ext, mask);
+  }
+  mcp_can->mode = last_mode;
+  set_new_mode(mcp_can, last_mode);
+}
+
+// To set a Filter
+void init_filter(MCP2515* mcp_can, uint8_t num_filter, uint32_t filter) {
+  FuriHalSpiBusHandle* spi = mcp_can->spi;
+
+  uint8_t ext = 0;
+
+  MCP_MODE last_mode = mcp_can->mode;
+
+  set_config_mode(mcp_can);
+
+  if (num_filter > 6)
+    return;
+
+  if (filter > 0x7FF)
+    ext = 1;
+
+  switch (num_filter) {
+    case 0:
+      write_mf(spi, MCP_RXF0SIDH, ext, filter);
+      break;
+    case 1:
+      write_mf(spi, MCP_RXF1SIDH, ext, filter);
+      break;
+
+    case 2:
+      write_mf(spi, MCP_RXF2SIDH, ext, filter);
+      break;
+
+    case 3:
+      write_mf(spi, MCP_RXF3SIDH, ext, filter);
+      break;
+
+    case 4:
+      write_mf(spi, MCP_RXF4SIDH, ext, filter);
+      break;
+
+    case 5:
+      write_mf(spi, MCP_RXF5SIDH, ext, filter);
+      break;
+
+    default:
+      break;
+  }
+
+  mcp_can->mode = last_mode;
+  set_new_mode(mcp_can, last_mode);
+}
+
 // This function works to know if there is any message waiting
 uint8_t read_rx_tx_status(FuriHalSpiBusHandle* spi) {
   uint8_t ret = 0;
@@ -417,16 +502,17 @@ ERROR_CAN read_can_message(MCP2515* mcp_can, CANFRAME* frame) {
   ERROR_CAN ret = ERROR_OK;
   FuriHalSpiBusHandle* spi = mcp_can->spi;
 
-  UNUSED(frame);
   uint8_t status = read_rx_tx_status(spi);
 
   if (status & MCP_RX0IF) {
     read_frame(spi, frame, INSTRUCTION_READ_RX0);
     modify_register(spi, MCP_CANINTF, MCP_RX0IF, 0);
+    log_info("RX0");
 
   } else if (status & MCP_RX1IF) {
     read_frame(spi, frame, INSTRUCTION_READ_RX1);
     modify_register(spi, MCP_CANINTF, MCP_RX1IF, 0);
+    log_info("RX1");
   } else
     ret = ERROR_NOMSG;
   return ret;
@@ -460,13 +546,17 @@ ERROR_CAN check_error(MCP2515* mcp_can) {
 // This function works to get
 ERROR_CAN check_receive(MCP2515* mcp_can) {
   FuriHalSpiBusHandle* spi = mcp_can->spi;
-  static uint8_t status = 0;
-  mcp_get_status(spi, &status);
 
-  if (status & MCP_STAT_RXIF_MASK)
+  uint8_t status = read_rx_tx_status(spi);
+
+  if (status & MCP_RX0IF) {
     return ERROR_OK;
-  else
-    return ERROR_NOMSG;
+  }
+  if (status & MCP_RX1IF) {
+    return ERROR_OK;
+  }
+
+  return ERROR_NOMSG;
 }
 
 // To get the next buffer

@@ -359,12 +359,21 @@ bool mcp_get_status(FuriHalSpiBusHandle* spi, uint8_t* data);
 // To set a new mode
 bool set_new_mode(MCP2515* mcp_can, MCP_MODE new_mode);
 
+// The function works to compare if the chip is in a specific mode
+bool is_mode(MCP2515* mcp_can, MCP_MODE mode);
+
 // The modes we want to work
 bool set_config_mode(MCP2515* mcp_can);
 bool set_normal_mode(MCP2515* mcp_can);
 bool set_listen_only_mode(MCP2515* mcp_can);
 bool set_sleep_mode(MCP2515* mcp_can);
 bool set_loop_back_mode(MCP2515* mcp_can);
+
+// To set the mask
+void init_mask(MCP2515* mcp_can, uint8_t num_mask, uint32_t mask);
+
+// To set the filters
+void init_filter(MCP2515* mcp_can, uint8_t num_filter, uint32_t filter);
 
 // To read and write a message
 uint8_t get_error(MCP2515* mcp_can);
@@ -375,16 +384,5 @@ ERROR_CAN read_can_message(MCP2515* mcp_can,
 
 ERROR_CAN send_can_frame(MCP2515* mcp_can,
                          CANFRAME* frame);  // Send a CANBUS Frame
-
-/*
-
-    Functions in development
-
-*/
-
-void init_mask(MCP2515* mcp_can, uint8_t num_mask, uint32_t mask);
-void init_filter(MCP2515* mcp_can, uint8_t num_filter, uint32_t filter);
-
-ERROR_CAN read_message(MCP2515* mcp_can, CANFRAME* frame);
 
 #endif
