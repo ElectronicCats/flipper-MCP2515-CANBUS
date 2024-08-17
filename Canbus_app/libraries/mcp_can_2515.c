@@ -215,30 +215,15 @@ void init_can_buffer(FuriHalSpiBusHandle* spi) {
     a3++;
   }
 
-  // set_register(spi, MCP_RXB0CTRL, 0);
-  // set_register(spi, MCP_RXB1CTRL, 0);
-
-  set_register(spi, MCP_RXB0CTRL, 0x0E);
-  set_register(spi, MCP_RXB1CTRL, 0x0D);
-
-  // set_register(spi, MCP_CANINTE, MCP_RX0IF | MCP_RX1IF);
-
-  // modify_register(spi, MCP_RXB0CTRL, MCP_RXB_RX_MASK | MCP_RXB_BUKT_MASK,
-  // MCP_RXB_RX_STDEXT | MCP_RXB_RX_STD);
-
-  // modify_register(spi, MCP_RXB1CTRL, MCP_RXB_RX_MASK, MCP_RXB_RX_STDEXT);
+  set_register(spi, MCP_RXB0CTRL, 0);
+  set_register(spi, MCP_RXB1CTRL, 0);
 }
 
 // This function works to set Registers to initialize the MCP2515
 void set_registers_init(FuriHalSpiBusHandle* spi) {
   set_register(spi, MCP_CANINTE, MCP_RX0IF | MCP_RX1IF);
 
-  // set_register(spi, MCP_BFPCTRL, MCP_BxBFS_MASK | MCP_BxBFE_MASK); //<---
-  // This works to put the RXBnF pins in output
-
-  set_register(
-      spi, MCP_BFPCTRL,
-      MCP_BxBFM_MASK);  // <--- This works to set the RXBnF pins as an interrupt
+  set_register(spi, MCP_BFPCTRL, MCP_BxBFS_MASK | MCP_BxBFE_MASK);
 
   set_register(spi, MCP_TXRTSCTRL, 0x00);
 }
@@ -548,24 +533,7 @@ ERROR_CAN check_receive(MCP2515* mcp_can) {
   return ERROR_NOMSG;
 }
 
-// To get the next buffer
-ERROR_CAN get_next_buffer_free(FuriHalSpiBusHandle* spi,
-                               uint8_t* buffer_address) {
-  static uint8_t number_of_buffers[3] = {MCP_TXB0CTRL, MCP_TXB1CTRL,
-                                         MCP_TXB2CTRL};
-
-  uint8_t buffer_control_value = 0;
-
-  for (uint8_t i = 0; i < 3; i++) {
-    read_register(spi, number_of_buffers[i], &buffer_control_value);
-    if (buffer_control_value == 0) {
-      *buffer_address = number_of_buffers[i] + 1;
-      return ERROR_OK;
-    }
-  }
-  return ERROR_ALLTXBUSY;
-}
-
+// write the id in the tx register
 void write_id(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
   uint32_t can_id = frame->canId;
 
@@ -598,6 +566,7 @@ void write_id(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
   }
 }
 
+// write the data lenght in it respective register
 void write_dlc_register(FuriHalSpiBusHandle* spi,
                         uint8_t address,
                         CANFRAME* frame) {
@@ -609,6 +578,7 @@ void write_dlc_register(FuriHalSpiBusHandle* spi,
   set_register(spi, address + 4, data_lenght);
 }
 
+// write data in the registers
 void write_buffer(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
   uint8_t data_lenght = frame->data_lenght;
 
@@ -619,7 +589,33 @@ void write_buffer(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
   }
 }
 
-ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame) {
+uint8_t get_free_buffer(FuriHalSpiBusHandle* spi) {
+  static uint8_t status = 0;
+  uint8_t instruction = INSTRUCTION_READ_STATUS;
+
+  furi_hal_spi_acquire(spi);
+  furi_hal_spi_bus_tx(spi, &instruction, 1, TIMEOUT_SPI);
+  furi_hal_spi_bus_rx(spi, &status, 1, TIMEOUT_SPI);
+  furi_hal_spi_release(spi);
+
+  uint8_t status_TX0 = status & MCP_STAT_TX0_PENDING;
+  uint8_t status_TX1 = status & MCP_STAT_TX1_PENDING;
+  uint8_t status_TX2 = status & MCP_STAT_TX2_PENDING;
+
+  if (!status_TX0)
+    return MCP_TXB0CTRL;
+  if (!status_TX1)
+    return MCP_TXB1CTRL;
+  if (!status_TX2)
+    return MCP_TXB2CTRL;
+
+  return 0xFF;
+}
+
+// send can message
+ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi,
+                           CANFRAME* frame,
+                           uint8_t tx_buffer) {
   static CANFRAME auxiliar_frame;
   memset(&auxiliar_frame, 0, sizeof(CANFRAME));
   auxiliar_frame.canId = frame->canId;
@@ -631,19 +627,10 @@ ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame) {
     auxiliar_frame.buffer[i] = frame->buffer[i];
   }
 
-  ERROR_CAN res;
+  ERROR_CAN res = ERROR_FAILTX;
   uint8_t is_send_it = 0;
-  uint8_t free_buffer = 0;
-  uint16_t time_waiting = 0;
-
-  do {
-    res = get_next_buffer_free(spi, &free_buffer);
-    furi_delay_us(1);
-    time_waiting++;
-  } while ((res == ERROR_ALLTXBUSY) && (time_waiting < 1000));
-
-  if (res != ERROR_OK)
-    return res;
+  uint8_t free_buffer = tx_buffer + 1;
+  uint32_t time_waiting = furi_get_tick();
 
   write_id(spi, free_buffer, &auxiliar_frame);
 
@@ -651,23 +638,20 @@ ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame) {
 
   write_buffer(spi, free_buffer, &auxiliar_frame);
 
-  modify_register(spi, free_buffer - 1, MCP_TXB_TXREQ_M, MCP_TXB_TXREQ_M);
+  modify_register(spi, tx_buffer, MCP_TXB_TXREQ_M, MCP_TXB_TXREQ_M);
 
-  time_waiting = 0;
-  res = ERROR_ALLTXBUSY;
+  time_waiting = furi_get_tick();
 
   do {
     read_register(spi, free_buffer - 1, &is_send_it);
     if (is_send_it == 0)
       res = ERROR_OK;
-    furi_delay_us(1);
-    time_waiting++;
-  } while ((res != ERROR_OK) && (time_waiting < TIMEOUT));
+  } while ((res != ERROR_OK) && ((furi_get_tick() - time_waiting) < 1));
 
   read_register(spi, free_buffer - 1, &is_send_it);
 
-  if (time_waiting == TIMEOUT)
-    return ERROR_FAILTX;
+  if (is_send_it)
+    return res;
 
   return ERROR_OK;
 }
@@ -675,7 +659,13 @@ ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame) {
 // This function is to sent a can message
 ERROR_CAN send_can_frame(MCP2515* mcp_can, CANFRAME* frame) {
   FuriHalSpiBusHandle* spi = mcp_can->spi;
-  return send_can_message(spi, frame);
+
+  uint8_t free_buffer = get_free_buffer(spi);
+
+  if (free_buffer == 0xFF)
+    return ERROR_ALLTXBUSY;
+
+  return send_can_message(spi, frame, free_buffer);
 }
 
 // This function works to alloc the struct
