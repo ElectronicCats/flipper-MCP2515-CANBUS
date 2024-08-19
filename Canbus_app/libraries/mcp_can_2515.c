@@ -332,19 +332,22 @@ void write_mf(FuriHalSpiBusHandle* spi,
     bufData[MCP_SIDL] |= MCP_TXB_EXIDE_M;
     bufData[MCP_SIDH] = (uint8_t) (canId >> 5);
   } else {
-    // bufData[MCP_EID0] = (uint8_t)(canId & 0xFF);
-    // bufData[MCP_EID8] = (uint8_t)(canId >> 8);
-    // canId = (uint16_t)(id >> 16);
-
     bufData[MCP_SIDL] = (uint8_t) ((canId & 0x07) << 5);
     bufData[MCP_SIDH] = (uint8_t) (canId >> 3);
     bufData[MCP_EID0] = 0;
     bufData[MCP_EID8] = 0;
   }
 
+  uint8_t instruction[] = {INSTRUCTION_WRITE, address};
+
+  furi_hal_spi_acquire(spi);
+  furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
+
   for (uint8_t i = 0; i < 4; i++) {
-    set_register(spi, address + i, bufData[i]);
+    furi_hal_spi_bus_tx(spi, &bufData[i], 1, TIMEOUT_SPI);
   }
+
+  furi_hal_spi_release(spi);
 }
 
 // To set a Mask
@@ -561,9 +564,16 @@ void write_id(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
     tbufdata[MCP_EID8] = 0;
   }
 
+  uint8_t instruction[] = {INSTRUCTION_WRITE, address};
+
+  furi_hal_spi_acquire(spi);
+  furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
+
   for (uint8_t i = 0; i < 4; i++) {
-    set_register(spi, address + i, tbufdata[i]);
+    furi_hal_spi_bus_tx(spi, &tbufdata[i], 1, TIMEOUT_SPI);
   }
+
+  furi_hal_spi_release(spi);
 }
 
 // write the data lenght in it respective register
@@ -584,9 +594,16 @@ void write_buffer(FuriHalSpiBusHandle* spi, uint8_t address, CANFRAME* frame) {
 
   address = address + 5;
 
+  uint8_t instruction[] = {INSTRUCTION_WRITE, address};
+
+  furi_hal_spi_acquire(spi);
+  furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
+
   for (uint8_t i = 0; i < data_lenght; i++) {
-    set_register(spi, address + i, frame->buffer[i]);
+    furi_hal_spi_bus_tx(spi, &frame->buffer[i], 1, TIMEOUT_SPI);
   }
+
+  furi_hal_spi_release(spi);
 }
 
 uint8_t get_free_buffer(FuriHalSpiBusHandle* spi) {
@@ -642,13 +659,22 @@ ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi,
 
   time_waiting = furi_get_tick();
 
+  uint8_t instruction[] = {INSTRUCTION_READ, free_buffer - 1};
+
   do {
+    furi_hal_spi_acquire(spi);
+
+    furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
+    furi_hal_spi_bus_rx(spi, &is_send_it, 1, TIMEOUT_SPI);
+
+    furi_hal_spi_release(spi);
+
     read_register(spi, free_buffer - 1, &is_send_it);
     if (is_send_it == 0)
       res = ERROR_OK;
-  } while ((res != ERROR_OK) && ((furi_get_tick() - time_waiting) < 1));
 
-  read_register(spi, free_buffer - 1, &is_send_it);
+    furi_delay_us(1);
+  } while ((res != ERROR_OK) && ((furi_get_tick() - time_waiting) < 1));
 
   if (is_send_it)
     return res;
