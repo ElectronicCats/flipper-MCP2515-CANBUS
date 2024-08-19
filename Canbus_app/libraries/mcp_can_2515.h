@@ -143,6 +143,16 @@ typedef enum {
   MCP_RXB_IDE_M = 0x08, /* In RXBnSIDL   */
   MCP_RXB_RTR_M = 0x40, /* In RXBnDLC  */
   //
+  MCP_STAT_TXIF_MASK = 0xA8,
+  MCP_STAT_TX0IF = 0x08,
+  MCP_STAT_TX1IF = 0x20,
+  MCP_STAT_TX2IF = 0x80,
+  MCP_STAT_TX_PENDING_MASK = 0x54,
+  MCP_STAT_TX0_PENDING = 0x04,
+  MCP_STAT_TX1_PENDING = 0x10,
+  MCP_STAT_TX2_PENDING = 0x40,
+
+  //
   MCP_STAT_RXIF_MASK = (0x03),
   MCP_STAT_RX0IF = (1 << 0),
   MCP_STAT_RX1IF = (1 << 1),
@@ -185,10 +195,6 @@ typedef enum {
   MCP_LOOPBACK = 0x40,
   MCP_LISTENONLY = 0x60,
   MODE_CONFIG = 0x80,
-  MODE_POWERUP = 0xE0,
-  MODE_MASK = 0xE0,
-  MODE_ONESHOT = 0x08,
-
 } MCP_MODE;
 
 // MCP2515 registers
@@ -307,7 +313,7 @@ typedef enum {
 
 // MCP2515 BITRATES VALUES
 typedef enum {
-  MCP_125KPS,
+  MCP_125KBPS,
   MCP_250KBPS,
   MCP_500KBPS,
   MCP_1000KBPS,
@@ -354,12 +360,24 @@ void free_mcp2515(MCP2515* mcp_can);
 // This is to get the status
 bool mcp_get_status(FuriHalSpiBusHandle* spi, uint8_t* data);
 
+// To set a new mode
+bool set_new_mode(MCP2515* mcp_can, MCP_MODE new_mode);
+
+// The function works to compare if the chip is in a specific mode
+bool is_mode(MCP2515* mcp_can, MCP_MODE mode);
+
 // The modes we want to work
 bool set_config_mode(MCP2515* mcp_can);
 bool set_normal_mode(MCP2515* mcp_can);
 bool set_listen_only_mode(MCP2515* mcp_can);
 bool set_sleep_mode(MCP2515* mcp_can);
 bool set_loop_back_mode(MCP2515* mcp_can);
+
+// To set the mask
+void init_mask(MCP2515* mcp_can, uint8_t num_mask, uint32_t mask);
+
+// To set the filters
+void init_filter(MCP2515* mcp_can, uint8_t num_filter, uint32_t filter);
 
 // To read and write a message
 uint8_t get_error(MCP2515* mcp_can);
@@ -370,4 +388,5 @@ ERROR_CAN read_can_message(MCP2515* mcp_can,
 
 ERROR_CAN send_can_frame(MCP2515* mcp_can,
                          CANFRAME* frame);  // Send a CANBUS Frame
+
 #endif
