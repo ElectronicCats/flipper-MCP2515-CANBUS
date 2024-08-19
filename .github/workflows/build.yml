@@ -13,6 +13,7 @@ jobs:
         with:
           # Set to 'release' to build for latest published release version or dev for develop
           sdk-channel: release
+          app-dir: ./Canbus_app/
       - name: Upload app artifacts
         uses: actions/upload-artifact@v3
         with:
