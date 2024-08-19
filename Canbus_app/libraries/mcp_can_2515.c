@@ -85,7 +85,14 @@ void read_Id(FuriHalSpiBusHandle* spi,
 // get actual mode of the MCP2515
 uint8_t get_mode(FuriHalSpiBusHandle* spi) {
   uint8_t data = 0;
-  read_register(spi, MCP_CANSTAT, &data);
+
+  uint8_t instruction[] = {INSTRUCTION_READ, MCP_CANSTAT};
+  furi_hal_spi_acquire(spi);
+  furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
+  furi_hal_spi_bus_rx(spi, &data, 1, TIMEOUT_SPI);
+
+  furi_hal_spi_release(spi);
+
   return data & CANSTAT_OPM;
 }
 
@@ -139,6 +146,8 @@ bool set_new_mode(MCP2515* mcp_can, MCP_MODE new_mode) {
     if (read_status == MODE_CONFIG)
       ret = true;
 
+    furi_delay_us(1);
+
   } while ((ret != true) && ((furi_get_tick() - time_out) < 50));
 
   time_out = furi_get_tick();
@@ -150,6 +159,9 @@ bool set_new_mode(MCP2515* mcp_can, MCP_MODE new_mode) {
     read_status &= CANSTAT_OPM;
     if (read_status == new_mode)
       return true;
+
+    furi_delay_us(1);
+
   } while ((furi_get_tick() - time_out) < 50);
 
   return false;
@@ -160,9 +172,6 @@ bool set_config_mode(MCP2515* mcp_can) {
   bool ret = true;
   ret = set_new_mode(mcp_can, MODE_CONFIG);
 
-  if (ret)
-    mcp_can->mode = MODE_CONFIG;
-
   return ret;
 }
 
@@ -170,10 +179,6 @@ bool set_config_mode(MCP2515* mcp_can) {
 bool set_normal_mode(MCP2515* mcp_can) {
   bool ret = true;
   ret = set_new_mode(mcp_can, MCP_NORMAL);
-
-  if (ret)
-    mcp_can->mode = MCP_NORMAL;
-
   return ret;
 }
 
@@ -181,10 +186,6 @@ bool set_normal_mode(MCP2515* mcp_can) {
 bool set_listen_only_mode(MCP2515* mcp_can) {
   bool ret = true;
   ret = set_new_mode(mcp_can, MCP_LISTENONLY);
-
-  if (ret)
-    mcp_can->mode = MCP_LISTENONLY;
-
   return ret;
 }
 
@@ -192,10 +193,6 @@ bool set_listen_only_mode(MCP2515* mcp_can) {
 bool set_sleep_mode(MCP2515* mcp_can) {
   bool ret = true;
   ret = set_new_mode(mcp_can, MCP_SLEEP);
-
-  if (ret)
-    mcp_can->mode = MCP_SLEEP;
-
   return ret;
 }
 
@@ -343,10 +340,7 @@ void write_mf(FuriHalSpiBusHandle* spi,
   furi_hal_spi_acquire(spi);
   furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
 
-  for (uint8_t i = 0; i < 4; i++) {
-    furi_hal_spi_bus_tx(spi, &bufData[i], 1, TIMEOUT_SPI);
-  }
-
+  furi_hal_spi_bus_tx(spi, bufData, 4, TIMEOUT_SPI);
   furi_hal_spi_release(spi);
 }
 
@@ -355,8 +349,6 @@ void init_mask(MCP2515* mcp_can, uint8_t num_mask, uint32_t mask) {
   FuriHalSpiBusHandle* spi = mcp_can->spi;
 
   uint8_t ext = 0;
-
-  MCP_MODE last_mode = mcp_can->mode;
 
   set_config_mode(mcp_can);
 
@@ -373,8 +365,8 @@ void init_mask(MCP2515* mcp_can, uint8_t num_mask, uint32_t mask) {
   if (num_mask == 1) {
     write_mf(spi, MCP_RXM1SIDH, ext, mask);
   }
-  mcp_can->mode = last_mode;
-  set_new_mode(mcp_can, last_mode);
+
+  set_new_mode(mcp_can, mcp_can->mode);
 }
 
 // To set a Filter
@@ -382,8 +374,6 @@ void init_filter(MCP2515* mcp_can, uint8_t num_filter, uint32_t filter) {
   FuriHalSpiBusHandle* spi = mcp_can->spi;
 
   uint8_t ext = 0;
-
-  MCP_MODE last_mode = mcp_can->mode;
 
   set_config_mode(mcp_can);
 
@@ -421,8 +411,7 @@ void init_filter(MCP2515* mcp_can, uint8_t num_filter, uint32_t filter) {
       break;
   }
 
-  mcp_can->mode = last_mode;
-  set_new_mode(mcp_can, last_mode);
+  set_new_mode(mcp_can, mcp_can->mode);
 }
 
 // This function works to know if there is any message waiting
