@@ -55,7 +55,7 @@ typedef struct {
   Storage* storage;
   DialogsApp* dialogs;
   File* log_file;
-  char log_file_path[100];
+  char* log_file_path;
   bool log_file_ready;
   uint8_t save_logs;
 

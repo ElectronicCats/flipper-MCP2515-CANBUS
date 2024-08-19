@@ -74,6 +74,8 @@ static App* app_alloc() {
 
   app->frameArray = (CANFRAME*) malloc(100 * sizeof(CANFRAME));
 
+  app->log_file_path = (char*) malloc(100 * sizeof(char));
+
   app->frame_to_send = malloc(sizeof(CANFRAME));
 
   makePaths(app);
@@ -109,6 +111,7 @@ static void app_free(App* app) {
   furi_record_close(RECORD_STORAGE);
   furi_record_close(RECORD_DIALOGS);
 
+  free(app->log_file_path);
   free(app->frameArray);
 
   free(app);
