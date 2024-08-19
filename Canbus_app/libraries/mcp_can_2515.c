@@ -692,8 +692,6 @@ ERROR_CAN send_can_frame(MCP2515* mcp_can, CANFRAME* frame) {
     return ERROR_ALLTXBUSY;
 
   return send_can_message(spi, frame, free_buffer);
-
-  return ERROR_OK;
 }
 
 // This function works to alloc the struct
