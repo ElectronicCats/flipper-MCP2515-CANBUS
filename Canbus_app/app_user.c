@@ -77,6 +77,8 @@ static App* app_alloc() {
 
   app->frame_to_send = malloc(sizeof(CANFRAME));
 
+  app->obdii.bitrate = app->mcp_can->bitRate;
+
   makePaths(app);
 
   return app;

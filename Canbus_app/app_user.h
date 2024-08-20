@@ -37,6 +37,8 @@ typedef struct {
   CANFRAME* frameArray;
   CANFRAME* frame_to_send;
 
+  OBDII obdii;
+
   uint32_t time;
   uint32_t times[100];
   uint32_t current_time[100];
