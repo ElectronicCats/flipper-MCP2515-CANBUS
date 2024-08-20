@@ -1,6 +1,6 @@
 App(
     appid="canbus_app",
-    name="CANBUS_DEV",
+    name="CANBUS",
     apptype=FlipperAppType.EXTERNAL,
     entry_point="app_main",
     requires=["gui"],

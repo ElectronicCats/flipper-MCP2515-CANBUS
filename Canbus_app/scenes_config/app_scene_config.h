@@ -25,4 +25,5 @@ ADD_SCENE(app, about_us, about_us)
 
 // On development
 ADD_SCENE(app, obdii_menu, obdii_option)
+ADD_SCENE(app, obdii_typical_codes, obdii_typical_codes_option)
 ADD_SCENE(app, draw_obdii, draw_obii_option)
