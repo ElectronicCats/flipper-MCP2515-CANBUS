@@ -1,3 +1,6 @@
+![GitHub release (with filter)](https://img.shields.io/github/v/release/ElectronicCats/flipper-MCP2515-CANBUS?color=%23008000)
+![GitHub actions](https://img.shields.io/github/actions/workflow/status/ElectronicCats/flipper-MCP2515-CANBUS/build.yml)
+
 # Flipper CAN Bus App 🐬
 This app allows you to interact with CAN Bus networks. Now you can interact with CAN Bus transmissions using the Flipper Zero. Basic tasks such as sniffing and injection are available, making it easy to perform activities such as analysis, error detection and peripherals control in a CAN Bus network.
 
