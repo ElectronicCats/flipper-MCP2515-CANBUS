@@ -65,10 +65,13 @@ typedef enum {
 } pid_all_codes;
 
 typedef enum {
+    RUN_TIME_SINCE_ENGINE_START = 0x1F,
     CALCULATED_ENGINE_LOAD = 0x04,
     ENGINE_SPEED = 0x0C,
     VEHICLE_SPEED = 0x0D,
     THROTTLE_POSITION = 0x11,
+    FUEL_INPUT_POSITION = 0x2F,
+    THROTTLE_RELATIVE_POSITION = 0x45
 } pid_typical_codes;
 
 typedef struct {
@@ -105,5 +108,8 @@ uint16_t calculate_engine_speed(uint8_t value_a, uint8_t value_b);
 
 // Calculate the porcent of calculated load engine
 float calculate_engine_load(uint8_t value);
+
+// Calculate the units that got sum
+uint16_t sum_value(uint8_t A, uint8_t B);
 
 #endif

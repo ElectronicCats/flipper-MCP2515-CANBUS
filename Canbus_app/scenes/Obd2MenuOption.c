@@ -90,33 +90,9 @@ void typical_menu_callback(void* context, uint32_t index) {
 
     app->obdii_aux_index = index;
     scene_manager_set_scene_state(app->scene_manager, app_scene_obdii_typical_codes_option, index);
-
-    switch(index) {
-    case 0:
-        scene_manager_next_scene(app->scene_manager, app_scene_draw_obii_option);
-        break;
-
-    case 1:
-        scene_manager_next_scene(app->scene_manager, app_scene_draw_obii_option);
-        break;
-
-    case 2:
-        scene_manager_next_scene(app->scene_manager, app_scene_draw_obii_option);
-        break;
-
-    case 3:
-        // scene_manager_next_scene(app->scene_manager,
-        // app_scene_draw_obii_option);
-        break;
-
-    case 4:
-        // scene_manager_next_scene(app->scene_manager,
-        // app_scene_draw_obii_option);
-        break;
-
-    default:
-        break;
-    }
+    scene_manager_next_scene(
+        app->scene_manager,
+        app_scene_draw_obii_option); // It will go directly to the respective scene
 }
 
 // Scene on enter
@@ -126,7 +102,14 @@ void app_scene_obdii_typical_codes_on_enter(void* context) {
     submenu_add_item(app->submenu, "Engine Speed", 0, typical_menu_callback, app);
     submenu_add_item(app->submenu, "Vehicle Speed", 1, typical_menu_callback, app);
     submenu_add_item(app->submenu, "Calculated Engine Load", 2, typical_menu_callback, app);
+    submenu_add_item(app->submenu, "Thortle Position", 3, typical_menu_callback, app);
+    submenu_add_item(app->submenu, "Fuel Tank Input Level", 4, typical_menu_callback, app);
+    submenu_add_item(app->submenu, "Thortle Relative Position", 5, typical_menu_callback, app);
+    submenu_add_item(app->submenu, "Time Engine Running", 6, typical_menu_callback, app);
 
+    submenu_set_selected_item(
+        app->submenu,
+        scene_manager_get_scene_state(app->scene_manager, app_scene_obdii_typical_codes_option));
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
     scene_manager_set_scene_state(app->scene_manager, app_scene_obdii_typical_codes_option, 0);
 }
@@ -155,6 +138,17 @@ void app_scene_obdii_typical_codes_on_exit(void* context) {
 
 */
 
+// Draws a developmet
+void draw_in_development(App* app) {
+    widget_reset(app->widget);
+
+    widget_add_string_element(
+        app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "SCENE IN");
+
+    widget_add_string_element(
+        app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "DEVELOPMENT");
+}
+
 // Draws device not connected
 void draw_device_no_connected(App* app) {
     widget_reset(app->widget);
@@ -166,70 +160,71 @@ void draw_device_no_connected(App* app) {
         app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
 }
 
-// Draws engine speed
-void draw_engine_speed(App* app, uint16_t engine_speed) {
-    FuriString* text_label = app->text;
-
-    furi_string_reset(text_label);
-    widget_reset(app->widget);
-
-    widget_add_string_element(
-        app->widget, 65, 25, AlignCenter, AlignBottom, FontPrimary, "ENGINE SPEED");
-
-    furi_string_cat_printf(text_label, "%u RPM", engine_speed);
-    widget_add_string_element(
-        app->widget,
-        65,
-        45,
-        AlignCenter,
-        AlignBottom,
-        FontPrimary,
-        furi_string_get_cstr(text_label));
-}
-
-// Draws the vehicle speed
-void draw_vehicle_speed(App* app, uint16_t velocity) {
-    FuriString* text_label = app->text;
-
-    furi_string_reset(text_label);
-    widget_reset(app->widget);
-
-    widget_add_string_element(
-        app->widget, 65, 25, AlignCenter, AlignBottom, FontPrimary, "VEHICLE SPEED");
-
-    furi_string_cat_printf(text_label, "%u KM/H", velocity);
-    widget_add_string_element(
-        app->widget,
-        65,
-        45,
-        AlignCenter,
-        AlignBottom,
-        FontPrimary,
-        furi_string_get_cstr(text_label));
+// Draw the unit medition
+void draw_value(App* app, const char* text) {
+    widget_add_string_element(app->widget, 65, 45, AlignCenter, AlignBottom, FontPrimary, text);
 }
 
 // Draws the calculated engine load
-void draw_calculated_engine_load(App* app, uint16_t load_engine) {
+void draw_scene(App* app, uint8_t selector, uint16_t variable) {
     FuriString* text_label = app->text;
+
+    char* text = "";
 
     furi_string_reset(text_label);
     widget_reset(app->widget);
 
-    widget_add_string_element(
-        app->widget, 65, 15, AlignCenter, AlignBottom, FontPrimary, "CALCULATED");
+    if(selector == 0) { // Engine Speed
+        widget_add_string_element(
+            app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "ENGINE SPEED");
+        text = "RPM";
+    } else if(selector == 1) { // Vehicle Speed
+        widget_add_string_element(
+            app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "VEHICLE SPEED");
+        text = "KM/H";
 
-    widget_add_string_element(
-        app->widget, 65, 30, AlignCenter, AlignBottom, FontPrimary, "ENGINE LOAD");
+    } else if(selector == 2) { // CALCULATED ENGINE LOAD
+        widget_add_string_element(
+            app->widget, 65, 15, AlignCenter, AlignBottom, FontPrimary, "CALCULATED");
 
-    furi_string_cat_printf(text_label, "%u %%", load_engine);
-    widget_add_string_element(
-        app->widget,
-        65,
-        45,
-        AlignCenter,
-        AlignBottom,
-        FontPrimary,
-        furi_string_get_cstr(text_label));
+        widget_add_string_element(
+            app->widget, 65, 30, AlignCenter, AlignBottom, FontPrimary, "ENGINE LOAD");
+
+        text = "%";
+
+    } else if(selector == 3) { // Thortle Position
+        widget_add_string_element(
+            app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "THORLE POSITION");
+
+        text = "%";
+
+    } else if(selector == 4) { // Fuel Tank Input Level
+        widget_add_string_element(
+            app->widget, 65, 15, AlignCenter, AlignBottom, FontPrimary, "FUEL TANK");
+        widget_add_string_element(
+            app->widget, 65, 30, AlignCenter, AlignBottom, FontPrimary, "INPUT LEVEL");
+
+        text = "%";
+
+    } else if(selector == 5) { // Thortle Relative Position
+        widget_add_string_element(
+            app->widget, 65, 15, AlignCenter, AlignBottom, FontPrimary, "THORTLE");
+        widget_add_string_element(
+            app->widget, 65, 30, AlignCenter, AlignBottom, FontPrimary, "RELATIVE POSITION");
+
+        text = "%";
+    } else if(selector == 6) {
+        widget_add_string_element(
+            app->widget, 65, 15, AlignCenter, AlignBottom, FontPrimary, "TIME SINCE");
+        widget_add_string_element(
+            app->widget, 65, 30, AlignCenter, AlignBottom, FontPrimary, "ENGINE START");
+
+        text = "seg";
+    }
+
+    furi_string_cat_printf(text_label, "%u %s", variable, text);
+
+    draw_value(app, furi_string_get_cstr(text_label));
 }
 
 // Scene on enter
@@ -295,6 +290,22 @@ static int32_t obdii_thread_on_work(void* context) {
         request = CALCULATED_ENGINE_LOAD;
         break;
 
+    case 3:
+        request = THROTTLE_POSITION;
+        break;
+
+    case 4:
+        request = FUEL_INPUT_POSITION;
+        break;
+
+    case 5:
+        request = THROTTLE_RELATIVE_POSITION;
+        break;
+
+    case 6:
+        request = RUN_TIME_SINCE_ENGINE_START;
+        break;
+
     default:
         break;
     }
@@ -313,19 +324,36 @@ static int32_t obdii_thread_on_work(void* context) {
 
             if(message) {
                 switch(option) {
-                case 0:
-                    draw_engine_speed(app, calculate_engine_speed(data[3], data[4]));
+                case 0: // Engine Speed RPM
+                    draw_scene(app, option, calculate_engine_speed(data[3], data[4]));
                     break;
 
-                case 1:
-                    draw_vehicle_speed(app, data[3]);
+                case 1: // Vehcile Speed
+                    draw_scene(app, option, data[3]);
                     break;
 
-                case 2:
-                    draw_calculated_engine_load(app, 0);
+                case 2: // Calculated Engine Load
+                    draw_scene(app, option, calculate_engine_load(data[3]));
+                    break;
+
+                case 3: // Thortle Position
+                    draw_scene(app, option, calculate_engine_load(data[3]));
+                    break;
+
+                case 4: // Fuel Tank Input Level
+                    draw_scene(app, option, calculate_engine_load(data[3]));
+                    break;
+
+                case 5: // Thortle Relative Position
+                    draw_scene(app, option, calculate_engine_load(data[3]));
+                    break;
+
+                case 6: // Time Engine Running
+                    draw_scene(app, option, sum_value(data[3], data[4]));
                     break;
 
                 default:
+                    draw_in_development(app);
                     break;
                 }
             }
