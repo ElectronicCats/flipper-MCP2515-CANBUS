@@ -97,10 +97,13 @@ bool pid_init(OBDII* obdii);
 // Function to deinit and free obdii
 void pid_deinit(OBDII* obdii);
 
-//
+// request data
 bool pid_show_data(OBDII* obdii, uint8_t pid, uint8_t* data, uint8_t size);
 
 // Function to calculate the engine speed
 uint16_t calculate_engine_speed(uint8_t value_a, uint8_t value_b);
+
+// Calculate the porcent of calculated load engine
+float calculate_engine_load(uint8_t value);
 
 #endif

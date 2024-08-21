@@ -55,3 +55,8 @@ uint16_t calculate_engine_speed(uint8_t value_a, uint8_t value_b) {
 
     return operation_a + operation_b;
 }
+
+float calculate_engine_load(uint8_t value) {
+    UNUSED(value);
+    return 0;
+}

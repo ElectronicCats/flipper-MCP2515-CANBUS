@@ -101,8 +101,7 @@ void typical_menu_callback(void* context, uint32_t index) {
         break;
 
     case 2:
-        // scene_manager_next_scene(app->scene_manager,
-        // app_scene_draw_obii_option);
+        scene_manager_next_scene(app->scene_manager, app_scene_draw_obii_option);
         break;
 
     case 3:
@@ -126,6 +125,7 @@ void app_scene_obdii_typical_codes_on_enter(void* context) {
     submenu_reset(app->submenu);
     submenu_add_item(app->submenu, "Engine Speed", 0, typical_menu_callback, app);
     submenu_add_item(app->submenu, "Vehicle Speed", 1, typical_menu_callback, app);
+    submenu_add_item(app->submenu, "Calculated Engine Load", 2, typical_menu_callback, app);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
     scene_manager_set_scene_state(app->scene_manager, app_scene_obdii_typical_codes_option, 0);
@@ -208,6 +208,30 @@ void draw_vehicle_speed(App* app, uint16_t velocity) {
         furi_string_get_cstr(text_label));
 }
 
+// Draws the calculated engine load
+void draw_calculated_engine_load(App* app, uint16_t load_engine) {
+    FuriString* text_label = app->text;
+
+    furi_string_reset(text_label);
+    widget_reset(app->widget);
+
+    widget_add_string_element(
+        app->widget, 65, 15, AlignCenter, AlignBottom, FontPrimary, "CALCULATED");
+
+    widget_add_string_element(
+        app->widget, 65, 30, AlignCenter, AlignBottom, FontPrimary, "ENGINE LOAD");
+
+    furi_string_cat_printf(text_label, "%u %%", load_engine);
+    widget_add_string_element(
+        app->widget,
+        65,
+        45,
+        AlignCenter,
+        AlignBottom,
+        FontPrimary,
+        furi_string_get_cstr(text_label));
+}
+
 // Scene on enter
 void app_scene_draw_obdii_on_enter(void* context) {
     App* app = context;
@@ -267,6 +291,10 @@ static int32_t obdii_thread_on_work(void* context) {
         request = VEHICLE_SPEED;
         break;
 
+    case 2:
+        request = CALCULATED_ENGINE_LOAD;
+        break;
+
     default:
         break;
     }
@@ -291,6 +319,10 @@ static int32_t obdii_thread_on_work(void* context) {
 
                 case 1:
                     draw_vehicle_speed(app, data[3]);
+                    break;
+
+                case 2:
+                    draw_calculated_engine_load(app, 0);
                     break;
 
                 default:
