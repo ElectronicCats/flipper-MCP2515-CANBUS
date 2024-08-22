@@ -41,6 +41,15 @@ bool pid_show_data(OBDII* obdii, uint8_t pid, uint8_t* data, uint8_t size) {
     return true;
 }
 
+/*bool get_manual_pid(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* data) {
+    CANFRAME frame;
+    frame.canId = 0x7DF;
+
+    if(mode == CLEAR_STORAGE_DTC) {
+        }
+    return false;
+}*/
+
 void pid_deinit(OBDII* obdii) {
     free_mcp2515(obdii->CAN);
     free(obdii->codes);

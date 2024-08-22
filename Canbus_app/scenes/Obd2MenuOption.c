@@ -77,6 +77,7 @@ void app_scene_obdii_menu_on_exit(void* context) {
     Thread
 */
 static int32_t obdii_thread_on_work(void* context);
+static int32_t obdii_thread_getting_pid_supported(void* context);
 
 /*
 
@@ -259,7 +260,17 @@ void app_scene_draw_obdii_on_exit(void* context) {
 }
 
 /*
-    Thread
+    Thread to get the supported PID
+*/
+
+static int32_t obdii_thread_getting_pid_supported(void* context) {
+    App* app = context;
+    UNUSED(app);
+    return 0;
+}
+
+/*
+    Thread To Show DATA
 */
 
 static int32_t obdii_thread_on_work(void* context) {
