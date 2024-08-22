@@ -15,8 +15,7 @@ void obdii_menu_callback(void* context, uint32_t index) {
 
     switch(index) {
     case 0:
-        // scene_manager_next_scene(app->scene_manager,
-        // app_scene_draw_obii_option);
+        scene_manager_next_scene(app->scene_manager, app_scene_supported_pid_option);
         break;
 
     case 1:
@@ -77,7 +76,7 @@ void app_scene_obdii_menu_on_exit(void* context) {
     Thread
 */
 static int32_t obdii_thread_on_work(void* context);
-static int32_t obdii_thread_getting_pid_supported(void* context);
+static int32_t obdii_thread_getting_pid_supported_on_work(void* context);
 
 /*
 
@@ -232,7 +231,7 @@ void draw_scene(App* app, uint8_t selector, uint16_t variable) {
 void app_scene_draw_obdii_on_enter(void* context) {
     App* app = context;
 
-    app->thread = furi_thread_alloc_ex("SniffingWork", 1024, obdii_thread_on_work, app);
+    app->thread = furi_thread_alloc_ex("GetDataPID", 1024, obdii_thread_on_work, app);
     furi_thread_start(app->thread);
 
     widget_reset(app->widget);
@@ -260,10 +259,74 @@ void app_scene_draw_obdii_on_exit(void* context) {
 }
 
 /*
+    This scene works to Display the respective PID codes supported by the car
+*/
+
+// Scene on enter
+void app_scene_draw_supported_pid_on_enter(void* context) {
+    App* app = context;
+    submenu_reset(app->submenu);
+
+    app->thread = furi_thread_alloc_ex(
+        "SupportedPID", 1024, obdii_thread_getting_pid_supported_on_work, app);
+    furi_thread_start(app->thread);
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
+}
+
+// Scene on Event
+bool app_scene_draw_supported_pid_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    UNUSED(event);
+    UNUSED(app);
+    return false;
+}
+
+// Scene on exit
+void app_scene_draw_supported_pid_on_exit(void* context) {
+    App* app = context;
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
+
+    submenu_reset(app->submenu);
+}
+
+/*
+    Scene to show that is not connected
+*/
+
+// Scene on enter
+void app_scene_obdii_device_not_connected_on_enter(void* context) {
+    App* app = context;
+
+    widget_reset(app->widget);
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+
+    draw_device_no_connected(app);
+}
+
+// Scene on Event
+bool app_scene_obdii_device_not_connected_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+
+    bool consumed = false;
+    UNUSED(app);
+    UNUSED(event);
+
+    return consumed;
+}
+
+// Scene on exit
+void app_scene_obdii_device_not_connected_on_exit(void* context) {
+    App* app = context;
+    widget_reset(app->widget);
+}
+
+/*
     Thread to get the supported PID
 */
 
-static int32_t obdii_thread_getting_pid_supported(void* context) {
+static int32_t obdii_thread_getting_pid_supported_on_work(void* context) {
     App* app = context;
     UNUSED(app);
     return 0;

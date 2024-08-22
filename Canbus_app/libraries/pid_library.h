@@ -77,6 +77,7 @@ typedef enum {
 typedef struct {
     pid_all_codes pid_num;
     char* name;
+    char* unit;
     bool is_supported;
 } pid_code;
 
@@ -90,6 +91,8 @@ typedef struct {
     pid_code* codes;
 } OBDII;
 
+extern char* pid_codes_name[];
+
 /*
   Convertions
 */
@@ -102,6 +105,12 @@ void pid_deinit(OBDII* obdii);
 
 // request data
 bool pid_show_data(OBDII* obdii, uint8_t pid, uint8_t* data, uint8_t size);
+
+// request a PID in a manual form
+bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* data);
+
+// get the pid's supported in a block of pid
+bool pid_get_supported_pid(OBDII* obdii, pid_request_supported_codes block);
 
 // Function to calculate the engine speed
 uint16_t calculate_engine_speed(uint8_t value_a, uint8_t value_b);
