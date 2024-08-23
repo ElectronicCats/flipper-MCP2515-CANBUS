@@ -80,6 +80,7 @@ typedef enum {
     SenderOption,
     ObdiiOption,
     ReadLOGOption,
+    PlayLOGOption,
     SettingsOption,
     AboutUsOption,
 } MainMenuOptions;
@@ -91,6 +92,7 @@ typedef enum {
     SettingsOptionEvent,
     ObdiiOptionEvent,
     ReadLOGOptionEvent,
+    PlayLOGOptionEvent,
     AboutUsEvent,
 } MainMenuEvents;
 

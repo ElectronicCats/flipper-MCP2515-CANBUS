@@ -71,8 +71,8 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
         scene_manager_handle_custom_event(app->scene_manager, SenderOptionEvent);
         break;
 
-    case PlayerOption:
-        scene_manager_handle_custom_event(app->scene_manager, PlayerOptionEvent);
+    case PlayLOGOption:
+        scene_manager_handle_custom_event(app->scene_manager, app_scene_play_logs);
         break;
 
     case SettingsOption:
@@ -109,7 +109,7 @@ void app_scene_menu_on_enter(void* context) {
 
     submenu_add_item(app->submenu, "Sender", SenderOption, basic_scenes_menu_callback, app);
 
-    submenu_add_item(app->submenu, "Player", PlayerOption, basic_scenes_menu_callback, app);
+    submenu_add_item(app->submenu, "Player", PlayLOGOption, basic_scenes_menu_callback, app);
 
     submenu_add_item(app->submenu, "Scanner OBD2", ObdiiOption, basic_scenes_menu_callback, app);
 
@@ -143,8 +143,8 @@ bool app_scene_menu_on_event(void* context, SceneManagerEvent event) {
             scene_manager_next_scene(app->scene_manager, app_scene_sender_option);
             break;
 
-        case PlayerOptionEvent:
-            scene_manager_next_scene(app->scene_manager, app_scene_player_option);
+        case PlayLOGOptionEvent:
+            scene_manager_next_scene(app->scene_manager, app_scene_play_logs);
             break;    
 
         case SettingsOptionEvent:
