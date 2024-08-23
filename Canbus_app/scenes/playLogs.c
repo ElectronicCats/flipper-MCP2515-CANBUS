@@ -1,9 +1,15 @@
 #include "../app_user.h"
+#define TAG "PLAY "
+
+typedef enum {
+  PLAY_OK,
+  PLAY_ERROR,
+} player_status;
 
 uint32_t hex_to_int(const char* hex_str) {
-    uint32_t result = 0;
+    unsigned int result = 0;
     sscanf(hex_str, "%x", &result);
-    return result;
+    return (uint32_t)result;
 }
 
 void send_data_frame(void* context) {
@@ -15,31 +21,30 @@ void send_data_frame(void* context) {
     ERROR_CAN error = ERROR_OK;
     debug = mcp2515_init(app->mcp_can);
 
-    //#define PATHAPP "apps_data/canbus"
-    //DialogsApp* dialogs_tx;             model or app?
-    //Storage* storage_tx;
-    //File* file_tx;
+    // Storage* storage;
+    // DialogsApp* dialogs;
+    // File* log_file;
 
     FuriString* predefined_filepath = furi_string_alloc_set_str(PATHAPP);
     FuriString* selected_filepath = furi_string_alloc();
     DialogsFileBrowserOptions browser_options;
-    dialog_file_browser_set_basic_options(&browser_options, LORA_LOG_FILE_EXTENSION, NULL);
+    dialog_file_browser_set_basic_options(&browser_options, ".log", NULL);
     browser_options.base_path = PATHAPP;
 
-    dialog_file_browser_show(model->dialogs_tx, selected_filepath, predefined_filepath, &browser_options);
+    dialog_file_browser_show(app->dialogs, selected_filepath, predefined_filepath, &browser_options);
 
     if(storage_file_open(
-            model->file_tx, furi_string_get_cstr(selected_filepath), FSAM_READ, FSOM_OPEN_EXISTING)) {
+            app->log_file, furi_string_get_cstr(selected_filepath), FSAM_READ, FSOM_OPEN_EXISTING)) {
 
-            model->flag_tx_file = true;
-            model->test = 1;
+            // app->flag_tx_file = true;
+            // app->test = 1;
 
             char buffer[256];
             size_t buffer_index = 0;
             size_t bytes_read;
             char c;
 
-            while ((bytes_read = storage_file_read(model->file_tx, &c, 1)) > 0 && model->flag_signal) {
+            while ((bytes_read = storage_file_read(app->log_file, &c, 1)) > 0) { // && model->flag_signal) {
                 if (c == '\n' || buffer_index >= 256 - 1) {
                     buffer[buffer_index] = '\0';
 
@@ -63,10 +68,10 @@ void send_data_frame(void* context) {
                     // Data length
                     token = strtok_r(NULL, " ", &saveptr);
                     if (!token) return;
-                    frame_to_send.data_length = (uint8_t)atoi(token);
+                    frame_to_send.data_lenght = (uint8_t)atoi(token);
 
                     // Fill the data buffer
-                    for (int i = 0; i < frame_to_send.data_length && i < MAX_LEN; i++) {
+                    for (int i = 0; i < frame_to_send.data_lenght && i < MAX_LEN; i++) {
                         token = strtok_r(NULL, " ", &saveptr);
                         if (!token) break;
                         frame_to_send.buffer[i] = (uint8_t)hex_to_int(token);
@@ -77,9 +82,9 @@ void send_data_frame(void* context) {
                         furi_delay_ms(500);
 
                         if (error != ERROR_OK)
-                        scene_manager_handle_custom_event(app->scene_manager, SEND_ERROR);
+                        scene_manager_handle_custom_event(app->scene_manager, PLAY_ERROR);
                         else
-                        scene_manager_handle_custom_event(app->scene_manager, SEND_OK);
+                        scene_manager_handle_custom_event(app->scene_manager, PLAY_OK);
                     } else {
                         scene_manager_handle_custom_event(app->scene_manager, DEVICE_NO_CONNECTED);
                     }
@@ -91,18 +96,18 @@ void send_data_frame(void* context) {
             }
 
     } else {
-        dialog_message_show_storage_error(model->dialogs_tx, "Cannot open File");
+        dialog_message_show_storage_error(app->dialogs, "Cannot open File");
     }
-    storage_file_close(model->file_tx);
-    model->test = 0;
+    storage_file_close(app->log_file);
+    //app->test = 0;
     furi_string_free(selected_filepath);
     furi_string_free(predefined_filepath);
 
-    furi_hal_gpio_write(pin_led, true);
-    furi_delay_ms(50);
-    furi_hal_gpio_write(pin_led, false);
+    // furi_hal_gpio_write(pin_led, true);
+    // furi_delay_ms(50);
+    // furi_hal_gpio_write(pin_led, false);
 
-    model->flag_tx_file = false;
+    // app->flag_file = false;
 
 }
 
