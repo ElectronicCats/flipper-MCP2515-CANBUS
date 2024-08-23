@@ -70,6 +70,7 @@ typedef struct {
     uint8_t sender_id_compose[4];
 
     uint32_t obdii_aux_index;
+    uint8_t flags;
 
     uint64_t size_of_storage;
 } App;

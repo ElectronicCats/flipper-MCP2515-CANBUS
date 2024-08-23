@@ -121,24 +121,24 @@ bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* d
 }
 
 // It works to get the supported datas
-bool pid_get_supported_pid(OBDII* obdii, pid_request_supported_codes block) {
+bool pid_get_supported_pid(OBDII* obdii, uint8_t block) {
     uint8_t data[8];
 
     if(!pid_manual_request(obdii, SHOW_DATA, block, data)) return false;
 
-    obdii->codes[0].pid_num = 0x00;
-    obdii->codes[0].is_supported = true;
-    obdii->codes[0].name = pid_codes_name[0];
+    obdii->codes[block].pid_num = block;
+    obdii->codes[block].is_supported = true;
+    obdii->codes[block].name = "Supported";
 
     uint32_t codes_available = (data[3] << 24) + (data[4] << 16) + (data[5] << 8) + data[6];
 
     for(uint8_t i = 1; i <= 32; i++) {
-        obdii->codes[i].pid_num = i;
-        obdii->codes[i].is_supported = codes_available & (1 << (32 - i));
+        obdii->codes[block + i].pid_num = block + i;
+        obdii->codes[block + i].is_supported = codes_available & (1 << (32 - i));
         if(block == BLOCK_A)
             obdii->codes[i].name = pid_codes_name[i];
         else
-            obdii->codes[i].name = "UNKNOWN";
+            obdii->codes[block + i].name = "UNKNOWN";
     }
 
     return true;

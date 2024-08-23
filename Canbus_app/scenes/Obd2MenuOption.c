@@ -8,6 +8,9 @@
         - ALL THE FUNCTIONALITIES AS OBDII SCANNER HAS
 */
 
+#define MESSAGE_ERROR 0xF0
+
+// odbii menu casllback
 void obdii_menu_callback(void* context, uint32_t index) {
     App* app = context;
 
@@ -160,6 +163,17 @@ void draw_device_no_connected(App* app) {
         app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
 }
 
+// draw when a message is not recognized
+void draw_send_wrong(App* app) {
+    widget_reset(app->widget);
+
+    widget_add_string_element(
+        app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "TRANSMITION");
+
+    widget_add_string_element(
+        app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "FAILURE");
+}
+
 // Draw the unit medition
 void draw_value(App* app, const char* text) {
     widget_add_string_element(app->widget, 65, 45, AlignCenter, AlignBottom, FontPrimary, text);
@@ -262,62 +276,120 @@ void app_scene_draw_obdii_on_exit(void* context) {
     This scene works to Display the respective PID codes supported by the car
 */
 
-// Scene on enter
-void app_scene_draw_supported_pid_on_enter(void* context) {
-    App* app = context;
+// This line is added to avoid compile errors
+void supported_pid_callback(void* context, uint32_t index);
+
+// Add the initial Elements
+void initial_elements(App* app) {
     submenu_reset(app->submenu);
+    submenu_set_header(app->submenu, "Get Supported PID");
+    submenu_add_item(app->submenu, "Block A", 0x100, supported_pid_callback, app);
+    submenu_add_item(app->submenu, "Block B", 0x101, supported_pid_callback, app);
+    submenu_add_item(app->submenu, "Block C", 0x102, supported_pid_callback, app);
+    submenu_add_item(app->submenu, "Block D", 0x103, supported_pid_callback, app);
+}
+
+// Callback for the supported menu
+void supported_pid_callback(void* context, uint32_t index) {
+    App* app = context;
+
+    UNUSED(app);
+
+    switch(index) {
+    case 0x100:
+        app->flags = BLOCK_A;
+        break;
+
+    case 0x101:
+        app->flags = BLOCK_B;
+        break;
+
+    case 0x102:
+        app->flags = BLOCK_C;
+        break;
+
+    case 0x103:
+        app->flags = BLOCK_D;
+        break;
+
+    default:
+        break;
+    }
+}
+
+// Scene on enter
+void app_scene_menu_supported_pid_on_enter(void* context) {
+    App* app = context;
 
     app->thread = furi_thread_alloc_ex(
         "SupportedPID", 1024, obdii_thread_getting_pid_supported_on_work, app);
     furi_thread_start(app->thread);
 
+    if(scene_manager_get_scene_state(app->scene_manager, app_scene_supported_pid_option) == 1) {
+        scene_manager_set_scene_state(app->scene_manager, app_scene_supported_pid_option, 0);
+        scene_manager_previous_scene(app->scene_manager);
+    } else {
+        initial_elements(app);
+    }
+
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
 }
 
 // Scene on Event
-bool app_scene_draw_supported_pid_on_event(void* context, SceneManagerEvent event) {
+bool app_scene_menu_supported_pid_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
-    UNUSED(event);
-    UNUSED(app);
-    return false;
+    bool consumed = false;
+    if(event.event == DEVICE_NO_CONNECTED) {
+        consumed = true;
+
+        // Go to the scene
+        scene_manager_set_scene_state(app->scene_manager, app_scene_supported_pid_option, 1);
+
+        // Set the scene to know the error
+        scene_manager_set_scene_state(app->scene_manager, app_scene_obdii_warning_scenes, 0);
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_warning_scenes);
+    }
+    if(event.event == MESSAGE_ERROR) {
+        // Set the scene to know the error
+        scene_manager_set_scene_state(app->scene_manager, app_scene_obdii_warning_scenes, 1);
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_warning_scenes);
+    }
+    return consumed;
 }
 
 // Scene on exit
-void app_scene_draw_supported_pid_on_exit(void* context) {
+void app_scene_menu_supported_pid_on_exit(void* context) {
     App* app = context;
     furi_thread_join(app->thread);
+
     furi_thread_free(app->thread);
 
     submenu_reset(app->submenu);
 }
 
 /*
-    Scene to show that is not connected
+    Scene to set if the device wasnt sent okay or the device is not connected
 */
-
-// Scene on enter
-void app_scene_obdii_device_not_connected_on_enter(void* context) {
+//
+void app_scene_obdii_warnings_on_enter(void* context) {
     App* app = context;
 
-    widget_reset(app->widget);
-    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+    uint32_t state =
+        scene_manager_get_scene_state(app->scene_manager, app_scene_obdii_warning_scenes);
 
-    draw_device_no_connected(app);
+    if(state == 0) draw_device_no_connected(app);
+    if(state == 1) draw_send_wrong(app);
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }
 
-// Scene on Event
-bool app_scene_obdii_device_not_connected_on_event(void* context, SceneManagerEvent event) {
-    App* app = context;
-
-    bool consumed = false;
-    UNUSED(app);
+bool app_scene_obdii_warnings_on_event(void* context, SceneManagerEvent event) {
+    UNUSED(context);
     UNUSED(event);
 
-    return consumed;
+    return false;
 }
 
-// Scene on exit
-void app_scene_obdii_device_not_connected_on_exit(void* context) {
+void app_scene_obdii_warnings_on_exit(void* context) {
     App* app = context;
     widget_reset(app->widget);
 }
@@ -328,7 +400,57 @@ void app_scene_obdii_device_not_connected_on_exit(void* context) {
 
 static int32_t obdii_thread_getting_pid_supported_on_work(void* context) {
     App* app = context;
-    UNUSED(app);
+
+    OBDII scanner;
+
+    scanner.bitrate = app->mcp_can->bitRate;
+
+    bool run = pid_init(&scanner);
+
+    bool draw_list = false;
+
+    FuriString* text = app->text;
+
+    app->flags = 0xFF;
+
+    // if the device is not detected the thread send an custom event
+    if(!run) {
+        scene_manager_set_scene_state(app->scene_manager, app_scene_supported_pid_option, 1);
+        view_dispatcher_send_custom_event(app->view_dispatcher, DEVICE_NO_CONNECTED);
+    }
+
+    // if it runs
+    while(run && furi_hal_gpio_read(&gpio_button_back)) {
+        uint32_t flag = app->flags;
+
+        if(flag != 0xFF) {
+            if(pid_get_supported_pid(&scanner, flag)) {
+                draw_list = true;
+
+            } else {
+                view_dispatcher_send_custom_event(app->view_dispatcher, MESSAGE_ERROR);
+                break;
+            }
+        }
+
+        if(draw_list) {
+            submenu_reset(app->submenu);
+            for(uint8_t i = 1; i <= 32; i++) {
+                furi_string_reset(text);
+
+                if(scanner.codes[i + flag].is_supported) {
+                    char* name = scanner.codes[i + flag].name;
+                    furi_string_cat_printf(text, "0x%lx - %s", i + flag, name);
+                    submenu_add_item(
+                        app->submenu, furi_string_get_cstr(text), i, supported_pid_callback, app);
+                }
+            }
+            break;
+        }
+    }
+
+    pid_deinit(&scanner);
+
     return 0;
 }
 
