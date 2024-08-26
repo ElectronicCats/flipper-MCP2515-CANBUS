@@ -62,6 +62,8 @@ bool pid_init(OBDII* obdii) {
 bool pid_show_data(OBDII* obdii, uint8_t pid, uint8_t* data, uint8_t size) {
     MCP2515* CAN = obdii->CAN;
     CANFRAME frame = obdii->frame_to_send;
+    ERROR_CAN ret = ERROR_NOMSG;
+
     frame.buffer[0] = 2;
     frame.buffer[1] = SHOW_DATA;
     frame.buffer[2] = pid;
@@ -70,9 +72,16 @@ bool pid_show_data(OBDII* obdii, uint8_t pid, uint8_t* data, uint8_t size) {
 
     if(send_can_frame(CAN, &frame) != ERROR_OK) return false;
 
-    furi_delay_ms(1);
+    uint16_t time_delay = 0;
 
-    if(read_can_message(CAN, &obdii->frame_to_received) != ERROR_OK) return false;
+    do {
+        ret = read_can_message(CAN, &obdii->frame_to_received);
+        furi_delay_us(1);
+        time_delay++;
+
+    } while((ret != ERROR_OK) && (time_delay < 1500));
+
+    if(ret != ERROR_OK) return false;
 
     for(uint8_t i = 0; i < size; i++) {
         data[i] = obdii->frame_to_received.buffer[i];
@@ -104,13 +113,13 @@ bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* d
 
     if(send_can_frame(CAN, &frame) != ERROR_OK) return false;
 
-    uint8_t time_delay = 0;
+    uint16_t time_delay = 0;
 
     do {
         ret = read_can_message(CAN, &frame);
-        furi_delay_ms(1);
+        furi_delay_us(1);
         time_delay++;
-    } while((ret != ERROR_OK) && (time_delay < 10));
+    } while((ret != ERROR_OK) && (time_delay < 15000));
 
     if(ret != ERROR_OK) return false;
 
