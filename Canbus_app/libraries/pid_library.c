@@ -111,7 +111,14 @@ bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* d
     frame.buffer[1] = mode;
     frame.buffer[2] = pid;
 
-    if(send_can_frame(CAN, &frame) != ERROR_OK) return false;
+    uint8_t counter = 0;
+
+    do {
+        if(send_can_frame(CAN, &frame) == ERROR_OK) break;
+        counter++;
+    } while(counter < 3);
+
+    if(counter == 3) return false;
 
     uint16_t time_delay = 0;
 
