@@ -463,6 +463,7 @@ void app_scene_obdii_delete_dtc_on_exit(void* context) {
     Manual Sender Scene
 */
 
+// Callback for the options
 void callback_manual_pid_sender_options(VariableItem* item) {
     App* app = variable_item_get_context(item);
     uint8_t index = variable_item_get_current_value_index(item);
@@ -532,6 +533,25 @@ bool app_scene_manual_sender_pid_on_event(void* context, SceneManagerEvent event
 void app_scene_manual_sender_pid_on_exit(void* context) {
     App* app = context;
     variable_item_list_reset(app->varList);
+}
+
+/*
+    Scene to show the response in the scene
+*/
+
+void app_scene_response_manual_pid_on_enter(void* context) {
+    UNUSED(context);
+}
+
+bool app_scene_response_manual_pid_on_event(void* context, SceneManagerEvent event) {
+    bool consumed = false;
+    UNUSED(context);
+    UNUSED(event);
+    return consumed;
+}
+
+void app_scene_response_manual_pid_on_exit(void* context) {
+    UNUSED(context);
 }
 
 /*
@@ -755,3 +775,7 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
     }
     return 0;
 }
+
+/*
+    Thread to Send and Received the PID message
+*/
