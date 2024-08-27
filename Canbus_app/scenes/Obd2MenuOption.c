@@ -77,8 +77,10 @@ void app_scene_obdii_menu_on_exit(void* context) {
 /*
     Thread
 */
+
 static int32_t obdii_thread_on_work(void* context);
 static int32_t obdii_thread_getting_pid_supported_on_work(void* context);
+static int32_t obdii_thread_get_dtc_on_work(void* context);
 
 /*
 
@@ -345,6 +347,8 @@ void app_scene_list_supported_pid_on_enter(void* context) {
 
     if(scene_manager_get_scene_state(app->scene_manager, app_scene_list_supported_pid_option) ==
        1) {
+        scene_manager_set_scene_state(app->scene_manager, app_scene_list_supported_pid_option, 0);
+        scene_manager_previous_scene(app->scene_manager);
     } else {
         app->thread = furi_thread_alloc_ex(
             "GetSupportedPID", 1024, obdii_thread_getting_pid_supported_on_work, app);
@@ -362,16 +366,19 @@ bool app_scene_list_supported_pid_on_event(void* context, SceneManagerEvent even
         consumed = true;
 
         // Go to the scene
-        scene_manager_set_scene_state(app->scene_manager, app_scene_supported_pid_option, 1);
+        scene_manager_set_scene_state(app->scene_manager, app_scene_list_supported_pid_option, 0);
 
         // Set the scene to know the error
         scene_manager_set_scene_state(app->scene_manager, app_scene_obdii_warning_scenes, 0);
-        // scene_manager_next_scene(app->scene_manager, app_scene_obdii_warning_scenes);
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_warning_scenes);
     }
     if(event.event == MESSAGE_ERROR) {
+        scene_manager_set_scene_state(app->scene_manager, app_scene_list_supported_pid_option, 0);
+
         // Set the scene to know the error
+        scene_manager_set_scene_state(app->scene_manager, app_scene_list_supported_pid_option, 1);
         scene_manager_set_scene_state(app->scene_manager, app_scene_obdii_warning_scenes, 1);
-        // scene_manager_next_scene(app->scene_manager, app_scene_obdii_warning_scenes);
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_warning_scenes);
     }
     return consumed;
 }
@@ -395,6 +402,8 @@ void app_scene_list_supported_pid_on_exit(void* context) {
 void app_scene_obdii_get_errors_on_enter(void* context) {
     App* app = context;
     widget_reset(app->widget);
+    app->thread = furi_thread_alloc_ex("ShowDTC", 1024, obdii_thread_get_dtc_on_work, app);
+    furi_thread_start(app->thread);
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }
 
@@ -407,6 +416,8 @@ bool app_scene_obdii_get_errors_on_event(void* context, SceneManagerEvent event)
 
 void app_scene_obdii_get_errors_on_exit(void* context) {
     App* app = context;
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
     widget_reset(app->widget);
 }
 
@@ -600,5 +611,18 @@ static int32_t obdii_thread_on_work(void* context) {
     pid_deinit(&scanner);
 
     UNUSED(app);
+    return 0;
+}
+
+/*
+    Thread to request the DTC (Diagnostic Trouble Codes)
+*/
+
+static int32_t obdii_thread_get_dtc_on_work(void* context) {
+    App* app = context;
+    UNUSED(app);
+
+    while(furi_hal_gpio_read(&gpio_button_back)) {
+    }
     return 0;
 }
