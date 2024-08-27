@@ -20,6 +20,7 @@ const char* services[] = {
     "Show Pending DTC",
     "Request Vehicle Information"};
 const uint8_t services_num[] = {0x1, 0x2, 0x3, 0x4};
+static uint8_t selector_pid = 0;
 static uint8_t code_to_send = 0x00;
 
 // odbii menu casllback
@@ -91,6 +92,7 @@ void app_scene_obdii_menu_on_exit(void* context) {
 static int32_t obdii_thread_on_work(void* context);
 static int32_t obdii_thread_getting_pid_supported_on_work(void* context);
 static int32_t obdii_thread_dtc_on_work(void* context);
+static int32_t obdii_thread_response_manual_sender_on_work(void* context);
 
 /*
 
@@ -463,6 +465,14 @@ void app_scene_obdii_delete_dtc_on_exit(void* context) {
     Manual Sender Scene
 */
 
+// Callback for the in
+void callback_manual_input_pid_options(void* context, uint32_t index) {
+    App* app = context;
+    app->sender_selected_item = index;
+
+    if(index == 2) scene_manager_next_scene(app->scene_manager, app_scene_response_pid_option);
+}
+
 // Callback for the options
 void callback_manual_pid_sender_options(VariableItem* item) {
     App* app = variable_item_get_context(item);
@@ -474,8 +484,9 @@ void callback_manual_pid_sender_options(VariableItem* item) {
 
     switch(selected_index) {
     case 0:
-        variable_item_set_current_value_text(item, services[index]);
-        variable_item_set_current_value_index(item, index);
+        selector_pid = index;
+        variable_item_set_current_value_text(item, services[selector_pid]);
+        variable_item_set_current_value_index(item, selector_pid);
 
         break;
 
@@ -500,8 +511,8 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
 
     item = variable_item_list_add(
         app->varList, "Service", 4, callback_manual_pid_sender_options, app);
-    variable_item_set_current_value_index(item, services_num[0]);
-    variable_item_set_current_value_text(item, services[0]);
+    variable_item_set_current_value_index(item, selector_pid);
+    variable_item_set_current_value_text(item, services[selector_pid]);
 
     item =
         variable_item_list_add(app->varList, "PID", 96, callback_manual_pid_sender_options, app);
@@ -512,11 +523,9 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
     item = variable_item_list_add(
-        app->varList, "Multiple Frames", 0, callback_manual_pid_sender_options, app);
-    variable_item_set_current_value_text(item, "OFF");
-
-    item = variable_item_list_add(
         app->varList, "Send Request", 0, callback_manual_pid_sender_options, app);
+
+    variable_item_list_set_enter_callback(app->varList, callback_manual_input_pid_options, app);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
 }
@@ -540,7 +549,12 @@ void app_scene_manual_sender_pid_on_exit(void* context) {
 */
 
 void app_scene_response_manual_pid_on_enter(void* context) {
-    UNUSED(context);
+    App* app = context;
+    text_box_reset(app->textBox);
+    app->thread =
+        furi_thread_alloc_ex("ManualPID", 1024, obdii_thread_response_manual_sender_on_work, app);
+    furi_thread_start(app->thread);
+    view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
 }
 
 bool app_scene_response_manual_pid_on_event(void* context, SceneManagerEvent event) {
@@ -551,7 +565,10 @@ bool app_scene_response_manual_pid_on_event(void* context, SceneManagerEvent eve
 }
 
 void app_scene_response_manual_pid_on_exit(void* context) {
-    UNUSED(context);
+    App* app = context;
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
+    text_box_reset(app->textBox);
 }
 
 /*
@@ -779,3 +796,11 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
 /*
     Thread to Send and Received the PID message
 */
+
+static int32_t obdii_thread_response_manual_sender_on_work(void* context) {
+    App* app = context;
+
+    UNUSED(app);
+
+    return 0;
+}
