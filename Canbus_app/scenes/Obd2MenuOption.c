@@ -422,6 +422,29 @@ void app_scene_obdii_get_errors_on_exit(void* context) {
 }
 
 /*
+    Scene to Delete DTC en car
+*/
+
+void app_scene_obdii_delete_dtc_on_enter(void* context) {
+    App* app = context;
+    UNUSED(app);
+}
+
+bool app_scene_obdii_delete_dtc_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    bool consumed = false;
+    UNUSED(app);
+    UNUSED(event);
+
+    return consumed;
+}
+
+void app_scene_obdii_delete_dtc_on_exit(void* context) {
+    App* app = context;
+    UNUSED(app);
+}
+
+/*
     Manual Sender Scene
 */
 void app_scene_manual_sender_pid_on_enter(void* context) {
