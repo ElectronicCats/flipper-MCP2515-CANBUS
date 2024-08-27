@@ -8,7 +8,19 @@
         - ALL THE FUNCTIONALITIES AS OBDII SCANNER HAS
 */
 
+// This define is for the costum event
 #define MESSAGE_ERROR 0xF0
+
+// These arrays are used in the manual sender PID
+const char* services[] = {
+    "Show Data",
+    "Show Freeze Data",
+    "Show Storage DTC",
+    "Clear Storage DTC",
+    "Show Pending DTC",
+    "Request Vehicle Information"};
+const uint8_t services_num[] = {0x1, 0x2, 0x3, 0x4};
+static uint8_t code_to_send = 0x00;
 
 // odbii menu casllback
 void obdii_menu_callback(void* context, uint32_t index) {
@@ -30,13 +42,11 @@ void obdii_menu_callback(void* context, uint32_t index) {
         break;
 
     case 3:
-        // scene_manager_next_scene(app->scene_manager,
-        // app_scene_draw_obii_option);
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_get_errors_option);
         break;
 
     case 4:
-        // scene_manager_next_scene(app->scene_manager,
-        // app_scene_draw_obii_option);
+        scene_manager_next_scene(app->scene_manager, app_scene_manual_sender_pid_option);
         break;
 
     default:
@@ -427,7 +437,10 @@ void app_scene_obdii_get_errors_on_exit(void* context) {
 
 void app_scene_obdii_delete_dtc_on_enter(void* context) {
     App* app = context;
-    UNUSED(app);
+    widget_reset(app->widget);
+    app->thread = furi_thread_alloc_ex("ShowDTC", 1024, obdii_thread_dtc_on_work, app);
+    furi_thread_start(app->thread);
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }
 
 bool app_scene_obdii_delete_dtc_on_event(void* context, SceneManagerEvent event) {
@@ -441,15 +454,70 @@ bool app_scene_obdii_delete_dtc_on_event(void* context, SceneManagerEvent event)
 
 void app_scene_obdii_delete_dtc_on_exit(void* context) {
     App* app = context;
-    UNUSED(app);
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
+    widget_reset(app->widget);
 }
 
 /*
     Manual Sender Scene
 */
+
+void callback_manual_pid_sender_options(VariableItem* item) {
+    App* app = variable_item_get_context(item);
+    uint8_t index = variable_item_get_current_value_index(item);
+    uint8_t selected_index = variable_item_list_get_selected_item_index(app->varList);
+    FuriString* text = app->text;
+
+    furi_string_reset(text);
+
+    switch(selected_index) {
+    case 0:
+        variable_item_set_current_value_text(item, services[index]);
+        variable_item_set_current_value_index(item, index);
+
+        break;
+
+    case 1:
+        code_to_send = index;
+        variable_item_set_current_value_index(item, code_to_send);
+        furi_string_cat_printf(text, "0x%x", code_to_send);
+        variable_item_set_current_value_text(item, furi_string_get_cstr(text));
+        break;
+
+    default:
+        break;
+    }
+}
+
 void app_scene_manual_sender_pid_on_enter(void* context) {
     App* app = context;
-    UNUSED(app);
+    FuriString* text = app->text;
+    VariableItem* item;
+
+    variable_item_list_reset(app->varList);
+
+    item = variable_item_list_add(
+        app->varList, "Service", 4, callback_manual_pid_sender_options, app);
+    variable_item_set_current_value_index(item, services_num[0]);
+    variable_item_set_current_value_text(item, services[0]);
+
+    item =
+        variable_item_list_add(app->varList, "PID", 96, callback_manual_pid_sender_options, app);
+    variable_item_set_current_value_index(item, code_to_send);
+
+    furi_string_reset(text);
+    furi_string_cat_printf(text, "0x%x", code_to_send);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(text));
+
+    item = variable_item_list_add(
+        app->varList, "Multiple Frames", 0, callback_manual_pid_sender_options, app);
+    variable_item_set_current_value_text(item, "OFF");
+
+    item = variable_item_list_add(
+        app->varList, "Send Request", 0, callback_manual_pid_sender_options, app);
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
 }
 
 bool app_scene_manual_sender_pid_on_event(void* context, SceneManagerEvent event) {
@@ -463,7 +531,7 @@ bool app_scene_manual_sender_pid_on_event(void* context, SceneManagerEvent event
 
 void app_scene_manual_sender_pid_on_exit(void* context) {
     App* app = context;
-    UNUSED(app);
+    variable_item_list_reset(app->varList);
 }
 
 /*
