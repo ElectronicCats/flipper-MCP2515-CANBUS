@@ -48,11 +48,13 @@ void play_data_frames(void* context) {
                     CANFRAME frame_to_send = {0};  // Initialize all fields to 0
                     char *saveptr;
                     char *token;
-                    int time_hop = 0;
+                    int time_to_next_frame = 0;
                     float timestamp;
 
+                    UNUSED(timestamp);
+
                     // Timestamp
-                    token = strtok_r(line, "() ", &saveptr);
+                    token = strtok_r(buffer, "() ", &saveptr);
                     if (!token) return;
                     timestamp = atof(token);
 
@@ -75,12 +77,13 @@ void play_data_frames(void* context) {
 
                     token = strtok_r(NULL, ",", &saveptr);
                     if (token) {
-                        time_hop = atoi(token);
+                        time_to_next_frame = atoi(token);
                     }                    
 
                     if (debug == ERROR_OK) {
                         error = send_can_frame(app->mcp_can, app->frame_to_send);
-                        furi_delay_ms(500);
+
+                        time_to_next_frame == 0?furi_delay_ms(500):furi_delay_ms(time_to_next_frame);
 
                         if (error != ERROR_OK)
                         scene_manager_handle_custom_event(app->scene_manager, PLAY_ERROR);
