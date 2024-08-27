@@ -26,8 +26,7 @@ void obdii_menu_callback(void* context, uint32_t index) {
         break;
 
     case 2:
-        // scene_manager_next_scene(app->scene_manager,
-        // app_scene_draw_obii_option);
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_get_errors_option);
         break;
 
     case 3:
@@ -387,6 +386,28 @@ void app_scene_list_supported_pid_on_exit(void* context) {
     }
 
     submenu_reset(app->submenu);
+}
+
+/*
+    Scene to watch the errors in the car
+*/
+
+void app_scene_obdii_get_errors_on_enter(void* context) {
+    App* app = context;
+    widget_reset(app->widget);
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+}
+
+bool app_scene_obdii_get_errors_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    UNUSED(app);
+    UNUSED(event);
+    return false;
+}
+
+void app_scene_obdii_get_errors_on_exit(void* context) {
+    App* app = context;
+    widget_reset(app->widget);
 }
 
 /*
