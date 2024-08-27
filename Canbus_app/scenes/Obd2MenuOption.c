@@ -80,7 +80,7 @@ void app_scene_obdii_menu_on_exit(void* context) {
 
 static int32_t obdii_thread_on_work(void* context);
 static int32_t obdii_thread_getting_pid_supported_on_work(void* context);
-static int32_t obdii_thread_get_dtc_on_work(void* context);
+static int32_t obdii_thread_dtc_on_work(void* context);
 
 /*
 
@@ -402,7 +402,7 @@ void app_scene_list_supported_pid_on_exit(void* context) {
 void app_scene_obdii_get_errors_on_enter(void* context) {
     App* app = context;
     widget_reset(app->widget);
-    app->thread = furi_thread_alloc_ex("ShowDTC", 1024, obdii_thread_get_dtc_on_work, app);
+    app->thread = furi_thread_alloc_ex("ShowDTC", 1024, obdii_thread_dtc_on_work, app);
     furi_thread_start(app->thread);
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }
@@ -419,6 +419,28 @@ void app_scene_obdii_get_errors_on_exit(void* context) {
     furi_thread_join(app->thread);
     furi_thread_free(app->thread);
     widget_reset(app->widget);
+}
+
+/*
+    Manual Sender Scene
+*/
+void app_scene_manual_sender_pid_on_enter(void* context) {
+    App* app = context;
+    UNUSED(app);
+}
+
+bool app_scene_manual_sender_pid_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    bool consumed = false;
+    UNUSED(app);
+    UNUSED(event);
+
+    return consumed;
+}
+
+void app_scene_manual_sender_pid_on_exit(void* context) {
+    App* app = context;
+    UNUSED(app);
 }
 
 /*
@@ -618,11 +640,27 @@ static int32_t obdii_thread_on_work(void* context) {
     Thread to request the DTC (Diagnostic Trouble Codes)
 */
 
-static int32_t obdii_thread_get_dtc_on_work(void* context) {
+static int32_t obdii_thread_dtc_on_work(void* context) {
     App* app = context;
     UNUSED(app);
 
+    OBDII scanner;
+    pid_init(&scanner);
+
+    uint8_t data[] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+    UNUSED(data);
+
     while(furi_hal_gpio_read(&gpio_button_back)) {
+        /*if(furi_hal_gpio_read(&gpio_button_ok)) {
+            if(pid_manual_request(&scanner, SHOW_STORAGE_DTC, 0X00, data)) {
+                log_info("Get DTC");
+            } else {
+                log_exception("Error");
+            }
+        }
+
+        furi_delay_ms(1);*/
     }
     return 0;
 }

@@ -99,6 +99,8 @@ bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* d
 
     frame.data_lenght = 8;
 
+    log_info("Here 1");
+
     if(mode == CLEAR_STORAGE_DTC) {
         frame.buffer[0] = 01;
         frame.buffer[1] = mode;
@@ -106,6 +108,8 @@ bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* d
         if(send_can_frame(CAN, &frame) != ERROR_OK) return false;
         return true;
     }
+
+    log_info("Here 2");
 
     frame.buffer[0] = 02;
     frame.buffer[1] = mode;
@@ -120,6 +124,8 @@ bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* d
 
     if(counter == 3) return false;
 
+    log_info("Here ");
+
     uint16_t time_delay = 0;
 
     do {
@@ -129,6 +135,8 @@ bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* d
     } while((ret != ERROR_OK) && (time_delay < 15000));
 
     if(ret != ERROR_OK) return false;
+
+    log_info("Here 3");
 
     for(uint8_t i = 0; i < 8; i++)
         data[i] = frame.buffer[i];
