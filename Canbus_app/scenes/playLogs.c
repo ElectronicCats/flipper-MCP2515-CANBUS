@@ -12,7 +12,7 @@ uint32_t hex_to_int(const char* hex_str) {
     return (uint32_t)result;
 }
 
-void send_data_frame(void* context) {
+void play_data_frames(void* context) {
 
     App* app = context;
 
@@ -20,10 +20,6 @@ void send_data_frame(void* context) {
     ERROR_CAN debug = ERROR_OK;
     ERROR_CAN error = ERROR_OK;
     debug = mcp2515_init(app->mcp_can);
-
-    // Storage* storage;
-    // DialogsApp* dialogs;
-    // File* log_file;
 
     FuriString* predefined_filepath = furi_string_alloc_set_str(PATHAPP);
     FuriString* selected_filepath = furi_string_alloc();
@@ -35,9 +31,6 @@ void send_data_frame(void* context) {
 
     if(storage_file_open(
             app->log_file, furi_string_get_cstr(selected_filepath), FSAM_READ, FSOM_OPEN_EXISTING)) {
-
-            // app->flag_tx_file = true;
-            // app->test = 1;
 
             char buffer[256];
             size_t buffer_index = 0;
@@ -55,10 +48,13 @@ void send_data_frame(void* context) {
                     CANFRAME frame_to_send = {0};  // Initialize all fields to 0
                     char *saveptr;
                     char *token;
+                    int time_hop = 0;
+                    float timestamp;
 
-                    // Skip the timestamp
-                    token = strtok_r(buffer, " ", &saveptr);
+                    // Timestamp
+                    token = strtok_r(line, "() ", &saveptr);
                     if (!token) return;
+                    timestamp = atof(token);
 
                     // CAN bus ID
                     token = strtok_r(NULL, " ", &saveptr);
@@ -76,6 +72,11 @@ void send_data_frame(void* context) {
                         if (!token) break;
                         frame_to_send.buffer[i] = (uint8_t)hex_to_int(token);
                     }
+
+                    token = strtok_r(NULL, ",", &saveptr);
+                    if (token) {
+                        time_hop = atoi(token);
+                    }                    
 
                     if (debug == ERROR_OK) {
                         error = send_can_frame(app->mcp_can, app->frame_to_send);
@@ -99,15 +100,13 @@ void send_data_frame(void* context) {
         dialog_message_show_storage_error(app->dialogs, "Cannot open File");
     }
     storage_file_close(app->log_file);
-    //app->test = 0;
+
     furi_string_free(selected_filepath);
     furi_string_free(predefined_filepath);
 
     // furi_hal_gpio_write(pin_led, true);
     // furi_delay_ms(50);
     // furi_hal_gpio_write(pin_led, false);
-
-    // app->flag_file = false;
 
 }
 
