@@ -1,10 +1,17 @@
 #include "../app_user.h"
 #define TAG "PLAY "
+#define MAX_UNIQUE_IDS 1000
 
 typedef enum {
   PLAY_OK,
   PLAY_ERROR,
 } player_status;
+
+typedef enum {
+  TIMING_TIMESTAMP,
+  TIMING_CUSTOM,
+  TIMING_DEFAULT,
+} timing;
 
 uint32_t hex_to_int(const char* hex_str) {
     unsigned int result = 0;
@@ -37,6 +44,61 @@ void play_data_frames(void* context) {
             size_t bytes_read;
             char c;
 
+            uint32_t previous_timing = 0;
+            uint32_t current_timing;
+
+            unsigned int unique_ids[MAX_UNIQUE_IDS] = {0};
+            int unique_id_count = 0;
+
+            // Primera pasada: recolectar IDs únicos
+            while ((bytes_read = storage_file_read(app->log_file, &c, 1)) > 0) {
+                if (c == '\n' || buffer_index >= 256 - 1) {
+                    buffer[buffer_index] = '\0';
+
+                    char *saveptr;
+                    char *token;
+
+                    // Pass timestamp
+                    token = strtok_r(buffer, "() ", &saveptr);
+                    if (!token) continue;
+
+                    // Get ID
+                    token = strtok_r(NULL, " ", &saveptr);
+                    if (!token) continue;
+
+                    uint32_t can_id = hex_to_int(token);
+
+                    // Add ID to unique ID list if not present
+                    bool id_exists = false;
+                    for (int i = 0; i < unique_id_count; i++) {
+                        if (unique_ids[i] == can_id) {
+                            id_exists = true;
+                            break;
+                        }
+                    }
+                    if (!id_exists && unique_id_count < MAX_UNIQUE_IDS) {
+                        unique_ids[unique_id_count++] = can_id;
+                    }
+
+                    buffer_index = 0;
+                } else {
+                    buffer[buffer_index++] = c;
+                }
+            }
+
+            // Print unique IDs
+            FURI_LOG_I(TAG, "IDs únicos encontrados:");
+            for (int i = 0; i < unique_id_count; i++) {
+                FURI_LOG_I(TAG, "0x%X", unique_ids[i]);
+            }
+            FURI_LOG_I(TAG, "Total de IDs únicos: %d", unique_id_count);
+
+            // Restart file
+            storage_file_seek(app->log_file, 0, true);
+            
+
+            buffer_index = 0;
+
             while ((bytes_read = storage_file_read(app->log_file, &c, 1)) > 0) { // && model->flag_signal) {
                 if (c == '\n' || buffer_index >= 256 - 1) {
                     buffer[buffer_index] = '\0';
@@ -57,6 +119,8 @@ void play_data_frames(void* context) {
                     token = strtok_r(buffer, "() ", &saveptr);
                     if (!token) return;
                     timestamp = atof(token);
+                    current_timing = timestamp - previous_timing;
+                    previous_timing = timestamp;
 
                     // CAN bus ID
                     token = strtok_r(NULL, " ", &saveptr);
@@ -83,7 +147,18 @@ void play_data_frames(void* context) {
                     if (debug == ERROR_OK) {
                         error = send_can_frame(app->mcp_can, app->frame_to_send);
 
-                        time_to_next_frame == 0?furi_delay_ms(500):furi_delay_ms(time_to_next_frame);
+                        // TODO: choose TIMING
+                        switch(2) {
+                            case TIMING_TIMESTAMP:
+                                furi_delay_ms((uint32_t)(current_timing*1000));
+                                break;
+                            case TIMING_CUSTOM:
+                                furi_delay_ms(time_to_next_frame);
+                                break;                            
+                            case TIMING_DEFAULT:
+                                furi_delay_ms(500);
+                                break;                           
+                        }
 
                         if (error != ERROR_OK)
                         scene_manager_handle_custom_event(app->scene_manager, PLAY_ERROR);
