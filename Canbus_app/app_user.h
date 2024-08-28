@@ -116,6 +116,12 @@ typedef enum {
     ReturnEvent
 } SenderEvents;
 
+// These are the player events
+typedef enum {
+    ChooseTimingEvent,
+    ReturnTimingEvent
+} PlayerEvents;
+
 // These are the options to save
 typedef enum {
     NoSave,

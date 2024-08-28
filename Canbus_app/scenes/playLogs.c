@@ -1,6 +1,6 @@
 #include "../app_user.h"
 #define TAG "PLAY "
-#define MAX_UNIQUE_IDS 1000
+#define MAX_UNIQUE_IDS 100
 
 typedef enum {
   PLAY_OK,
@@ -12,6 +12,18 @@ typedef enum {
   TIMING_CUSTOM,
   TIMING_DEFAULT,
 } timing;
+
+// Timing configuration
+const uint8_t config_timing_values[] = {
+    0x00,
+    0x01,
+    0x02,
+};
+const char* const config_timing_names[] = {
+    "DEFAULT",
+    "CUSTOM",
+    "TIMESTAMP",
+};
 
 uint32_t hex_to_int(const char* hex_str) {
     unsigned int result = 0;
@@ -188,24 +200,98 @@ void play_data_frames(void* context) {
 
 }
 
+// Options Callback
+void callback_player_options(VariableItem* item) {
+    App* app = variable_item_get_context(item);
+    uint8_t selected_index = variable_item_list_get_selected_item_index(app->varList);
+    uint8_t index_item = variable_item_get_current_value_index(item);
+
+    switch(selected_index) {
+    case TIMING_DEFAULT:
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "%u", index_item);
+        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+        app->frame_to_send->data_lenght = index_item;
+        break;
+    case TIMING_CUSTOM:
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "%u", index_item);
+        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+        app->frame_to_send->req = index_item;
+        break;
+    case TIMING_TIMESTAMP:
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "%u", index_item);
+        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+        app->frame_to_send->req = index_item;
+        break;
+    default:
+        break;
+    }
+}
 void app_scene_play_logs_on_enter(void* context) {
     App* app = context;
-    text_box_set_font(app->textBox, TextBoxFontText);
-    text_box_reset(app->textBox);
-    view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
-    text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
+    VariableItem* item;
+
+    // Timing options
+    item = variable_item_list_add(
+        app->varList,
+        "Timing",
+        COUNT_OF(config_timing_values),
+        callback_player_options,
+        app);
+    uint8_t config_timing_index = 0;
+    variable_item_set_current_value_index(item, config_timing_index);
+    variable_item_set_current_value_text(item, config_timing_names[config_timing_index]);
+
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "Wait to send LOG file...");
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+
+    // TODO: launch select timing options
+
+    //app->thread = furi_thread_alloc_ex("Sender_on_work", 1024, sender_on_work, app);
+    //furi_thread_start(app->thread);
 }
 
 bool app_scene_play_logs_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
-    UNUSED(app);
-    UNUSED(event);
+
+    if(event.type == SceneManagerEventTypeCustom) {
+        switch(event.event) {
+        case PLAY_OK:
+            widget_reset(app->widget);
+            widget_add_string_element(
+                app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "LOG PLAYBACK OK");
+            break;
+
+        case PLAY_ERROR:
+            widget_reset(app->widget);
+            widget_add_string_element(
+                app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "LOG PLAYBACK ERROR");
+            break;
+
+        case DEVICE_NO_CONNECTED:
+            widget_reset(app->widget);
+
+            widget_add_string_element(
+                app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "DEVICE NO");
+
+            widget_add_string_element(
+                app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
+            break;
+
+        default:
+            break;
+        }
+    }
     return consumed;
 }
 
 void app_scene_play_logs_on_exit(void* context) {
     App* app = context;
-    furi_string_reset(app->text);
-    text_box_reset(app->textBox);
+    variable_item_list_reset(app->varList);
 }
