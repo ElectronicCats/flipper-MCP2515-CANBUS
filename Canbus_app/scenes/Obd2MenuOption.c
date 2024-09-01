@@ -12,15 +12,10 @@
 #define MESSAGE_ERROR 0xF0
 
 // These arrays are used in the manual sender PID
-const char* services[] = {
-    "Show Data",
-    "Show Freeze Data",
-    "Show Storage DTC",
-    "Clear Storage DTC",
-    "Show Pending DTC",
-    "Request Vehicle Information"};
-const uint8_t services_num[] = {0x1, 0x2, 0x3, 0x4};
-static uint8_t selector_pid = 0;
+const uint8_t services_num[] = {0x1, 0x2, 0x3, 0x4, 0x05, 0x6, 0x7, 0x8, 0x9, 0xA};
+static uint8_t byte_values = 0;
+static uint8_t service_selector = 0;
+static uint8_t service_to_send = 0x1;
 static uint8_t code_to_send = 0x00;
 
 // odbii menu casllback
@@ -470,6 +465,18 @@ void callback_manual_input_pid_options(void* context, uint32_t index) {
     App* app = context;
     app->sender_selected_item = index;
 
+    if(index == 0) {
+        scene_manager_set_scene_state(
+            app->scene_manager, app_scene_input_manual_pid_option, index);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_manual_pid_option);
+    }
+
+    if(index == 1) {
+        scene_manager_set_scene_state(
+            app->scene_manager, app_scene_input_manual_pid_option, index);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_manual_pid_option);
+    }
+
     if(index == 2) scene_manager_next_scene(app->scene_manager, app_scene_response_pid_option);
 }
 
@@ -484,9 +491,11 @@ void callback_manual_pid_sender_options(VariableItem* item) {
 
     switch(selected_index) {
     case 0:
-        selector_pid = index;
-        variable_item_set_current_value_text(item, services[selector_pid]);
-        variable_item_set_current_value_index(item, selector_pid);
+        furi_string_cat_printf(text, "0x%x", services_num[index]);
+        variable_item_set_current_value_text(item, furi_string_get_cstr(text));
+        variable_item_set_current_value_index(item, index);
+        service_to_send = services_num[index];
+        service_selector = index;
 
         break;
 
@@ -502,6 +511,7 @@ void callback_manual_pid_sender_options(VariableItem* item) {
     }
 }
 
+// Scene on enter
 void app_scene_manual_sender_pid_on_enter(void* context) {
     App* app = context;
     FuriString* text = app->text;
@@ -509,11 +519,16 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
 
     variable_item_list_reset(app->varList);
 
-    item = variable_item_list_add(
-        app->varList, "Service", 4, callback_manual_pid_sender_options, app);
-    variable_item_set_current_value_index(item, selector_pid);
-    variable_item_set_current_value_text(item, services[selector_pid]);
+    // First item to set
+    furi_string_reset(text);
+    furi_string_cat_printf(text, "0x%x", service_to_send);
 
+    item = variable_item_list_add(
+        app->varList, "Service", 10, callback_manual_pid_sender_options, app);
+    variable_item_set_current_value_index(item, service_selector);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(text));
+
+    // Second Item to set
     item =
         variable_item_list_add(app->varList, "PID", 96, callback_manual_pid_sender_options, app);
     variable_item_set_current_value_index(item, code_to_send);
@@ -522,6 +537,7 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
     furi_string_cat_printf(text, "0x%x", code_to_send);
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
+    // Third item to set
     item = variable_item_list_add(
         app->varList, "Send Request", 0, callback_manual_pid_sender_options, app);
 
@@ -542,6 +558,61 @@ bool app_scene_manual_sender_pid_on_event(void* context, SceneManagerEvent event
 void app_scene_manual_sender_pid_on_exit(void* context) {
     App* app = context;
     variable_item_list_reset(app->varList);
+}
+
+/*
+    Scene to set the pid code
+*/
+
+void input_manual_pid(void* context) {
+    App* app = context;
+    uint32_t state =
+        scene_manager_get_scene_state(app->scene_manager, app_scene_input_manual_pid_option);
+
+    switch(state) {
+    case 0:
+        service_to_send = byte_values;
+        view_dispatcher_send_custom_event(app->view_dispatcher, ReturnEvent);
+        break;
+
+    case 1:
+        code_to_send = byte_values;
+        break;
+
+    default:
+        break;
+    }
+}
+
+void app_scene_input_manual_set_pid_on_enter(void* context) {
+    App* app = context;
+    ByteInput* scene = app->input_byte_value;
+
+    byte_input_set_result_callback(scene, input_manual_pid, NULL, app, &byte_values, 1);
+    byte_input_set_header_text(scene, "SET SERVICE");
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, InputByteView);
+}
+
+bool app_scene_input_manual_set_pid_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    bool consumed = false;
+
+    if(event.type == SceneManagerEventTypeCustom) {
+        switch(event.event) {
+        case ReturnEvent:
+            scene_manager_previous_scene(app->scene_manager);
+            break;
+
+        default:
+            break;
+        }
+    }
+    return consumed;
+}
+
+void app_scene_input_manual_set_pid_on_exit(void* context) {
+    UNUSED(context);
 }
 
 /*
