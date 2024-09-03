@@ -31,7 +31,7 @@ uint32_t hex_to_int(const char* hex_str) {
     return (uint32_t)result;
 }
 
-void play_data_frames(void* context) {
+void play_data_frames(void* context, int frame_interval) {
 
     App* app = context;
 
@@ -160,7 +160,7 @@ void play_data_frames(void* context) {
                         error = send_can_frame(app->mcp_can, app->frame_to_send);
 
                         // TODO: choose TIMING
-                        switch(2) {
+                        switch(frame_interval) {
                             case TIMING_TIMESTAMP:
                                 furi_delay_ms((uint32_t)(current_timing*1000));
                                 break;
@@ -200,36 +200,25 @@ void play_data_frames(void* context) {
 
 }
 
-// Options Callback
-void callback_player_options(VariableItem* item) {
-    App* app = variable_item_get_context(item);
-    uint8_t selected_index = variable_item_list_get_selected_item_index(app->varList);
-    uint8_t index_item = variable_item_get_current_value_index(item);
-
-    switch(selected_index) {
-    case TIMING_DEFAULT:
-        furi_string_reset(app->text);
-        furi_string_cat_printf(app->text, "%u", index_item);
-        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-        app->frame_to_send->data_lenght = index_item;
-        break;
-    case TIMING_CUSTOM:
-        furi_string_reset(app->text);
-        furi_string_cat_printf(app->text, "%u", index_item);
-        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-        app->frame_to_send->req = index_item;
-        break;
-    case TIMING_TIMESTAMP:
-        furi_string_reset(app->text);
-        furi_string_cat_printf(app->text, "%u", index_item);
-        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-        app->frame_to_send->req = index_item;
-        break;
-    default:
-        break;
-    }
+// Option callback using button OK
+void callback_input_player_options(void* context, uint32_t index) {
+    App* app = context;
+    UNUSED(index);
+    //scene_manager_next_scene(app->scene_manager, app_scene_send_message);
+    play_data_frames(app, app->config_timing_index);
 }
-void app_scene_play_logs_on_enter(void* context) {
+
+// Options Callback
+void callback_player_timing_options(VariableItem* item) {
+    App* app = variable_item_get_context(item);
+
+    uint8_t index = variable_item_get_current_value_index(item);
+    variable_item_set_current_value_text(item, config_timing_names[index]);
+    
+    app->config_timing_index = index;
+
+}
+void app_scene_player_on_enter(void* context) {
     App* app = context;
     VariableItem* item;
 
@@ -238,17 +227,21 @@ void app_scene_play_logs_on_enter(void* context) {
         app->varList,
         "Timing",
         COUNT_OF(config_timing_values),
-        callback_player_options,
+        callback_player_timing_options,
         app);
     uint8_t config_timing_index = 0;
     variable_item_set_current_value_index(item, config_timing_index);
     variable_item_set_current_value_text(item, config_timing_names[config_timing_index]);
+    
+    variable_item_list_set_enter_callback(app->varList, callback_input_player_options, app);
+    //variable_item_list_set_selected_item(app->varList, app->player_selected_item);
+    view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
 
-    widget_reset(app->widget);
-    widget_add_string_element(
-        app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "Wait to send LOG file...");
+    // widget_reset(app->widget);
+    // widget_add_string_element(
+    //     app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "Wait to send LOG file...");
 
-    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+    // view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 
     // TODO: launch select timing options
 
@@ -256,7 +249,7 @@ void app_scene_play_logs_on_enter(void* context) {
     //furi_thread_start(app->thread);
 }
 
-bool app_scene_play_logs_on_event(void* context, SceneManagerEvent event) {
+bool app_scene_player_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
 
@@ -291,7 +284,7 @@ bool app_scene_play_logs_on_event(void* context, SceneManagerEvent event) {
     return consumed;
 }
 
-void app_scene_play_logs_on_exit(void* context) {
+void app_scene_player_on_exit(void* context) {
     App* app = context;
     variable_item_list_reset(app->varList);
 }

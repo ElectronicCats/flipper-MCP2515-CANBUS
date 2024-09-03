@@ -65,6 +65,8 @@ typedef struct {
     uint32_t sniffer_index;
     uint32_t sniffer_index_aux;
 
+    uint8_t config_timing_index;
+
     uint8_t num_of_devices;
     uint8_t sender_selected_item;
     uint8_t sender_id_compose[4];
