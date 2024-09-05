@@ -200,6 +200,13 @@ void play_data_frames(void* context, int frame_interval) {
 
 }
 
+static uint32_t callback_back_navigation_submenu(void* _context) {
+    App* app = _context;
+    UNUSED(app);
+    //view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
+    return SubmenuView;
+}
+
 // Option callback using button OK
 void callback_input_player_options(void* context, uint32_t index) {
     App* app = context;
@@ -218,6 +225,7 @@ void callback_player_timing_options(VariableItem* item) {
     app->config_timing_index = index;
 
 }
+
 void app_scene_player_on_enter(void* context) {
     App* app = context;
     VariableItem* item;
@@ -235,6 +243,9 @@ void app_scene_player_on_enter(void* context) {
     
     variable_item_list_set_enter_callback(app->varList, callback_input_player_options, app);
     //variable_item_list_set_selected_item(app->varList, app->player_selected_item);
+    view_set_previous_callback(
+        variable_item_list_get_view(app->varList),
+        callback_back_navigation_submenu);
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
 
     // widget_reset(app->widget);
@@ -243,10 +254,13 @@ void app_scene_player_on_enter(void* context) {
 
     // view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 
-    // TODO: launch select timing options
-
     //app->thread = furi_thread_alloc_ex("Sender_on_work", 1024, sender_on_work, app);
     //furi_thread_start(app->thread);
+}
+
+void app_scene_player_on_exit(void* context) {
+    App* app = context;
+    variable_item_list_reset(app->varList);
 }
 
 bool app_scene_player_on_event(void* context, SceneManagerEvent event) {
@@ -282,9 +296,4 @@ bool app_scene_player_on_event(void* context, SceneManagerEvent event) {
         }
     }
     return consumed;
-}
-
-void app_scene_player_on_exit(void* context) {
-    App* app = context;
-    variable_item_list_reset(app->varList);
 }
