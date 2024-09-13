@@ -173,15 +173,10 @@ static int32_t worker_sniffing(void* context) {
         view_dispatcher_send_custom_event(app->view_dispatcher, DEVICE_NO_CONNECTED);
     }
 
-    while(run) {
+    while(run && furi_hal_gpio_read(&gpio_button_back)) {
         bool new = true;
 
-        uint32_t events =
-            furi_thread_flags_wait(WORKER_ALL_RX_EVENTS, FuriFlagWaitAny, FuriWaitForever);
-        if(events & WorkerflagStop) break;
-        if(events & WorkerflagReceived) {
-            read_can_message(mcp_can, &frame);
-
+        if(read_can_message(mcp_can, &frame) == ERROR_OK) {
             if(first_address) {
                 app->frameArray[num_of_devices] = frame;
                 app->times[num_of_devices] = 0;
