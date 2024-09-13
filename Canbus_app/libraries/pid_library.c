@@ -55,6 +55,10 @@ bool pid_init(OBDII* obdii) {
     obdii->frame_to_send.canId = ECU_REQUEST_ID;
     obdii->frame_to_send.data_lenght = 8;
 
+    for(uint8_t i = 0; i < 8; i++) {
+        obdii->frame_to_send.buffer[i] = 0;
+    }
+
     return true;
 }
 
@@ -91,6 +95,7 @@ bool pid_show_data(OBDII* obdii, uint8_t pid, uint8_t* data, uint8_t size) {
 }
 
 // It works to send a mode in the pid
+/*
 bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* data) {
     MCP2515* CAN = obdii->CAN;
     CANFRAME frame = obdii->frame_to_send;
@@ -143,12 +148,65 @@ bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* d
 
     return true;
 }
+*/
+
+bool pid_manual_request(
+    OBDII* obdii,
+    uint32_t id,
+    pid_services mode,
+    uint8_t pid,
+    CANFRAME* frames_to_read,
+    uint8_t lenght) {
+    MCP2515* CAN = obdii->CAN;
+    CANFRAME frame = obdii->frame_to_send;
+    ERROR_CAN ret = ERROR_OK;
+
+    frame.canId = id;
+
+    frame.buffer[0] = 2;
+    frame.buffer[1] = mode;
+    frame.buffer[2] = pid;
+
+    if(mode == CLEAR_STORAGE_DTC || mode == REQUEST_VEHICLE_INFORMATION) frame.buffer[2] = 0;
+
+    uint32_t time_delay = 0;
+
+    do {
+        ret = send_can_frame(CAN, &frame);
+
+        furi_delay_ms(1);
+
+        time_delay++;
+
+    } while((ret != ERROR_OK) && (time_delay < 50));
+
+    if(ret != ERROR_OK) return false;
+
+    furi_delay_ms(10);
+
+    for(uint8_t i = 0; i < lenght; i++) {
+        time_delay = 0;
+        do {
+            ret = read_can_message(CAN, &(frames_to_read[i]));
+            furi_delay_ms(1);
+            time_delay++;
+        } while((ret != ERROR_OK) && (time_delay < 60));
+
+        if(ret != ERROR_OK) break;
+    }
+
+    return true;
+}
 
 // It works to get the supported datas
 bool pid_get_supported_pid(OBDII* obdii, uint8_t block) {
     uint8_t data[8];
 
-    if(!pid_manual_request(obdii, SHOW_DATA, block, data)) return false;
+    //if(!pid_manual_request(obdii, SHOW_DATA, block, data)) return false;
+
+    return false;
+
+    // At the moment going to ignore the next code
 
     obdii->codes[block].pid_num = block;
     obdii->codes[block].is_supported = true;

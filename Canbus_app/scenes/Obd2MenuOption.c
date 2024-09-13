@@ -12,10 +12,10 @@
 #define MESSAGE_ERROR 0xF0
 
 // These arrays are used in the manual sender PID
-const uint8_t services_num[] = {0x1, 0x2, 0x3, 0x4, 0x05, 0x6, 0x7, 0x8, 0x9, 0xA};
-static uint8_t byte_values = 0;
-static uint8_t service_selector = 0;
+static uint32_t can_id = 0x7DF;
+static uint8_t byte_values[4] = {0, 0, 0, 0};
 static uint8_t service_to_send = 0x1;
+static uint8_t lenght_pid = 0x00;
 static uint8_t code_to_send = 0x00;
 
 // odbii menu casllback
@@ -38,7 +38,7 @@ void obdii_menu_callback(void* context, uint32_t index) {
         break;
 
     case 3:
-        scene_manager_next_scene(app->scene_manager, app_scene_obdii_get_errors_option);
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_delete_errors_option);
         break;
 
     case 4:
@@ -465,19 +465,31 @@ void callback_manual_input_pid_options(void* context, uint32_t index) {
     App* app = context;
     app->sender_selected_item = index;
 
-    if(index == 0) {
+    switch(index) {
+    case 0:
         scene_manager_set_scene_state(
             app->scene_manager, app_scene_input_manual_pid_option, index);
         scene_manager_next_scene(app->scene_manager, app_scene_input_manual_pid_option);
-    }
 
-    if(index == 1) {
+        break;
+
+    case 1:
         scene_manager_set_scene_state(
             app->scene_manager, app_scene_input_manual_pid_option, index);
         scene_manager_next_scene(app->scene_manager, app_scene_input_manual_pid_option);
-    }
 
-    if(index == 2) scene_manager_next_scene(app->scene_manager, app_scene_response_pid_option);
+        break;
+
+    case 2:
+        scene_manager_set_scene_state(
+            app->scene_manager, app_scene_input_manual_pid_option, index);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_manual_pid_option);
+
+        break;
+
+    default:
+        break;
+    }
 }
 
 // Callback for the options
@@ -490,19 +502,18 @@ void callback_manual_pid_sender_options(VariableItem* item) {
     furi_string_reset(text);
 
     switch(selected_index) {
-    case 0:
-        furi_string_cat_printf(text, "0x%x", services_num[index]);
+    // Service
+    case 1:
+        service_to_send = index;
+        furi_string_cat_printf(text, "0x%x", service_to_send);
         variable_item_set_current_value_text(item, furi_string_get_cstr(text));
-        variable_item_set_current_value_index(item, index);
-        service_to_send = services_num[index];
-        service_selector = index;
 
         break;
 
-    case 1:
-        code_to_send = index;
-        variable_item_set_current_value_index(item, code_to_send);
-        furi_string_cat_printf(text, "0x%x", code_to_send);
+    // Lenght
+    case 3:
+        lenght_pid = index;
+        furi_string_cat_printf(text, "%u", lenght_pid);
         variable_item_set_current_value_text(item, furi_string_get_cstr(text));
         break;
 
@@ -519,28 +530,40 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
 
     variable_item_list_reset(app->varList);
 
-    // First item to set
+    // First item to set (CAN ID)
+    furi_string_reset(text);
+    furi_string_cat_printf(text, "0x%lx", can_id);
+
+    item =
+        variable_item_list_add(app->varList, "CAN ID", 0, callback_manual_pid_sender_options, app);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(text));
+
+    // Second Item to set (Service)
     furi_string_reset(text);
     furi_string_cat_printf(text, "0x%x", service_to_send);
-
     item = variable_item_list_add(
-        app->varList, "Service", 10, callback_manual_pid_sender_options, app);
-    variable_item_set_current_value_index(item, service_selector);
+        app->varList, "Service", 96, callback_manual_pid_sender_options, app);
+    variable_item_set_current_value_index(item, service_to_send);
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
-    // Second Item to set
-    item =
-        variable_item_list_add(app->varList, "PID", 96, callback_manual_pid_sender_options, app);
-    variable_item_set_current_value_index(item, code_to_send);
-
+    // Third item
     furi_string_reset(text);
     furi_string_cat_printf(text, "0x%x", code_to_send);
+    item = variable_item_list_add(app->varList, "Pid", 0, callback_manual_pid_sender_options, app);
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
-    // Third item to set
+    // Fourth Element to set (message lenght)
+    furi_string_reset(text);
+    furi_string_cat_printf(text, "%u", lenght_pid);
+
+    item = variable_item_list_add(
+        app->varList, "Lenght", 255, callback_manual_pid_sender_options, app);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(text));
+    variable_item_set_current_value_index(item, lenght_pid);
+
+    // Item to request the data
     item = variable_item_list_add(
         app->varList, "Send Request", 0, callback_manual_pid_sender_options, app);
-
     variable_item_list_set_enter_callback(app->varList, callback_manual_input_pid_options, app);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
@@ -570,26 +593,63 @@ void input_manual_pid(void* context) {
         scene_manager_get_scene_state(app->scene_manager, app_scene_input_manual_pid_option);
 
     switch(state) {
-    case 0:
-        service_to_send = byte_values;
-        view_dispatcher_send_custom_event(app->view_dispatcher, ReturnEvent);
+    case 0: // can id
+
+        can_id = byte_values[3] | (byte_values[2] << 8) | (byte_values[1] << 16) |
+                 (byte_values[0] << 24);
+
         break;
 
-    case 1:
-        code_to_send = byte_values;
+    case 1: // service
+        service_to_send = byte_values[0];
+        break;
+
+    case 2: // pid
+        code_to_send = byte_values[0];
         break;
 
     default:
         break;
     }
+
+    view_dispatcher_send_custom_event(app->view_dispatcher, ReturnEvent);
 }
 
 void app_scene_input_manual_set_pid_on_enter(void* context) {
     App* app = context;
     ByteInput* scene = app->input_byte_value;
+    uint8_t count_bytes = 0;
 
-    byte_input_set_result_callback(scene, input_manual_pid, NULL, app, &byte_values, 1);
-    byte_input_set_header_text(scene, "SET SERVICE");
+    uint32_t scene_state =
+        scene_manager_get_scene_state(app->scene_manager, app_scene_input_manual_pid_option);
+
+    switch(scene_state) {
+    case 0:
+        count_bytes = 4;
+
+        byte_values[3] = can_id;
+        byte_values[2] = can_id >> 8;
+        byte_values[1] = can_id >> 16;
+        byte_values[0] = can_id >> 24;
+        break;
+
+    case 1:
+        count_bytes = 1;
+        byte_values[0] = service_to_send;
+        break;
+
+    case 2:
+        count_bytes = 1;
+        byte_values[0] = code_to_send;
+
+        break;
+
+    default:
+        break;
+    }
+
+    byte_input_set_result_callback(scene, input_manual_pid, NULL, app, byte_values, count_bytes);
+    byte_input_set_header_text(scene, "SET VALUE");
 
     view_dispatcher_switch_to_view(app->view_dispatcher, InputByteView);
 }
@@ -842,24 +902,7 @@ static int32_t obdii_thread_on_work(void* context) {
 static int32_t obdii_thread_dtc_on_work(void* context) {
     App* app = context;
     UNUSED(app);
-
-    OBDII scanner;
-    pid_init(&scanner);
-
-    uint8_t data[] = {0, 0, 0, 0, 0, 0, 0, 0};
-
-    UNUSED(data);
-
     while(furi_hal_gpio_read(&gpio_button_back)) {
-        /*if(furi_hal_gpio_read(&gpio_button_ok)) {
-            if(pid_manual_request(&scanner, SHOW_STORAGE_DTC, 0X00, data)) {
-                log_info("Get DTC");
-            } else {
-                log_exception("Error");
-            }
-        }
-
-        furi_delay_ms(1);*/
     }
     return 0;
 }
