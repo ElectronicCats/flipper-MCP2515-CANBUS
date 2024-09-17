@@ -192,6 +192,7 @@ bool pid_manual_request(
             time_delay++;
         } while((ret != ERROR_OK) && (time_delay < 60));
 
+        if(ret != ERROR_OK && i == 0) return false;
         if(ret != ERROR_OK) break;
     }
 

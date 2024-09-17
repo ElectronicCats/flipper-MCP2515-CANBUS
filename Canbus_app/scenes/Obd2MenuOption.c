@@ -487,6 +487,9 @@ void callback_manual_input_pid_options(void* context, uint32_t index) {
 
         break;
 
+    case 4:
+        scene_manager_next_scene(app->scene_manager, app_scene_response_pid_option);
+
     default:
         break;
     }
@@ -685,6 +688,8 @@ void app_scene_response_manual_pid_on_enter(void* context) {
     app->thread =
         furi_thread_alloc_ex("ManualPID", 1024, obdii_thread_response_manual_sender_on_work, app);
     furi_thread_start(app->thread);
+    text_box_set_focus(app->textBox, TextBoxFocusEnd);
+
     view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
 }
 
@@ -914,7 +919,35 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
 static int32_t obdii_thread_response_manual_sender_on_work(void* context) {
     App* app = context;
 
-    UNUSED(app);
+    OBDII scanner;
+
+    CANFRAME canframes[lenght_pid];
+
+    UNUSED(canframes);
+
+    FuriString* text = app->text;
+
+    furi_string_reset(text);
+
+    scanner.bitrate = app->mcp_can->bitRate;
+
+    bool run = pid_init(&scanner);
+
+    if(run) {
+        furi_string_printf(text, "DEVICE CONNECTED!...\n");
+        furi_string_cat_printf(
+            text, "-> %lx 2 %x %x 0 0 0 0 0", can_id, service_to_send, code_to_send);
+
+        text_box_set_text(app->textBox, furi_string_get_cstr(text));
+
+        pid_manual_request(&scanner, can_id, service_to_send, code_to_send, canframes, lenght_pid);
+
+    } else {
+        furi_string_printf(text, "DEVICE NO CONNECTED!");
+        text_box_set_text(app->textBox, furi_string_get_cstr(text));
+    }
+
+    pid_deinit(&scanner);
 
     return 0;
 }
