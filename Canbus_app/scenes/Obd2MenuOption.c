@@ -514,15 +514,15 @@ void callback_manual_pid_sender_options(VariableItem* item) {
 
         break;
 
-    case 2:
+    /*case 2:
         count_of_bytes = index;
         furi_string_cat_printf(text, "%u", count_of_bytes);
         variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
-        break;
+        break;*/
 
     // Lenght
-    case 5:
+    case 4:
         lenght_pid = index;
         furi_string_cat_printf(text, "%u", lenght_pid);
         variable_item_set_current_value_text(item, furi_string_get_cstr(text));
@@ -561,8 +561,8 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
     furi_string_reset(text);
     furi_string_cat_printf(text, "%u", count_of_bytes);
     item = variable_item_list_add(
-        app->varList, "Count Bytes", 6, callback_manual_pid_sender_options, app);
-    variable_item_set_current_value_index(item, count_of_bytes);
+        app->varList, "Count Bytes", 0, callback_manual_pid_sender_options, app);
+    variable_item_set_current_value_index(item, 0);
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
     // Fourth item [3]

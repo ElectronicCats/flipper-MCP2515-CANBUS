@@ -120,6 +120,9 @@ bool pid_manual_request(
 // get the pid's supported in a block of pid
 bool pid_get_supported_pid(OBDII* obdii, uint8_t block);
 
+// Clear DTC
+bool clear_dtc(OBDII* obdii);
+
 // Function to calculate the engine speed
 uint16_t calculate_engine_speed(uint8_t value_a, uint8_t value_b);
 

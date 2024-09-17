@@ -95,61 +95,6 @@ bool pid_show_data(OBDII* obdii, uint8_t pid, uint8_t* data, uint8_t size) {
 }
 
 // It works to send a mode in the pid
-/*
-bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* data) {
-    MCP2515* CAN = obdii->CAN;
-    CANFRAME frame = obdii->frame_to_send;
-
-    ERROR_CAN ret = ERROR_NOMSG;
-
-    frame.data_lenght = 8;
-
-    log_info("Here 1");
-
-    if(mode == CLEAR_STORAGE_DTC) {
-        frame.buffer[0] = 01;
-        frame.buffer[1] = mode;
-
-        if(send_can_frame(CAN, &frame) != ERROR_OK) return false;
-        return true;
-    }
-
-    log_info("Here 2");
-
-    frame.buffer[0] = 02;
-    frame.buffer[1] = mode;
-    frame.buffer[2] = pid;
-
-    uint8_t counter = 0;
-
-    do {
-        if(send_can_frame(CAN, &frame) == ERROR_OK) break;
-        counter++;
-    } while(counter < 3);
-
-    if(counter == 3) return false;
-
-    log_info("Here ");
-
-    uint16_t time_delay = 0;
-
-    do {
-        ret = read_can_message(CAN, &frame);
-        furi_delay_us(1);
-        time_delay++;
-    } while((ret != ERROR_OK) && (time_delay < 15000));
-
-    if(ret != ERROR_OK) return false;
-
-    log_info("Here 3");
-
-    for(uint8_t i = 0; i < 8; i++)
-        data[i] = frame.buffer[i];
-
-    return true;
-}
-*/
-
 bool pid_manual_request(
     OBDII* obdii,
     uint32_t id,
@@ -231,6 +176,44 @@ bool pid_get_supported_pid(OBDII* obdii, uint8_t block) {
         else
             obdii->codes[block + i].name = "UNKNOWN";
     }
+
+    return true;
+}
+
+bool clear_dtc(OBDII* obdii) {
+    MCP2515* CAN = obdii->CAN;
+    CANFRAME frame = obdii->frame_to_send;
+    CANFRAME frame_to_received = obdii->frame_to_received;
+
+    ERROR_CAN ret = ERROR_OK;
+
+    frame.buffer[0] = 2;
+    frame.buffer[1] = CLEAR_STORAGE_DTC;
+    frame.buffer[2] = 0;
+
+    uint32_t time_delay = 0;
+
+    do {
+        ret = send_can_frame(CAN, &frame);
+
+        furi_delay_ms(1);
+
+        time_delay++;
+
+    } while((ret != ERROR_OK) && (time_delay < 50));
+
+    if(ret != ERROR_OK) return false;
+
+    time_delay = 0;
+    do {
+        ret = read_can_message(CAN, &frame_to_received);
+        furi_delay_ms(1);
+        time_delay++;
+    } while((ret != ERROR_OK) && (time_delay < 60));
+
+    if(ret != ERROR_OK) return false;
+
+    if(frame_to_received.buffer[1] != 0x44) return false;
 
     return true;
 }
