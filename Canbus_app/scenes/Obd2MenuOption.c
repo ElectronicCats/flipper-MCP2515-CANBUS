@@ -19,6 +19,9 @@ static uint8_t lenght_pid = 0x01;
 static uint8_t code_to_send = 0x00;
 static uint8_t count_of_bytes = 2;
 
+// This variable works to know if it wishes to delete the DTC storage
+static bool delete_dtc = false;
+
 // odbii menu casllback
 void obdii_menu_callback(void* context, uint32_t index) {
     App* app = context;
@@ -435,6 +438,7 @@ void app_scene_obdii_get_errors_on_exit(void* context) {
 
 void app_scene_obdii_delete_dtc_on_enter(void* context) {
     App* app = context;
+    delete_dtc = true;
     widget_reset(app->widget);
     app->thread = furi_thread_alloc_ex("ShowDTC", 1024, obdii_thread_dtc_on_work, app);
     furi_thread_start(app->thread);
@@ -454,6 +458,7 @@ void app_scene_obdii_delete_dtc_on_exit(void* context) {
     App* app = context;
     furi_thread_join(app->thread);
     furi_thread_free(app->thread);
+    delete_dtc = false;
     widget_reset(app->widget);
 }
 
@@ -922,9 +927,38 @@ static int32_t obdii_thread_on_work(void* context) {
 
 static int32_t obdii_thread_dtc_on_work(void* context) {
     App* app = context;
-    UNUSED(app);
-    while(furi_hal_gpio_read(&gpio_button_back)) {
+
+    OBDII scanner;
+
+    scanner.bitrate = app->mcp_can->bitRate;
+
+    bool run = pid_init(&scanner);
+
+    if(delete_dtc && run) {
+        if(clear_dtc(&scanner)) {
+            widget_reset(app->widget);
+
+            widget_add_string_element(
+                app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "ALL DTC");
+
+            widget_add_string_element(
+                app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CLEARED");
+        } else {
+            widget_reset(app->widget);
+
+            widget_add_string_element(
+                app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "ERROR");
+
+            widget_add_string_element(
+                app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CLEARING");
+        }
+    } else if(!delete_dtc && run) {
+    } else {
+        draw_device_no_connected(app);
     }
+
+    pid_deinit(&scanner);
+
     return 0;
 }
 
