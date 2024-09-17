@@ -15,8 +15,9 @@
 static uint32_t can_id = 0x7DF;
 static uint8_t byte_values[4] = {0, 0, 0, 0};
 static uint8_t service_to_send = 0x1;
-static uint8_t lenght_pid = 0x00;
+static uint8_t lenght_pid = 0x01;
 static uint8_t code_to_send = 0x00;
+static uint8_t count_of_bytes = 2;
 
 // odbii menu casllback
 void obdii_menu_callback(void* context, uint32_t index) {
@@ -480,14 +481,14 @@ void callback_manual_input_pid_options(void* context, uint32_t index) {
 
         break;
 
-    case 2:
+    case 3:
         scene_manager_set_scene_state(
             app->scene_manager, app_scene_input_manual_pid_option, index);
         scene_manager_next_scene(app->scene_manager, app_scene_input_manual_pid_option);
 
         break;
 
-    case 4:
+    case 5:
         scene_manager_next_scene(app->scene_manager, app_scene_response_pid_option);
 
     default:
@@ -513,8 +514,15 @@ void callback_manual_pid_sender_options(VariableItem* item) {
 
         break;
 
+    case 2:
+        count_of_bytes = index;
+        furi_string_cat_printf(text, "%u", count_of_bytes);
+        variable_item_set_current_value_text(item, furi_string_get_cstr(text));
+
+        break;
+
     // Lenght
-    case 3:
+    case 5:
         lenght_pid = index;
         furi_string_cat_printf(text, "%u", lenght_pid);
         variable_item_set_current_value_text(item, furi_string_get_cstr(text));
@@ -533,7 +541,7 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
 
     variable_item_list_reset(app->varList);
 
-    // First item to set (CAN ID)
+    // First item to set (CAN ID) [0]
     furi_string_reset(text);
     furi_string_cat_printf(text, "0x%lx", can_id);
 
@@ -541,7 +549,7 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
         variable_item_list_add(app->varList, "CAN ID", 0, callback_manual_pid_sender_options, app);
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
-    // Second Item to set (Service)
+    // Second Item to set (Service) [1]
     furi_string_reset(text);
     furi_string_cat_printf(text, "0x%x", service_to_send);
     item = variable_item_list_add(
@@ -549,13 +557,21 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
     variable_item_set_current_value_index(item, service_to_send);
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
-    // Third item
+    // Third item COUNT OF BYTES [2]
+    furi_string_reset(text);
+    furi_string_cat_printf(text, "%u", count_of_bytes);
+    item = variable_item_list_add(
+        app->varList, "Count Bytes", 6, callback_manual_pid_sender_options, app);
+    variable_item_set_current_value_index(item, count_of_bytes);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(text));
+
+    // Fourth item [3]
     furi_string_reset(text);
     furi_string_cat_printf(text, "0x%x", code_to_send);
     item = variable_item_list_add(app->varList, "Pid", 0, callback_manual_pid_sender_options, app);
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
-    // Fourth Element to set (message lenght)
+    // Fifth Element to set (message lenght) [4]
     furi_string_reset(text);
     furi_string_cat_printf(text, "%u", lenght_pid);
 
@@ -564,7 +580,7 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
     variable_item_set_current_value_index(item, lenght_pid);
 
-    // Item to request the data
+    // Item to request the data [5]
     item = variable_item_list_add(
         app->varList, "Send Request", 0, callback_manual_pid_sender_options, app);
     variable_item_list_set_enter_callback(app->varList, callback_manual_input_pid_options, app);
@@ -607,7 +623,7 @@ void input_manual_pid(void* context) {
         service_to_send = byte_values[0];
         break;
 
-    case 2: // pid
+    case 3: // pid
         code_to_send = byte_values[0];
         break;
 
@@ -641,7 +657,7 @@ void app_scene_input_manual_set_pid_on_enter(void* context) {
         byte_values[0] = service_to_send;
         break;
 
-    case 2:
+    case 3:
         count_bytes = 1;
         byte_values[0] = code_to_send;
 
@@ -936,11 +952,42 @@ static int32_t obdii_thread_response_manual_sender_on_work(void* context) {
     if(run) {
         furi_string_printf(text, "DEVICE CONNECTED!...\n");
         furi_string_cat_printf(
-            text, "-> %lx 2 %x %x 0 0 0 0 0", can_id, service_to_send, code_to_send);
+            text, "-> %lx 2 %x %x 0 0 0 0 0\n", can_id, service_to_send, code_to_send);
 
         text_box_set_text(app->textBox, furi_string_get_cstr(text));
 
-        pid_manual_request(&scanner, can_id, service_to_send, code_to_send, canframes, lenght_pid);
+        if(pid_manual_request(
+               &scanner,
+               can_id,
+               service_to_send,
+               code_to_send,
+               canframes,
+               lenght_pid,
+               count_of_bytes)) {
+            for(uint8_t i = 0; i < lenght_pid; i++) {
+                CANFRAME frame_received = canframes[i];
+                if(frame_received.canId == 0xa5) break;
+                furi_string_cat_printf(
+                    text,
+                    "<- %lx %x %x %x %x %x %x %x %x\n",
+                    frame_received.canId,
+                    frame_received.buffer[0],
+                    frame_received.buffer[1],
+                    frame_received.buffer[2],
+                    frame_received.buffer[3],
+                    frame_received.buffer[4],
+                    frame_received.buffer[5],
+                    frame_received.buffer[6],
+                    frame_received.buffer[7]);
+            }
+
+            text_box_reset(app->textBox);
+            text_box_set_text(app->textBox, furi_string_get_cstr(text));
+        } else {
+            text_box_reset(app->textBox);
+            furi_string_cat_printf(text, "FAILURE TRANSMITION!!\n");
+            text_box_set_text(app->textBox, furi_string_get_cstr(text));
+        }
 
     } else {
         furi_string_printf(text, "DEVICE NO CONNECTED!");

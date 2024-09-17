@@ -156,14 +156,15 @@ bool pid_manual_request(
     pid_services mode,
     uint8_t pid,
     CANFRAME* frames_to_read,
-    uint8_t lenght) {
+    uint8_t lenght,
+    uint8_t count_of_bytes) {
     MCP2515* CAN = obdii->CAN;
     CANFRAME frame = obdii->frame_to_send;
     ERROR_CAN ret = ERROR_OK;
 
     frame.canId = id;
 
-    frame.buffer[0] = 2;
+    frame.buffer[0] = count_of_bytes;
     frame.buffer[1] = mode;
     frame.buffer[2] = pid;
 
@@ -184,7 +185,14 @@ bool pid_manual_request(
 
     furi_delay_ms(10);
 
+    frame.buffer[0] = 30;
+    frame.buffer[1] = 0;
+    frame.buffer[2] = 0;
+
     for(uint8_t i = 0; i < lenght; i++) {
+        if(i == 1) {
+        }
+
         time_delay = 0;
         do {
             ret = read_can_message(CAN, &(frames_to_read[i]));

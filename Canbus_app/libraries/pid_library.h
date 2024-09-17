@@ -114,7 +114,8 @@ bool pid_manual_request(
     pid_services mode,
     uint8_t pid,
     CANFRAME* frames_to_read,
-    uint8_t lenght);
+    uint8_t lenght,
+    uint8_t count_of_bytes);
 
 // get the pid's supported in a block of pid
 bool pid_get_supported_pid(OBDII* obdii, uint8_t block);
