@@ -930,6 +930,8 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
 
     OBDII scanner;
 
+    CANFRAME canframes[20];
+
     scanner.bitrate = app->mcp_can->bitRate;
 
     bool run = pid_init(&scanner);
@@ -953,6 +955,8 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
                 app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CLEARING");
         }
     } else if(!delete_dtc && run) {
+        if(pid_manual_request(&scanner, 0x7df, SHOW_STORAGE_DTC, 0, canframes, 1, 2)) {
+        }
     } else {
         draw_device_no_connected(app);
     }

@@ -117,14 +117,9 @@ bool pid_manual_request(
 
     uint32_t time_delay = 0;
 
-    do {
-        ret = send_can_frame(CAN, &frame);
+    ret = send_can_frame(CAN, &frame);
 
-        furi_delay_ms(1);
-
-        time_delay++;
-
-    } while((ret != ERROR_OK) && (time_delay < 50));
+    furi_delay_ms(1);
 
     if(ret != ERROR_OK) return false;
 
@@ -136,6 +131,8 @@ bool pid_manual_request(
 
     for(uint8_t i = 0; i < lenght; i++) {
         if(i == 1) {
+            send_can_frame(CAN, &frame);
+            furi_delay_ms(10);
         }
 
         time_delay = 0;
@@ -154,13 +151,14 @@ bool pid_manual_request(
 
 // It works to get the supported datas
 bool pid_get_supported_pid(OBDII* obdii, uint8_t block) {
-    uint8_t data[8];
+    uint8_t data[8] = {0, 0, 0, 0, 0, 0};
 
-    //if(!pid_manual_request(obdii, SHOW_DATA, block, data)) return false;
+    if(!pid_manual_request(obdii, 0x7df, SHOW_DATA, block, &obdii->frame_to_received, 1, 2))
+        return false;
 
-    return false;
-
-    // At the moment going to ignore the next code
+    for(uint8_t i = 0; i < 8; i++) {
+        data[i] = obdii->frame_to_received.buffer[i];
+    }
 
     obdii->codes[block].pid_num = block;
     obdii->codes[block].is_supported = true;
@@ -193,16 +191,12 @@ bool clear_dtc(OBDII* obdii) {
 
     uint32_t time_delay = 0;
 
-    do {
-        ret = send_can_frame(CAN, &frame);
+    ret = send_can_frame(CAN, &frame);
 
-        furi_delay_ms(1);
-
-        time_delay++;
-
-    } while((ret != ERROR_OK) && (time_delay < 50));
+    furi_delay_ms(1);
 
     if(ret != ERROR_OK) return false;
+    furi_delay_ms(10);
 
     time_delay = 0;
     do {
