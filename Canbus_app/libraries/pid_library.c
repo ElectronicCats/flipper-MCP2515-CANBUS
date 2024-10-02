@@ -51,6 +51,10 @@ bool pid_init(OBDII* obdii) {
 
     init_mask(obdii->CAN, 1, 0x7FF);
     init_filter(obdii->CAN, 1, 0x7E8);
+    init_filter(obdii->CAN, 2, 0x7E8);
+    init_filter(obdii->CAN, 3, 0x7E8);
+    init_filter(obdii->CAN, 4, 0x7E8);
+    init_filter(obdii->CAN, 5, 0x7E8);
 
     obdii->frame_to_send.canId = ECU_REQUEST_ID;
     obdii->frame_to_send.data_lenght = 8;
@@ -125,7 +129,8 @@ bool pid_manual_request(
 
     furi_delay_ms(10);
 
-    frame.buffer[0] = 30;
+    frame.canId = 0x7df;
+    frame.buffer[0] = 0x30;
     frame.buffer[1] = 0;
     frame.buffer[2] = 0;
 
@@ -138,8 +143,10 @@ bool pid_manual_request(
         time_delay = 0;
         do {
             ret = read_can_message(CAN, &(frames_to_read[i]));
+            if(frames_to_read[i].canId != 0x7e8) ret = ERROR_FAIL;
             furi_delay_ms(1);
             time_delay++;
+
         } while((ret != ERROR_OK) && (time_delay < 60));
 
         if(ret != ERROR_OK && i == 0) return false;

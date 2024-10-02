@@ -519,12 +519,13 @@ void callback_manual_pid_sender_options(VariableItem* item) {
 
         break;
 
-    /*case 2:
+    // count of bytes
+    case 2:
         count_of_bytes = index;
         furi_string_cat_printf(text, "%u", count_of_bytes);
         variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
-        break;*/
+        break;
 
     // Lenght
     case 4:
@@ -566,9 +567,10 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
     furi_string_reset(text);
     furi_string_cat_printf(text, "%u", count_of_bytes);
     item = variable_item_list_add(
-        app->varList, "Count Bytes", 0, callback_manual_pid_sender_options, app);
+        app->varList, "Count Bytes", 7, callback_manual_pid_sender_options, app);
     variable_item_set_current_value_index(item, 0);
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
+    variable_item_set_current_value_index(item, count_of_bytes);
 
     // Fourth item [3]
     furi_string_reset(text);
@@ -956,6 +958,13 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
         }
     } else if(!delete_dtc && run) {
         if(pid_manual_request(&scanner, 0x7df, SHOW_STORAGE_DTC, 0, canframes, 1, 2)) {
+            widget_reset(app->widget);
+
+            widget_add_string_element(
+                app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "REQUESTED");
+
+            widget_add_string_element(
+                app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "OK");
         }
     } else {
         draw_device_no_connected(app);
