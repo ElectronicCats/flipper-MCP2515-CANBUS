@@ -219,6 +219,22 @@ bool clear_dtc(OBDII* obdii) {
     return true;
 }
 
+bool request_dtc(OBDII* obdii, char* message_DTC[]) {
+    CANFRAME canframes[20];
+
+    if(!pid_manual_request(obdii, 0x7df, SHOW_STORAGE_DTC, 0, canframes, 1, 2)) {
+        message_DTC[0] = "ERROR";
+        return false;
+    }
+
+    if(canframes[0].buffer[0] != 0x03 && canframes[0].buffer[1] != 0x43) {
+        message_DTC[0] = "NO DTC";
+        return false;
+    }
+
+    return true;
+}
+
 // It works to free
 void pid_deinit(OBDII* obdii) {
     free_mcp2515(obdii->CAN);
