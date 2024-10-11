@@ -83,7 +83,10 @@ bool pid_show_data(OBDII* obdii, uint8_t pid, uint8_t* data, uint8_t size) {
     uint16_t time_delay = 0;
 
     do {
-        ret = read_can_message(CAN, &obdii->frame_to_received);
+        read_can_message(CAN, &obdii->frame_to_received);
+
+        if(obdii->frame_to_received.canId == 0x7e8) ret = ERROR_OK;
+
         furi_delay_us(1);
         time_delay++;
 
@@ -123,11 +126,7 @@ bool pid_manual_request(
 
     ret = send_can_frame(CAN, &frame);
 
-    furi_delay_ms(1);
-
     if(ret != ERROR_OK) return false;
-
-    furi_delay_ms(10);
 
     frame.canId = 0x7df;
     frame.buffer[0] = 0x30;
@@ -136,18 +135,21 @@ bool pid_manual_request(
 
     for(uint8_t i = 0; i < lenght; i++) {
         if(i == 1) {
-            send_can_frame(CAN, &frame);
-            furi_delay_ms(10);
+            ret = send_can_frame(CAN, &frame);
+            if(ret != ERROR_OK) return false;
         }
 
+        ret = ERROR_FAIL;
         time_delay = 0;
+
         do {
-            ret = read_can_message(CAN, &(frames_to_read[i]));
-            if(frames_to_read[i].canId != 0x7e8) ret = ERROR_FAIL;
-            furi_delay_ms(1);
+            if(read_can_message(CAN, &(frames_to_read[i]))) {
+                if(frames_to_read[i].canId == 0x7e8) ret = ERROR_OK;
+            }
+            furi_delay_us(1);
             time_delay++;
 
-        } while((ret != ERROR_OK) && (time_delay < 60));
+        } while((ret != ERROR_OK) && (time_delay < 60000));
 
         if(ret != ERROR_OK && i == 0) return false;
         if(ret != ERROR_OK) break;
@@ -218,7 +220,7 @@ bool clear_dtc(OBDII* obdii) {
 
     return true;
 }
-
+/*
 bool request_dtc(OBDII* obdii, char* message_DTC[]) {
     CANFRAME canframes[20];
 
@@ -234,7 +236,7 @@ bool request_dtc(OBDII* obdii, char* message_DTC[]) {
 
     return true;
 }
-
+*/
 // It works to free
 void pid_deinit(OBDII* obdii) {
     free_mcp2515(obdii->CAN);
