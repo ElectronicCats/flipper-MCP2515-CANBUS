@@ -352,8 +352,8 @@ bool request_dtc(OBDII* obdii, uint8_t* count, char* codes[]) {
 
     separate_codes(canframes, save_error_codes, 5);
 
-    for(uint8_t i = 0; i < 20; i++) {
-        if(save_error_codes[i] == 0xaa) {
+    for(uint8_t i = 1; i < 20; i++) {
+        if((save_error_codes[i] == 0xaa) || (save_error_codes[i] == 0)) {
             *count = i - 1;
             break;
         }

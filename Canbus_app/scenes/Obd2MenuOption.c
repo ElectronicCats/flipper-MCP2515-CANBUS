@@ -934,17 +934,19 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
 
     FuriString* text = app->text;
 
+    UNUSED(text);
+
     scanner.bitrate = app->mcp_can->bitRate;
 
     bool loop = false;
-
-    UNUSED(loop);
 
     char* codes[20];
 
     for(uint8_t i = 0; i < 20; i++) {
         codes[i] = (char*)malloc(5 * sizeof(char));
     }
+
+    uint8_t dtc_selector = 0, count_dtc = 0;
 
     bool run = pid_init(&scanner);
 
@@ -967,26 +969,16 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
                 app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CLEARING");
         }
     } else if(!delete_dtc && run) {
-        uint8_t count = 0;
-        if(request_dtc(&scanner, &(count), codes)) {
-            widget_reset(app->widget);
+        if(request_dtc(&scanner, &(count_dtc), codes)) {
+            if(count_dtc == 0) {
+                widget_add_string_element(
+                    app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "NO DTC");
 
-            furi_string_reset(text);
+                widget_add_string_element(
+                    app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "DETECTED");
 
-            furi_string_cat_printf(text, "%u", count);
-
-            widget_add_string_element(
-                app->widget,
-                65,
-                20,
-                AlignCenter,
-                AlignBottom,
-                FontPrimary,
-                furi_string_get_cstr(text));
-
-            for(uint8_t i = 0; i < count; i++) {
-                log_info("code %u: %s", i, codes[i]);
-            }
+            } else
+                loop = true;
 
         } else {
             widget_add_string_element(
@@ -1000,9 +992,63 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
         draw_device_no_connected(app);
     }
 
+    uint8_t past_selector = 1;
+
+    while(loop) {
+        if(!furi_hal_gpio_read(&gpio_button_right)) {
+            dtc_selector++;
+            if(dtc_selector > (count_dtc - 1)) dtc_selector = 0;
+            furi_delay_ms(500);
+        }
+
+        if(!furi_hal_gpio_read(&gpio_button_left)) {
+            dtc_selector--;
+            if(dtc_selector > count_dtc) dtc_selector = (count_dtc - 1);
+            furi_delay_ms(500);
+        }
+
+        if(past_selector != dtc_selector) {
+            widget_reset(app->widget);
+            furi_string_reset(text);
+
+            furi_string_printf(text, "%u of %u DTC", dtc_selector + 1, count_dtc);
+
+            widget_add_string_element(
+                app->widget,
+                65,
+                20,
+                AlignCenter,
+                AlignBottom,
+                FontSecondary,
+                furi_string_get_cstr(text));
+
+            furi_string_reset(text);
+
+            furi_string_printf(text, "%s", codes[dtc_selector]);
+
+            widget_add_string_element(
+                app->widget,
+                65,
+                35,
+                AlignCenter,
+                AlignBottom,
+                FontPrimary,
+                furi_string_get_cstr(text));
+
+            past_selector = dtc_selector;
+        }
+
+        if(!furi_hal_gpio_read(&gpio_button_back)) {
+            break;
+        }
+        furi_delay_ms(1);
+    }
+
     for(uint8_t i = 0; i < 20; i++) {
         free(codes[i]);
     }
+
+    furi_string_reset(text);
 
     pid_deinit(&scanner);
 
