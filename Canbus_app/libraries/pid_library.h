@@ -1,6 +1,7 @@
 #ifndef PID_LIBRARY
 #define PID_LIBRARY
 
+#include "string.h"
 #include "mcp_can_2515.h"
 
 #define ECU_TYPICAL_ID_STANDAR 0x7E8
@@ -120,7 +121,7 @@ bool pid_manual_request(
 bool pid_get_supported_pid(OBDII* obdii, uint8_t block);
 
 // Request DTC
-bool request_dtc(OBDII* obdii, uint8_t* count);
+bool request_dtc(OBDII* obdii, uint8_t* count, char* codes[]);
 
 // Clear DTC
 bool clear_dtc(OBDII* obdii);

@@ -936,6 +936,16 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
 
     scanner.bitrate = app->mcp_can->bitRate;
 
+    bool loop = false;
+
+    UNUSED(loop);
+
+    char* codes[20];
+
+    for(uint8_t i = 0; i < 20; i++) {
+        codes[i] = (char*)malloc(5 * sizeof(char));
+    }
+
     bool run = pid_init(&scanner);
 
     if(delete_dtc && run) {
@@ -958,7 +968,7 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
         }
     } else if(!delete_dtc && run) {
         uint8_t count = 0;
-        if(request_dtc(&scanner, &(count))) {
+        if(request_dtc(&scanner, &(count), codes)) {
             widget_reset(app->widget);
 
             furi_string_reset(text);
@@ -974,6 +984,10 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
                 FontPrimary,
                 furi_string_get_cstr(text));
 
+            for(uint8_t i = 0; i < count; i++) {
+                log_info("code %u: %s", i, codes[i]);
+            }
+
         } else {
             widget_add_string_element(
                 app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "REQUESTED");
@@ -984,6 +998,10 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
 
     } else {
         draw_device_no_connected(app);
+    }
+
+    for(uint8_t i = 0; i < 20; i++) {
+        free(codes[i]);
     }
 
     pid_deinit(&scanner);

@@ -225,6 +225,7 @@ bool clear_dtc(OBDII* obdii) {
     This part works to get the dtc
 */
 
+// This separate codes by one frame
 void separate_code_by_frame(uint16_t* save_codes, CANFRAME frame, uint8_t frame_position) {
     uint16_t position = frame_position * 4;
 
@@ -234,13 +235,107 @@ void separate_code_by_frame(uint16_t* save_codes, CANFRAME frame, uint8_t frame_
     }
 }
 
+// This separate codes by multiple can frames
 void separate_codes(CANFRAME* frames, uint16_t* save_codes, uint8_t length) {
     for(uint8_t i = 0; i < length; i++) {
         separate_code_by_frame(save_codes, frames[i], i);
     }
 }
 
-bool request_dtc(OBDII* obdii, uint8_t* count) {
+// This is for translate codes
+void get_dtc(uint16_t numerical_code, char* dtc_code) {
+    char* first;
+
+    UNUSED(dtc_code);
+
+    FuriString* text = furi_string_alloc();
+
+    uint8_t identifier = numerical_code >> 12; // For the second
+    uint8_t firstNumber = numerical_code >> 8;
+    uint8_t secondNumber = numerical_code >> 4 & 0xf;
+    uint8_t thirdNumber = numerical_code & 0xf;
+
+    switch(identifier) // Set the correct type prefix for the code
+    {
+    case 0:
+        first = "P0";
+        break;
+
+    case 1:
+        first = "P1";
+        break;
+
+    case 2:
+        first = "P2";
+        break;
+
+    case 3:
+        first = "P3";
+        break;
+
+    case 4:
+        first = "C0";
+        break;
+
+    case 5:
+        first = "C1";
+        break;
+
+    case 6:
+        first = "C2";
+        break;
+
+    case 7:
+        first = "C3";
+        break;
+
+    case 8:
+        first = "B0";
+        break;
+
+    case 9:
+        first = "B1";
+        break;
+
+    case 10:
+        first = "B2";
+        break;
+
+    case 11:
+        first = "B3";
+        break;
+
+    case 12:
+        first = "U0";
+        break;
+
+    case 13:
+        first = "U1";
+        break;
+
+    case 14:
+        first = "U2";
+        break;
+
+    case 15:
+        first = "U3";
+        break;
+
+    default:
+        break;
+    }
+
+    furi_string_printf(text, "%s%u%u%u", first, firstNumber, secondNumber, thirdNumber);
+
+    for(uint8_t i = 0; i < 5; i++) {
+        dtc_code[i] = furi_string_get_char(text, i);
+    }
+
+    furi_string_free(text);
+}
+
+// Request the codes
+bool request_dtc(OBDII* obdii, uint8_t* count, char* codes[]) {
     CANFRAME canframes[5];
     uint16_t save_error_codes[20];
 
@@ -258,11 +353,18 @@ bool request_dtc(OBDII* obdii, uint8_t* count) {
     separate_codes(canframes, save_error_codes, 5);
 
     for(uint8_t i = 0; i < 20; i++) {
-        log_info("CODE = %x", save_error_codes[i]);
         if(save_error_codes[i] == 0xaa) {
             *count = i - 1;
             break;
         }
+    }
+
+    uint8_t quantity = *count;
+
+    if(quantity == 0) return true;
+
+    for(uint8_t i = 1; i < (quantity + 1); i++) {
+        get_dtc(save_error_codes[i], codes[i - 1]);
     }
 
     return true;
