@@ -1079,7 +1079,12 @@ static int32_t obdii_thread_response_manual_sender_on_work(void* context) {
     if(run) {
         furi_string_printf(text, "DEVICE CONNECTED!...\n");
         furi_string_cat_printf(
-            text, "-> %lx 2 %x %x 0 0 0 0 0\n", can_id, service_to_send, code_to_send);
+            text,
+            "-> %lx %u %x %x 0 0 0 0 0\n",
+            can_id,
+            count_of_bytes,
+            service_to_send,
+            code_to_send);
 
         text_box_set_text(app->textBox, furi_string_get_cstr(text));
 
@@ -1093,7 +1098,7 @@ static int32_t obdii_thread_response_manual_sender_on_work(void* context) {
                count_of_bytes)) {
             for(uint8_t i = 0; i < lenght_pid; i++) {
                 CANFRAME frame_received = canframes[i];
-                if(frame_received.canId == 0xa5) break;
+                if(frame_received.canId == 0x00) break;
                 furi_string_cat_printf(
                     text,
                     "<- %lx %x %x %x %x %x %x %x %x\n",
