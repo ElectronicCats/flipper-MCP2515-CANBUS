@@ -149,7 +149,7 @@ bool pid_manual_request(
             furi_delay_us(1);
             time_delay++;
 
-        } while((ret != ERROR_OK) && (time_delay < 60000));
+        } while((ret != ERROR_OK) && (time_delay < 1000));
 
         if(ret != ERROR_OK && i == 0) return false;
         if(ret != ERROR_OK) break;
@@ -220,23 +220,54 @@ bool clear_dtc(OBDII* obdii) {
 
     return true;
 }
-/*
-bool request_dtc(OBDII* obdii, char* message_DTC[]) {
-    CANFRAME canframes[20];
 
-    if(!pid_manual_request(obdii, 0x7df, SHOW_STORAGE_DTC, 0, canframes, 1, 2)) {
-        message_DTC[0] = "ERROR";
+/*
+    This part works to get the dtc
+*/
+
+void separate_code_by_frame(uint16_t* save_codes, CANFRAME frame, uint8_t frame_position) {
+    uint16_t position = frame_position * 4;
+
+    for(uint8_t i = 1; i < 8; i = i + 2) {
+        save_codes[position] = (frame.buffer[i - 1] << 8) + frame.buffer[i];
+        position++;
+    }
+}
+
+void separate_codes(CANFRAME* frames, uint16_t* save_codes, uint8_t length) {
+    for(uint8_t i = 0; i < length; i++) {
+        separate_code_by_frame(save_codes, frames[i], i);
+    }
+}
+
+bool request_dtc(OBDII* obdii, uint8_t* count) {
+    CANFRAME canframes[5];
+    uint16_t save_error_codes[20];
+
+    memset(canframes, 0, sizeof(canframes));
+    memset(save_error_codes, 0, sizeof(save_error_codes));
+
+    if(!pid_manual_request(obdii, 0x7df, SHOW_STORAGE_DTC, 0, canframes, 20, 1)) {
         return false;
     }
 
     if(canframes[0].buffer[0] != 0x03 && canframes[0].buffer[1] != 0x43) {
-        message_DTC[0] = "NO DTC";
         return false;
+    }
+
+    separate_codes(canframes, save_error_codes, 5);
+
+    for(uint8_t i = 0; i < 20; i++) {
+        log_info("CODE = %x", save_error_codes[i]);
+        if(save_error_codes[i] == 0xaa) {
+            *count = i - 1;
+            break;
+        }
     }
 
     return true;
 }
-*/
+
 // It works to free
 void pid_deinit(OBDII* obdii) {
     free_mcp2515(obdii->CAN);

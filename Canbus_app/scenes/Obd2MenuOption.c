@@ -932,6 +932,8 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
 
     OBDII scanner;
 
+    FuriString* text = app->text;
+
     scanner.bitrate = app->mcp_can->bitRate;
 
     bool run = pid_init(&scanner);
@@ -955,15 +957,31 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
                 app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CLEARING");
         }
     } else if(!delete_dtc && run) {
-        if(true) {
+        uint8_t count = 0;
+        if(request_dtc(&scanner, &(count))) {
             widget_reset(app->widget);
 
+            furi_string_reset(text);
+
+            furi_string_cat_printf(text, "%u", count);
+
+            widget_add_string_element(
+                app->widget,
+                65,
+                20,
+                AlignCenter,
+                AlignBottom,
+                FontPrimary,
+                furi_string_get_cstr(text));
+
+        } else {
             widget_add_string_element(
                 app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "REQUESTED");
 
             widget_add_string_element(
-                app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "OK");
+                app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "ERROR");
         }
+
     } else {
         draw_device_no_connected(app);
     }
@@ -984,7 +1002,7 @@ static int32_t obdii_thread_response_manual_sender_on_work(void* context) {
 
     CANFRAME canframes[lenght_pid];
 
-    UNUSED(canframes);
+    memset(canframes, 0, sizeof(canframes));
 
     FuriString* text = app->text;
 

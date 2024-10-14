@@ -107,7 +107,6 @@ void pid_deinit(OBDII* obdii);
 bool pid_show_data(OBDII* obdii, uint8_t pid, uint8_t* data, uint8_t size);
 
 // request a PID in a manual form
-//bool pid_manual_request(OBDII* obdii, pid_services mode, uint8_t pid, uint8_t* data);
 bool pid_manual_request(
     OBDII* obdii,
     uint32_t id,
@@ -119,6 +118,9 @@ bool pid_manual_request(
 
 // get the pid's supported in a block of pid
 bool pid_get_supported_pid(OBDII* obdii, uint8_t block);
+
+// Request DTC
+bool request_dtc(OBDII* obdii, uint8_t* count);
 
 // Clear DTC
 bool clear_dtc(OBDII* obdii);
