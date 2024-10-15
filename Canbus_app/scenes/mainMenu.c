@@ -72,7 +72,7 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
         break;
 
     case PlayLOGOption:
-        scene_manager_handle_custom_event(app->scene_manager, app_scene_play_logs);
+        scene_manager_handle_custom_event(app->scene_manager, PlayLOGOptionEvent);
         break;
 
     case SettingsOption:
@@ -145,7 +145,7 @@ bool app_scene_menu_on_event(void* context, SceneManagerEvent event) {
 
         case PlayLOGOptionEvent:
             scene_manager_next_scene(app->scene_manager, app_scene_play_logs);
-            break;    
+            break;
 
         case SettingsOptionEvent:
             scene_manager_next_scene(app->scene_manager, app_scene_settings_option);
