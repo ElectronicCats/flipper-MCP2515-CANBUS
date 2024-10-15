@@ -36,29 +36,29 @@ uint32_t hex_to_int(const char* hex_str) {
     return (uint32_t)result;
 }
 
-char *custom_strtok_r(char *str, const char *delim, char **saveptr) {
-    if (str) {
+char* custom_strtok_r(char* str, const char* delim, char** saveptr) {
+    if(str) {
         *saveptr = str;
     }
-    if (!*saveptr) {
+    if(!*saveptr) {
         return NULL;
     }
 
-    char *start = *saveptr;
-    while (*start && strchr(delim, *start)) {
+    char* start = *saveptr;
+    while(*start && strchr(delim, *start)) {
         ++start;
     }
-    if (*start == '\0') {
+    if(*start == '\0') {
         *saveptr = NULL;
         return NULL;
     }
 
-    char *end = start;
-    while (*end && !strchr(delim, *end)) {
+    char* end = start;
+    while(*end && !strchr(delim, *end)) {
         ++end;
     }
 
-    if (*end) {
+    if(*end) {
         *end = '\0';
         *saveptr = end + 1;
     } else {
@@ -72,11 +72,12 @@ void play_data_frames(App* app, UniqueId* unique_ids, int unique_id_count);
 void play_data_frames_bk(void* context, int frame_interval);
 
 // Function to select log file
-void select_log_file(App* app) {
+bool select_log_file(App* app, FuriString* file_name) {
     FuriString* predefined_filepath = furi_string_alloc_set_str(PATHAPP);
     FuriString* selected_filepath = furi_string_alloc();
     DialogsFileBrowserOptions browser_options;
     dialog_file_browser_set_basic_options(&browser_options, ".log", NULL);
+
     browser_options.base_path = PATHAPP;
 
     dialog_file_browser_show(
@@ -84,13 +85,29 @@ void select_log_file(App* app) {
 
     if(storage_file_open(
            app->log_file, furi_string_get_cstr(selected_filepath), FSAM_READ, FSOM_OPEN_EXISTING)) {
+        app->size_of_storage = storage_file_size(app->log_file);
         // File opened successfully
         //app->log_filepath = furi_string_alloc_set(selected_filepath);
     } else {
         dialog_message_show_storage_error(app->dialogs, "Cannot open File");
         // TODO: something
+        return false;
     }
 
+    if(app->size_of_storage > 25000) return false;
+
+    furi_string_reset(file_name);
+
+    furi_string_cat_str(file_name, furi_string_get_cstr(selected_filepath));
+
+    furi_string_reset(app->data);
+    char buf[storage_file_size(app->log_file)];
+    storage_file_read(app->log_file, buf, sizeof(buf));
+
+    buf[sizeof(buf)] = '\0';
+    furi_string_cat_str(app->data, buf);
+
+    storage_file_close(app->log_file);
     furi_string_free(selected_filepath);
     furi_string_free(predefined_filepath);
 }
