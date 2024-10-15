@@ -36,6 +36,38 @@ uint32_t hex_to_int(const char* hex_str) {
     return (uint32_t)result;
 }
 
+char *custom_strtok_r(char *str, const char *delim, char **saveptr) {
+    if (str) {
+        *saveptr = str;
+    }
+    if (!*saveptr) {
+        return NULL;
+    }
+
+    char *start = *saveptr;
+    while (*start && strchr(delim, *start)) {
+        ++start;
+    }
+    if (*start == '\0') {
+        *saveptr = NULL;
+        return NULL;
+    }
+
+    char *end = start;
+    while (*end && !strchr(delim, *end)) {
+        ++end;
+    }
+
+    if (*end) {
+        *end = '\0';
+        *saveptr = end + 1;
+    } else {
+        *saveptr = NULL;
+    }
+
+    return start;
+}
+
 void play_data_frames(App* app, UniqueId* unique_ids, int unique_id_count);
 void play_data_frames_bk(void* context, int frame_interval);
 
@@ -84,19 +116,20 @@ void play_data_frames(App* app, UniqueId* unique_ids, int unique_id_count) {
 
             CANFRAME frame_to_send = {0};
             char* saveptr;
+            char* endptr;
             char* token;
             int time_to_next_frame = 0;
-            float timestamp;
+            double timestamp;
 
             // Parse timestamp
-            token = strtok_r(buffer, "() ", &saveptr);
+            token = custom_strtok_r(buffer, "() ", &saveptr);
             if(!token) continue;
-            timestamp = atof(token);
+            timestamp = strtod(token, &endptr);
             uint32_t current_timing = (uint32_t)((timestamp - previous_timing) * 1000);
             previous_timing = timestamp;
 
             // Parse CAN ID
-            token = strtok_r(NULL, " ", &saveptr);
+            token = custom_strtok_r(NULL, " ", &saveptr);
             if(!token) continue;
             frame_to_send.canId = (uint32_t)strtoul(token, NULL, 16);
 
@@ -111,19 +144,19 @@ void play_data_frames(App* app, UniqueId* unique_ids, int unique_id_count) {
             if(!id_enabled) continue;
 
             // Parse data length
-            token = strtok_r(NULL, " ", &saveptr);
+            token = custom_strtok_r(NULL, " ", &saveptr);
             if(!token) continue;
             frame_to_send.data_lenght = (uint8_t)atoi(token);
 
             // Parse data
             for(int i = 0; i < frame_to_send.data_lenght && i < MAX_LEN; i++) {
-                token = strtok_r(NULL, " ", &saveptr);
+                token = custom_strtok_r(NULL, " ", &saveptr);
                 if(!token) break;
                 frame_to_send.buffer[i] = (uint8_t)strtoul(token, NULL, 16);
             }
 
             // Parse custom timing if available
-            token = strtok_r(NULL, ",", &saveptr);
+            token = custom_strtok_r(NULL, ",", &saveptr);
             if(token) {
                 time_to_next_frame = atoi(token);
             }
@@ -182,7 +215,6 @@ void play_data_frames_bk(void* context, int frame_interval) {
         char c;
 
         uint32_t previous_timing = 0;
-        uint32_t current_timing;
 
         unsigned int unique_ids[MAX_UNIQUE_IDS] = {0};
         int unique_id_count = 0;
@@ -196,11 +228,11 @@ void play_data_frames_bk(void* context, int frame_interval) {
                 char* token;
 
                 // Pass timestamp
-                token = strtok_r(buffer, "() ", &saveptr);
+                token = custom_strtok_r(buffer, "() ", &saveptr);
                 if(!token) continue;
 
                 // Get ID
-                token = strtok_r(NULL, " ", &saveptr);
+                token = custom_strtok_r(NULL, " ", &saveptr);
                 if(!token) continue;
 
                 uint32_t can_id = hex_to_int(token);
@@ -246,37 +278,36 @@ void play_data_frames_bk(void* context, int frame_interval) {
 
                 CANFRAME frame_to_send = {0}; // Initialize all fields to 0
                 char* saveptr;
+                char* endptr;
                 char* token;
                 int time_to_next_frame = 0;
-                float timestamp;
-
-                UNUSED(timestamp);
+                double timestamp;
 
                 // Timestamp
-                token = strtok_r(buffer, "() ", &saveptr);
+                token = custom_strtok_r(buffer, "() ", &saveptr);
                 if(!token) return;
-                timestamp = atof(token);
-                current_timing = timestamp - previous_timing;
+                timestamp = strtod(token, &endptr);
+                uint32_t current_timing = (uint32_t)((timestamp - previous_timing) * 1000);
                 previous_timing = timestamp;
 
                 // CAN bus ID
-                token = strtok_r(NULL, " ", &saveptr);
+                token = custom_strtok_r(NULL, " ", &saveptr);
                 if(!token) return;
                 frame_to_send.canId = hex_to_int(token);
 
                 // Data length
-                token = strtok_r(NULL, " ", &saveptr);
+                token = custom_strtok_r(NULL, " ", &saveptr);
                 if(!token) return;
                 frame_to_send.data_lenght = (uint8_t)atoi(token);
 
                 // Fill the data buffer
                 for(int i = 0; i < frame_to_send.data_lenght && i < MAX_LEN; i++) {
-                    token = strtok_r(NULL, " ", &saveptr);
+                    token = custom_strtok_r(NULL, " ", &saveptr);
                     if(!token) break;
                     frame_to_send.buffer[i] = (uint8_t)hex_to_int(token);
                 }
 
-                token = strtok_r(NULL, ",", &saveptr);
+                token = custom_strtok_r(NULL, ",", &saveptr);
                 if(token) {
                     time_to_next_frame = atoi(token);
                 }
