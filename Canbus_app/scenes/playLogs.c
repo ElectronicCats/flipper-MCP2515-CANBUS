@@ -68,49 +68,21 @@ char* custom_strtok_r(char* str, const char* delim, char** saveptr) {
     return start;
 }
 
-void play_data_frames(App* app, UniqueId* unique_ids, int unique_id_count);
-void play_data_frames_bk(void* context, int frame_interval);
-
-// Function to select log file
-bool select_log_file(App* app, FuriString* file_name) {
-    FuriString* predefined_filepath = furi_string_alloc_set_str(PATHAPP);
-    FuriString* selected_filepath = furi_string_alloc();
-    DialogsFileBrowserOptions browser_options;
-    dialog_file_browser_set_basic_options(&browser_options, ".log", NULL);
-
-    browser_options.base_path = PATHAPP;
-
-    dialog_file_browser_show(
-        app->dialogs, selected_filepath, predefined_filepath, &browser_options);
-
-    if(storage_file_open(
-           app->log_file, furi_string_get_cstr(selected_filepath), FSAM_READ, FSOM_OPEN_EXISTING)) {
-        app->size_of_storage = storage_file_size(app->log_file);
-        // File opened successfully
-        //app->log_filepath = furi_string_alloc_set(selected_filepath);
-    } else {
-        dialog_message_show_storage_error(app->dialogs, "Cannot open File");
-        // TODO: something
-        return false;
+void path_file_name(const char* path, FuriString* file_name) {
+    uint8_t last_pos = 0;
+    for(uint8_t i = 0; path[i] != '\0'; i++) {
+        if(path[i] == '/') last_pos = i + 1;
     }
-
-    if(app->size_of_storage > 25000) return false;
 
     furi_string_reset(file_name);
 
-    furi_string_cat_str(file_name, furi_string_get_cstr(selected_filepath));
-
-    furi_string_reset(app->data);
-    char buf[storage_file_size(app->log_file)];
-    storage_file_read(app->log_file, buf, sizeof(buf));
-
-    buf[sizeof(buf)] = '\0';
-    furi_string_cat_str(app->data, buf);
-
-    storage_file_close(app->log_file);
-    furi_string_free(selected_filepath);
-    furi_string_free(predefined_filepath);
+    for(uint8_t i = last_pos; path[i] != '\0'; i++) {
+        furi_string_cat_printf(file_name, "%c", path[i]);
+    }
 }
+
+void play_data_frames(App* app, UniqueId* unique_ids, int unique_id_count);
+void play_data_frames_bk(void* context, int frame_interval);
 
 // Function to play data frames
 void play_data_frames(App* app, UniqueId* unique_ids, int unique_id_count) {
@@ -207,6 +179,7 @@ void play_data_frames(App* app, UniqueId* unique_ids, int unique_id_count) {
     storage_file_seek(app->log_file, 0, true);
 }
 
+/*
 void play_data_frames_bk(void* context, int frame_interval) {
     App* app = context;
 
@@ -215,17 +188,8 @@ void play_data_frames_bk(void* context, int frame_interval) {
     ERROR_CAN error = ERROR_OK;
     debug = mcp2515_init(app->mcp_can);
 
-    FuriString* predefined_filepath = furi_string_alloc_set_str(PATHAPP);
-    FuriString* selected_filepath = furi_string_alloc();
-    DialogsFileBrowserOptions browser_options;
-    dialog_file_browser_set_basic_options(&browser_options, ".log", NULL);
-    browser_options.base_path = PATHAPP;
-
-    dialog_file_browser_show(
-        app->dialogs, selected_filepath, predefined_filepath, &browser_options);
-
     if(storage_file_open(
-           app->log_file, furi_string_get_cstr(selected_filepath), FSAM_READ, FSOM_OPEN_EXISTING)) {
+           app->log_file, furi_string_get_cstr(app->data), FSAM_READ, FSOM_OPEN_EXISTING)) {
         char buffer[256];
         size_t buffer_index = 0;
         size_t bytes_read;
@@ -360,26 +324,189 @@ void play_data_frames_bk(void* context, int frame_interval) {
         }
 
     } else {
-        dialog_message_show_storage_error(app->dialogs, "Cannot open File");
     }
     storage_file_close(app->log_file);
+}
+*/
 
-    furi_string_free(selected_filepath);
-    furi_string_free(predefined_filepath);
+void play_data_frames_bk(void* context, int frame_interval) {
+    App* app = context;
 
-    // furi_hal_gpio_write(pin_led, true);
-    // furi_delay_ms(50);
-    // furi_hal_gpio_write(pin_led, false);
+    log_info("Here 0");
+
+    //app->mcp_can->mode = MCP_NORMAL;
+    //ERROR_CAN debug = ERROR_OK;
+    // ERROR_CAN error = ERROR_OK;
+    //debug = mcp2515_init(app->mcp_can);
+
+    if(storage_file_open(
+           app->log_file, furi_string_get_cstr(app->data), FSAM_READ, FSOM_OPEN_EXISTING)) {
+        log_info("File Open");
+        char buffer[256];
+        size_t buffer_index = 0;
+        size_t bytes_read;
+        char c;
+
+        uint32_t previous_timing = 0;
+
+        unsigned int unique_ids[MAX_UNIQUE_IDS] = {0};
+        int unique_id_count = 0;
+
+        // Primera pasada: recolectar IDs únicos
+        while((bytes_read = storage_file_read(app->log_file, &c, 1)) > 0) {
+            if(c == '\n' || buffer_index >= 256 - 1) {
+                buffer[buffer_index] = '\0';
+
+                char* saveptr;
+                char* token;
+
+                // Pass timestamp
+                token = custom_strtok_r(buffer, "() ", &saveptr);
+                if(!token) continue;
+
+                // Get ID
+                token = custom_strtok_r(NULL, " ", &saveptr);
+                if(!token) continue;
+
+                uint32_t can_id = hex_to_int(token);
+
+                // Add ID to unique ID list if not present
+                bool id_exists = false;
+                for(int i = 0; i < unique_id_count; i++) {
+                    if(unique_ids[i] == can_id) {
+                        id_exists = true;
+                        break;
+                    }
+                }
+                if(!id_exists && unique_id_count < MAX_UNIQUE_IDS) {
+                    unique_ids[unique_id_count++] = can_id;
+                }
+
+                buffer_index = 0;
+            } else {
+                buffer[buffer_index++] = c;
+            }
+        }
+
+        // Print unique IDs
+        FURI_LOG_I(TAG, "IDs únicos encontrados:");
+        for(int i = 0; i < unique_id_count; i++) {
+            FURI_LOG_I(TAG, "0x%X", unique_ids[i]);
+        }
+        FURI_LOG_I(TAG, "Total de IDs únicos: %d", unique_id_count);
+
+        // Restart file
+        storage_file_seek(app->log_file, 0, true);
+
+        buffer_index = 0;
+
+        while((bytes_read = storage_file_read(app->log_file, &c, 1)) >
+              0) { // && model->flag_signal) {
+            if(c == '\n' || buffer_index >= 256 - 1) {
+                buffer[buffer_index] = '\0';
+
+                FURI_LOG_E(TAG, "%s\n", buffer);
+
+                buffer[sizeof(buffer) - 1] = '\0'; // Ensure the string is null-terminated
+
+                CANFRAME frame_to_send = {0}; // Initialize all fields to 0
+                char* saveptr;
+                char* endptr;
+                char* token;
+                int time_to_next_frame = 0;
+                double timestamp;
+
+                // Timestamp
+                token = custom_strtok_r(buffer, "() ", &saveptr);
+                if(!token) return;
+                timestamp = strtod(token, &endptr);
+                uint32_t current_timing = (uint32_t)((timestamp - previous_timing) * 1000);
+                previous_timing = timestamp;
+
+                // CAN bus ID
+                token = custom_strtok_r(NULL, " ", &saveptr);
+                if(!token) return;
+                frame_to_send.canId = hex_to_int(token);
+
+                // Data length
+                token = custom_strtok_r(NULL, " ", &saveptr);
+                if(!token) return;
+                frame_to_send.data_lenght = (uint8_t)atoi(token);
+
+                // Fill the data buffer
+                for(int i = 0; i < frame_to_send.data_lenght && i < MAX_LEN; i++) {
+                    token = custom_strtok_r(NULL, " ", &saveptr);
+                    if(!token) break;
+                    frame_to_send.buffer[i] = (uint8_t)hex_to_int(token);
+                }
+
+                token = custom_strtok_r(NULL, ",", &saveptr);
+                if(token) {
+                    time_to_next_frame = atoi(token);
+                }
+
+                if(true) {
+                    log_info(
+                        "%lx %u %x %x %x %x %x %x %x %x",
+                        frame_to_send.canId,
+                        frame_to_send.data_lenght,
+                        frame_to_send.buffer[0],
+                        frame_to_send.buffer[1],
+                        frame_to_send.buffer[2],
+                        frame_to_send.buffer[3],
+                        frame_to_send.buffer[4],
+                        frame_to_send.buffer[5],
+                        frame_to_send.buffer[6],
+                        frame_to_send.buffer[7]);
+
+                    // TODO: choose TIMING
+                    switch(frame_interval) {
+                    case TIMING_TIMESTAMP:
+                        furi_delay_ms((uint32_t)(current_timing));
+                        break;
+                    case TIMING_CUSTOM:
+                        furi_delay_ms(time_to_next_frame);
+                        break;
+                    case TIMING_DEFAULT:
+                        furi_delay_ms(1000);
+                        break;
+                    }
+                }
+                buffer_index = 0;
+            } else {
+                buffer[buffer_index++] = c;
+            }
+        }
+
+    } else {
+        log_info("File Not Open");
+    }
+    storage_file_close(app->log_file);
+}
+
+// Thread work
+int32_t thread_play_logs(void* context) {
+    App* app = context;
+
+    UNUSED(app);
+
+    log_info("Entra al hilo");
+
+    play_data_frames_bk(app, TIMING_DEFAULT);
+
+    return 0;
 }
 
 // Option callback using button OK
 void callback_input_player_options(void* context, uint32_t index) {
     App* app = context;
+
     UNUSED(app);
 
     switch(index) {
-    case 0:
-        log_info("Enter at the file manager");
+    case 2:
+        // play_data_frames_bk(app, TIMING_DEFAULT);
+        scene_manager_next_scene(app->scene_manager, app_scene_play_logs_widget);
         break;
 
     default:
@@ -415,12 +542,17 @@ void app_scene_play_logs_on_enter(void* context) {
 
     VariableItem* item;
 
+    path_file_name(furi_string_get_cstr(app->data), app->text);
+
     // reset list
     variable_item_list_reset(app->varList);
 
     // Choose File
     item = variable_item_list_add(app->varList, "File", 0, NULL, app);
-    variable_item_set_current_value_text(item, "---");
+
+    // Get the file Name
+    path_file_name(furi_string_get_cstr(app->data), app->text);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     // Timing options
     item = variable_item_list_add(
@@ -459,4 +591,35 @@ bool app_scene_play_logs_on_event(void* context, SceneManagerEvent event) {
     UNUSED(event);
     UNUSED(app);
     return consumed;
+}
+
+// Test widget
+void app_scene_play_logs_widget_on_enter(void* context) {
+    App* app = context;
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 62, 32, AlignCenter, AlignCenter, FontPrimary, "On Dev");
+
+    app->thread = furi_thread_alloc_ex("PlayLogs", 1024 * 20, thread_play_logs, app);
+    furi_thread_start(app->thread);
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+}
+
+bool app_scene_play_logs_widget_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    bool consumed = false;
+
+    UNUSED(event);
+    UNUSED(app);
+    return consumed;
+}
+
+void app_scene_play_logs_widget_on_exit(void* context) {
+    App* app = context;
+
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
+
+    widget_reset(app->widget);
 }
