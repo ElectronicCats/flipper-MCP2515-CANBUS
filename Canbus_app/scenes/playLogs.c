@@ -334,10 +334,10 @@ void play_data_frames_bk(void* context, int frame_interval) {
 
     log_info("Here 0");
 
-    //app->mcp_can->mode = MCP_NORMAL;
-    //ERROR_CAN debug = ERROR_OK;
+    app->mcp_can->mode = MCP_NORMAL;
+    ERROR_CAN debug = ERROR_OK;
     // ERROR_CAN error = ERROR_OK;
-    //debug = mcp2515_init(app->mcp_can);
+    debug = mcp2515_init(app->mcp_can);
 
     if(storage_file_open(
            app->log_file, furi_string_get_cstr(app->data), FSAM_READ, FSOM_OPEN_EXISTING)) {
@@ -445,7 +445,7 @@ void play_data_frames_bk(void* context, int frame_interval) {
                     time_to_next_frame = atoi(token);
                 }
 
-                if(true) {
+                if(debug == ERROR_OK) {
                     log_info(
                         "%lx %u %x %x %x %x %x %x %x %x",
                         frame_to_send.canId,
@@ -458,6 +458,8 @@ void play_data_frames_bk(void* context, int frame_interval) {
                         frame_to_send.buffer[5],
                         frame_to_send.buffer[6],
                         frame_to_send.buffer[7]);
+
+                    send_can_frame(app->mcp_can, &frame_to_send);
 
                     // TODO: choose TIMING
                     switch(frame_interval) {
@@ -505,7 +507,6 @@ void callback_input_player_options(void* context, uint32_t index) {
 
     switch(index) {
     case 2:
-        // play_data_frames_bk(app, TIMING_DEFAULT);
         scene_manager_next_scene(app->scene_manager, app_scene_play_logs_widget);
         break;
 
@@ -569,6 +570,7 @@ void app_scene_play_logs_on_enter(void* context) {
 
     // Play the logs
     item = variable_item_list_add(app->varList, "Play", 0, NULL, app);
+    variable_item_set_values_count(item, 5);
 
     // Set the enter callback
     variable_item_list_set_enter_callback(app->varList, callback_input_player_options, app);
