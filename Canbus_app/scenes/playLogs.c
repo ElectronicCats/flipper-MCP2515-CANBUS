@@ -68,6 +68,7 @@ char* custom_strtok_r(char* str, const char* delim, char** saveptr) {
     return start;
 }
 
+void path_file_name(const char* path, FuriString* file_name);
 void path_file_name(const char* path, FuriString* file_name) {
     uint8_t last_pos = 0;
     for(uint8_t i = 0; path[i] != '\0'; i++) {
@@ -340,7 +341,7 @@ void play_data_frames_bk(void* context, int frame_interval) {
     debug = mcp2515_init(app->mcp_can);
 
     if(storage_file_open(
-           app->log_file, furi_string_get_cstr(app->data), FSAM_READ, FSOM_OPEN_EXISTING)) {
+           app->log_file, furi_string_get_cstr(app->path), FSAM_READ, FSOM_OPEN_EXISTING)) {
         log_info("File Open");
         char buffer[256];
         size_t buffer_index = 0;
@@ -490,8 +491,6 @@ void play_data_frames_bk(void* context, int frame_interval) {
 int32_t thread_play_logs(void* context) {
     App* app = context;
 
-    UNUSED(app);
-
     log_info("Entra al hilo");
 
     play_data_frames_bk(app, TIMING_DEFAULT);
@@ -506,6 +505,10 @@ void callback_input_player_options(void* context, uint32_t index) {
     UNUSED(app);
 
     switch(index) {
+    case 0:
+        scene_manager_next_scene(app->scene_manager, app_scene_file_browser_option);
+        break;
+
     case 2:
         scene_manager_next_scene(app->scene_manager, app_scene_play_logs_widget);
         break;
@@ -522,9 +525,6 @@ void callback_player_timing_options(VariableItem* item) {
     uint8_t selected_index = variable_item_list_get_selected_item_index(app->varList);
 
     switch(selected_index) {
-    case 0:
-        break;
-
     case 1:
         uint8_t index = variable_item_get_current_value_index(item);
         variable_item_set_current_value_text(item, config_timing_names[index]);
@@ -543,17 +543,12 @@ void app_scene_play_logs_on_enter(void* context) {
 
     VariableItem* item;
 
-    path_file_name(furi_string_get_cstr(app->data), app->text);
-
     // reset list
     variable_item_list_reset(app->varList);
 
     // Choose File
     item = variable_item_list_add(app->varList, "File", 0, NULL, app);
-
-    // Get the file Name
-    path_file_name(furi_string_get_cstr(app->data), app->text);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->data));
 
     // Timing options
     item = variable_item_list_add(
@@ -570,7 +565,6 @@ void app_scene_play_logs_on_enter(void* context) {
 
     // Play the logs
     item = variable_item_list_add(app->varList, "Play", 0, NULL, app);
-    variable_item_set_values_count(item, 5);
 
     // Set the enter callback
     variable_item_list_set_enter_callback(app->varList, callback_input_player_options, app);
@@ -593,6 +587,41 @@ bool app_scene_play_logs_on_event(void* context, SceneManagerEvent event) {
     UNUSED(event);
     UNUSED(app);
     return consumed;
+}
+
+// File browser callback
+void file_browser_callback(void* context) {
+    App* app = context;
+    path_file_name(furi_string_get_cstr(app->path), app->data);
+    scene_manager_previous_scene(app->scene_manager);
+}
+
+// File Browser
+void app_scene_file_browser_on_enter(void* context) {
+    App* app = context;
+    file_browser_configure(app->file_browser, ".log", PATHLOGS, true, true, NULL, true);
+    file_browser_set_callback(app->file_browser, file_browser_callback, app);
+
+    furi_string_reset(app->text);
+    furi_string_cat(app->text, PATHLOGS);
+
+    file_browser_start(app->file_browser, app->text);
+    view_dispatcher_switch_to_view(app->view_dispatcher, FileBrowserView);
+}
+
+bool app_scene_file_browser_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    bool consumed = false;
+
+    UNUSED(event);
+    UNUSED(app);
+    return consumed;
+}
+
+void app_scene_file_browser_on_exit(void* context) {
+    App* app = context;
+    UNUSED(app);
+    file_browser_stop(app->file_browser);
 }
 
 // Test widget

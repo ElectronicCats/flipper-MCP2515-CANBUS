@@ -60,6 +60,14 @@ static App* app_alloc() {
 
     app->text = furi_string_alloc();
     app->data = furi_string_alloc();
+    app->path = furi_string_alloc();
+
+    furi_string_reset(app->data);
+    furi_string_cat_printf(app->data, "---");
+
+    app->file_browser = file_browser_alloc(app->path);
+    view_dispatcher_add_view(
+        app->view_dispatcher, FileBrowserView, file_browser_get_view(app->file_browser));
 
     app->mcp_can = mcp_alloc(MCP_NORMAL, MCP_16MHZ, MCP_500KBPS);
 
@@ -84,6 +92,7 @@ static void app_free(App* app) {
     view_dispatcher_remove_view(app->view_dispatcher, TextBoxView);
     view_dispatcher_remove_view(app->view_dispatcher, VarListView);
     view_dispatcher_remove_view(app->view_dispatcher, InputByteView);
+    view_dispatcher_remove_view(app->view_dispatcher, FileBrowserView);
 
     scene_manager_free(app->scene_manager);
     view_dispatcher_free(app->view_dispatcher);
@@ -92,9 +101,11 @@ static void app_free(App* app) {
     submenu_free(app->submenu);
     text_box_free(app->textBox);
     byte_input_free(app->input_byte_value);
+    file_browser_free(app->file_browser);
 
     furi_string_free(app->text);
     furi_string_free(app->data);
+    furi_string_free(app->path);
 
     if(app->log_file && storage_file_is_open(app->log_file)) {
         storage_file_close(app->log_file);

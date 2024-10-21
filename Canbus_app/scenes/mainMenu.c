@@ -43,7 +43,7 @@ bool OpenLogFile(App* app) {
 }
 
 // Function to select log file
-bool select_log_file(App* app) {
+/*bool select_log_file(App* app) {
     FuriString* predefined_filepath = furi_string_alloc_set_str(PATHLOGS);
     FuriString* selected_filepath = furi_string_alloc();
     DialogsFileBrowserOptions browser_options;
@@ -65,7 +65,7 @@ bool select_log_file(App* app) {
     furi_string_free(selected_filepath);
     furi_string_free(predefined_filepath);
     return true;
-}
+}*/
 
 // This function works to reset the values in the sender Option
 void reset_sender_values(void* context) {
@@ -97,9 +97,9 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
         break;
 
     case PlayLOGOption:
-        if(select_log_file(app)) {
-            scene_manager_handle_custom_event(app->scene_manager, PlayLOGOptionEvent);
-        }
+
+        scene_manager_handle_custom_event(app->scene_manager, PlayLOGOptionEvent);
+
         break;
 
     case SettingsOption:

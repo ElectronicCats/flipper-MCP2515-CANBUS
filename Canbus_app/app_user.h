@@ -9,6 +9,8 @@
 #include <gui/modules/text_input.h>
 #include <gui/modules/variable_item_list.h>
 #include <gui/modules/widget.h>
+#include <gui/modules/file_browser.h>
+#include <gui/modules/file_browser_worker.h>
 #include <gui/scene_manager.h>
 #include <gui/view_dispatcher.h>
 #include <storage/storage.h>
@@ -51,9 +53,11 @@ typedef struct {
     VariableItemList* varList;
     TextBox* textBox;
     ByteInput* input_byte_value;
+    FileBrowser* file_browser;
 
     FuriString* text;
     FuriString* data;
+    FuriString* path;
 
     Storage* storage;
     DialogsApp* dialogs;
@@ -151,6 +155,7 @@ typedef enum {
     TextBoxView,
     DialogInfoView,
     InputByteView,
+    FileBrowserView,
 } scenesViews;
 
 char* sequential_file_resolve_path(
