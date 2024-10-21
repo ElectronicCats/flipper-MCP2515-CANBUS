@@ -623,7 +623,6 @@ void input_manual_pid(void* context) {
 
         can_id = byte_values[3] | (byte_values[2] << 8) | (byte_values[1] << 16) |
                  (byte_values[0] << 24);
-
         break;
 
     case 1: // service
@@ -1101,7 +1100,8 @@ static int32_t obdii_thread_response_manual_sender_on_work(void* context) {
                 if(frame_received.canId == 0x00) break;
                 furi_string_cat_printf(
                     text,
-                    "<- %lx %x %x %x %x %x %x %x %x\n",
+                    "<-(%u) %lx %x %x %x %x %x %x %x %x\n",
+                    i,
                     frame_received.canId,
                     frame_received.buffer[0],
                     frame_received.buffer[1],

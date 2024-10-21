@@ -120,8 +120,6 @@ bool pid_manual_request(
     frame.buffer[1] = mode;
     frame.buffer[2] = pid;
 
-    if(mode == CLEAR_STORAGE_DTC || mode == REQUEST_VEHICLE_INFORMATION) frame.buffer[2] = 0;
-
     uint32_t time_delay = 0;
 
     ret = send_can_frame(CAN, &frame);
