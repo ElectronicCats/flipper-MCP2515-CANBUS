@@ -23,7 +23,7 @@ static uint8_t count_of_bytes = 2;
 static bool delete_dtc = false;
 
 // These variable are used for the VIN and ECU Name request
-static request_data = 0;
+static uint8_t request_data = 0;
 
 // odbii menu casllback
 void obdii_menu_callback(void* context, uint32_t index) {
@@ -46,14 +46,19 @@ void obdii_menu_callback(void* context, uint32_t index) {
         break;
 
     case 3:
-        scene_manager_next_scene(app->scene_manager, app_scene_obdii_get_errors_option);
+        request_data = 1;
+        scene_manager_next_scene(app->scene_manager, app_scene_car_data_option);
         break;
 
     case 4:
-        scene_manager_next_scene(app->scene_manager, app_scene_obdii_delete_errors_option);
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_get_errors_option);
         break;
 
     case 5:
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_delete_errors_option);
+        break;
+
+    case 6:
         scene_manager_next_scene(app->scene_manager, app_scene_manual_sender_pid_option);
         break;
 
@@ -73,9 +78,10 @@ void app_scene_obdii_menu_on_enter(void* context) {
     submenu_add_item(app->submenu, "Get Supported PID Codes", 0, obdii_menu_callback, app);
     submenu_add_item(app->submenu, "Show Typical Data", 1, obdii_menu_callback, app);
     submenu_add_item(app->submenu, "Get VIN number", 2, obdii_menu_callback, app);
-    submenu_add_item(app->submenu, "Show DTC", 3, obdii_menu_callback, app);
-    submenu_add_item(app->submenu, "Delete DTC", 4, obdii_menu_callback, app);
-    submenu_add_item(app->submenu, "Manual Sender PID", 5, obdii_menu_callback, app);
+    submenu_add_item(app->submenu, "Get ECU name", 3, obdii_menu_callback, app);
+    submenu_add_item(app->submenu, "Show DTC", 4, obdii_menu_callback, app);
+    submenu_add_item(app->submenu, "Delete DTC", 5, obdii_menu_callback, app);
+    submenu_add_item(app->submenu, "Manual Sender PID", 6, obdii_menu_callback, app);
 
     submenu_set_selected_item(app->submenu, app->obdii_aux_index);
 
@@ -1188,7 +1194,7 @@ static int32_t obdii_get_car_data(void* context) {
             get_VIN(&scanner, app->text);
         }
         if(request_data == 2) {
-            get_ECU_name(&scanner, app->text)
+            get_ECU_name(&scanner, app->text);
         }
     }
 
