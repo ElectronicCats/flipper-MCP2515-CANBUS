@@ -101,6 +101,22 @@ bool pid_show_data(OBDII* obdii, uint8_t pid, uint8_t* data, uint8_t size) {
     return true;
 }
 
+// get frames
+bool read_frames(MCP2515* CAN, CANFRAME* frame) {
+    uint32_t time_delay = 0;
+
+    do {
+        if(read_can_message(CAN, frame)) {
+            if(frame->canId == 0x7e8) return true;
+        }
+        furi_delay_us(1);
+        time_delay++;
+
+    } while((time_delay < 6000));
+
+    return false;
+}
+
 // It works to send a mode in the pid
 bool pid_manual_request(
     OBDII* obdii,
@@ -120,13 +136,12 @@ bool pid_manual_request(
     frame.buffer[1] = mode;
     frame.buffer[2] = pid;
 
-    uint32_t time_delay = 0;
+    // uint32_t time_delay = 0;
 
     ret = send_can_frame(CAN, &frame);
 
     if(ret != ERROR_OK) return false;
 
-    frame.canId = 0x7df;
     frame.buffer[0] = 0x30;
     frame.buffer[1] = 0;
     frame.buffer[2] = 0;
@@ -138,19 +153,24 @@ bool pid_manual_request(
         }
 
         ret = ERROR_FAIL;
-        time_delay = 0;
 
-        do {
+        // time_delay = 0;
+
+        /*do {
             if(read_can_message(CAN, &(frames_to_read[i]))) {
                 if(frames_to_read[i].canId == 0x7e8) ret = ERROR_OK;
             }
             furi_delay_us(1);
             time_delay++;
 
-        } while((ret != ERROR_OK) && (time_delay < 1000));
+        } while((ret != ERROR_OK) && (time_delay < 6000));*/
 
-        if(ret != ERROR_OK && i == 0) return false;
-        if(ret != ERROR_OK) break;
+        if(!read_frames(CAN, &(frames_to_read[i]))) {
+            if(i == 0)
+                return false;
+            else
+                break;
+        }
     }
 
     return true;
