@@ -22,6 +22,9 @@ static uint8_t count_of_bytes = 2;
 // This variable works to know if it wishes to delete the DTC storage
 static bool delete_dtc = false;
 
+// These variable are used for the VIN and ECU Name request
+static request_data = 0;
+
 // odbii menu casllback
 void obdii_menu_callback(void* context, uint32_t index) {
     App* app = context;
@@ -38,14 +41,18 @@ void obdii_menu_callback(void* context, uint32_t index) {
         break;
 
     case 2:
-        scene_manager_next_scene(app->scene_manager, app_scene_obdii_get_errors_option);
+        scene_manager_next_scene(app->scene_manager, app_scene_car_data_option);
         break;
 
     case 3:
-        scene_manager_next_scene(app->scene_manager, app_scene_obdii_delete_errors_option);
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_get_errors_option);
         break;
 
     case 4:
+        scene_manager_next_scene(app->scene_manager, app_scene_obdii_delete_errors_option);
+        break;
+
+    case 5:
         scene_manager_next_scene(app->scene_manager, app_scene_manual_sender_pid_option);
         break;
 
@@ -64,9 +71,10 @@ void app_scene_obdii_menu_on_enter(void* context) {
     // Examples
     submenu_add_item(app->submenu, "Get Supported PID Codes", 0, obdii_menu_callback, app);
     submenu_add_item(app->submenu, "Show Typical Data", 1, obdii_menu_callback, app);
-    submenu_add_item(app->submenu, "Show DTC", 2, obdii_menu_callback, app);
-    submenu_add_item(app->submenu, "Delete DTC", 3, obdii_menu_callback, app);
-    submenu_add_item(app->submenu, "Manual Sender PID", 4, obdii_menu_callback, app);
+    submenu_add_item(app->submenu, "Get VIN number", 2, obdii_menu_callback, app);
+    submenu_add_item(app->submenu, "Show DTC", 3, obdii_menu_callback, app);
+    submenu_add_item(app->submenu, "Delete DTC", 4, obdii_menu_callback, app);
+    submenu_add_item(app->submenu, "Manual Sender PID", 5, obdii_menu_callback, app);
 
     submenu_set_selected_item(app->submenu, app->obdii_aux_index);
 
@@ -92,6 +100,7 @@ static int32_t obdii_thread_on_work(void* context);
 static int32_t obdii_thread_getting_pid_supported_on_work(void* context);
 static int32_t obdii_thread_dtc_on_work(void* context);
 static int32_t obdii_thread_response_manual_sender_on_work(void* context);
+static int32_t obdii_get_car_data(void* context);
 
 /*
 
@@ -404,6 +413,36 @@ void app_scene_list_supported_pid_on_exit(void* context) {
     }
 
     submenu_reset(app->submenu);
+}
+
+/*
+    Scene to get the VIN and ECU Name
+*/
+// Scene on enter
+void app_scene_get_car_data_on_enter(void* context) {
+    App* app = context;
+    widget_reset(app->widget);
+
+    app->thread = furi_thread_alloc_ex("CarDatas", 1024, obdii_get_car_data, app);
+    furi_thread_start(app->thread);
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+}
+
+// Scene on event
+bool app_scene_get_car_data_on_event(void* context, SceneManagerEvent event) {
+    UNUSED(context);
+    UNUSED(event);
+
+    return false;
+}
+
+// Scene on exit
+void app_scene_get_car_data_on_exit(void* context) {
+    App* app = context;
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
+    widget_reset(app->widget);
 }
 
 /*
@@ -907,6 +946,8 @@ static int32_t obdii_thread_on_work(void* context) {
                     draw_scene(app, option, sum_value(data[3], data[4]));
                     break;
 
+                case 7:
+
                 default:
                     draw_in_development(app);
                     break;
@@ -917,8 +958,6 @@ static int32_t obdii_thread_on_work(void* context) {
         }
     }
     pid_deinit(&scanner);
-
-    UNUSED(app);
     return 0;
 }
 
@@ -1124,6 +1163,27 @@ static int32_t obdii_thread_response_manual_sender_on_work(void* context) {
     } else {
         furi_string_printf(text, "DEVICE NO CONNECTED!");
         text_box_set_text(app->textBox, furi_string_get_cstr(text));
+    }
+
+    pid_deinit(&scanner);
+
+    return 0;
+}
+
+/*
+    Thread to get the VIN number
+*/
+
+static int32_t obdii_get_car_data(void* context) {
+    App* app = context;
+    OBDII scanner;
+
+    scanner.bitrate = app->mcp_can->bitRate;
+
+    bool run = pid_init(&scanner);
+
+    if(run) {
+        get_VIN(&scanner, app->text);
     }
 
     pid_deinit(&scanner);

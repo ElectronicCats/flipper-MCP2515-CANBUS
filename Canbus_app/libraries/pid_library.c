@@ -368,6 +368,60 @@ bool request_dtc(OBDII* obdii, uint8_t* count, char* codes[]) {
     return true;
 }
 
+// Separate frames in arrays
+void separate_VIN_data(CANFRAME frame, uint8_t* vin, uint8_t count) {
+    count = count * 7;
+
+    for(uint8_t i = 0; i < 7; i++) {
+        vin[i + count] = frame.buffer[i + 1];
+    }
+}
+
+// Get the CAR VIN
+bool get_VIN(OBDII* obdii, FuriString* vin_number) {
+    CANFRAME canframes[5];
+
+    memset(canframes, 0, sizeof(canframes));
+
+    if(!pid_manual_request(obdii, 0x7df, REQUEST_VEHICLE_INFORMATION, 0x2, canframes, 5, 2))
+        return false;
+
+    if(canframes[0].buffer[2] != 0x49) return false;
+
+    uint32_t extension = canframes[0].buffer[1];
+
+    log_info("extension: %lu", extension);
+
+    uint8_t vin[40];
+
+    memset(vin, 0, sizeof(vin));
+
+    for(uint8_t i = 0; i < 5; i++) {
+        separate_VIN_data(canframes[i], vin, i);
+    }
+
+    char letters_vin[extension];
+
+    for(uint8_t i = 0; i < extension; i++) {
+        if(vin[i + 1] < 32) {
+            letters_vin[i] = ' ';
+        } else {
+            letters_vin[i] = vin[i + 1];
+        }
+        log_info("letter: %c  number: %x", letters_vin[i], vin[i + 1]);
+    }
+
+    furi_string_reset(vin_number);
+
+    for(uint8_t i = 0; i < extension; i++) {
+        furi_string_cat_printf(vin_number, "%c", letters_vin[i]);
+    }
+
+    log_info("%s", furi_string_get_cstr(vin_number));
+
+    return true;
+}
+
 // It works to free
 void pid_deinit(OBDII* obdii) {
     free_mcp2515(obdii->CAN);

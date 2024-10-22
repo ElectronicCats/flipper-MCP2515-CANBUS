@@ -1,7 +1,6 @@
 #ifndef PID_LIBRARY
 #define PID_LIBRARY
 
-#include "string.h"
 #include "mcp_can_2515.h"
 
 #define ECU_TYPICAL_ID_STANDAR 0x7E8
@@ -125,6 +124,9 @@ bool request_dtc(OBDII* obdii, uint8_t* count, char* codes[]);
 
 // Clear DTC
 bool clear_dtc(OBDII* obdii);
+
+// Get VIN 
+bool get_VIN(OBDII* obdii, FuriString* String);
 
 // Function to calculate the engine speed
 uint16_t calculate_engine_speed(uint8_t value_a, uint8_t value_b);
