@@ -41,6 +41,7 @@ void obdii_menu_callback(void* context, uint32_t index) {
         break;
 
     case 2:
+        request_data = 1;
         scene_manager_next_scene(app->scene_manager, app_scene_car_data_option);
         break;
 
@@ -1183,7 +1184,12 @@ static int32_t obdii_get_car_data(void* context) {
     bool run = pid_init(&scanner);
 
     if(run) {
-        get_VIN(&scanner, app->text);
+        if(request_data == 1) {
+            get_VIN(&scanner, app->text);
+        }
+        if(request_data == 2) {
+            get_ECU_name(&scanner, app->text)
+        }
     }
 
     pid_deinit(&scanner);

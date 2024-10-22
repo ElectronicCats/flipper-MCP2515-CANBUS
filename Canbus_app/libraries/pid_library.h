@@ -125,8 +125,11 @@ bool request_dtc(OBDII* obdii, uint8_t* count, char* codes[]);
 // Clear DTC
 bool clear_dtc(OBDII* obdii);
 
-// Get VIN 
+// Get VIN
 bool get_VIN(OBDII* obdii, FuriString* String);
+
+// Get ECU Name
+bool get_ECU_name(OBDII* obdii, FuriString* ecu_name);
 
 // Function to calculate the engine speed
 uint16_t calculate_engine_speed(uint8_t value_a, uint8_t value_b);

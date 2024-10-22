@@ -390,7 +390,45 @@ bool get_VIN(OBDII* obdii, FuriString* vin_number) {
 
     uint32_t extension = canframes[0].buffer[1];
 
-    log_info("extension: %lu", extension);
+    uint8_t vin[40];
+
+    memset(vin, 0, sizeof(vin));
+
+    for(uint8_t i = 0; i < 5; i++) {
+        separate_VIN_data(canframes[i], vin, i);
+    }
+
+    char letters_vin[extension];
+
+    for(uint8_t i = 0; i < extension; i++) {
+        if(vin[i + 1] < 32) {
+            letters_vin[i] = ' ';
+        } else {
+            letters_vin[i] = vin[i + 1];
+        }
+    }
+
+    furi_string_reset(vin_number);
+
+    for(uint8_t i = 0; i < extension; i++) {
+        furi_string_cat_printf(vin_number, "%c", letters_vin[i]);
+    }
+
+    return true;
+}
+
+// Get the ECU Name
+bool get_ECU_name(OBDII* obdii, FuriString* ecu_name) {
+    CANFRAME canframes[5];
+
+    memset(canframes, 0, sizeof(canframes));
+
+    if(!pid_manual_request(obdii, 0x7df, REQUEST_VEHICLE_INFORMATION, 0xA, canframes, 5, 2))
+        return false;
+
+    if(canframes[0].buffer[2] != 0x49) return false;
+
+    uint32_t extension = canframes[0].buffer[1];
 
     uint8_t vin[40];
 
@@ -408,16 +446,13 @@ bool get_VIN(OBDII* obdii, FuriString* vin_number) {
         } else {
             letters_vin[i] = vin[i + 1];
         }
-        log_info("letter: %c  number: %x", letters_vin[i], vin[i + 1]);
     }
 
-    furi_string_reset(vin_number);
+    furi_string_reset(ecu_name);
 
     for(uint8_t i = 0; i < extension; i++) {
-        furi_string_cat_printf(vin_number, "%c", letters_vin[i]);
+        furi_string_cat_printf(ecu_name, "%c", letters_vin[i]);
     }
-
-    log_info("%s", furi_string_get_cstr(vin_number));
 
     return true;
 }
