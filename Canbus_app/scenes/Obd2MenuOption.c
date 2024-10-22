@@ -46,7 +46,7 @@ void obdii_menu_callback(void* context, uint32_t index) {
         break;
 
     case 3:
-        request_data = 1;
+        request_data = 2;
         scene_manager_next_scene(app->scene_manager, app_scene_car_data_option);
         break;
 
@@ -1191,12 +1191,35 @@ static int32_t obdii_get_car_data(void* context) {
 
     if(run) {
         if(request_data == 1) {
-            get_VIN(&scanner, app->text);
+            if(get_VIN(&scanner, app->text)) {
+                widget_add_string_element(
+                    app->widget,
+                    64,
+                    32,
+                    AlignCenter,
+                    AlignCenter,
+                    FontSecondary,
+                    furi_string_get_cstr(app->text));
+            } else {
+                draw_send_wrong(app);
+            }
         }
         if(request_data == 2) {
-            get_ECU_name(&scanner, app->text);
+            if(get_ECU_name(&scanner, app->text)) {
+                widget_add_string_element(
+                    app->widget,
+                    64,
+                    32,
+                    AlignCenter,
+                    AlignCenter,
+                    FontSecondary,
+                    furi_string_get_cstr(app->text));
+            } else {
+                draw_send_wrong(app);
+            }
         }
-    }
+    } else
+        draw_device_no_connected(app);
 
     pid_deinit(&scanner);
 
