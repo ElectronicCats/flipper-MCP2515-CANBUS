@@ -628,7 +628,6 @@ ERROR_CAN send_can_message(FuriHalSpiBusHandle* spi, CANFRAME* frame, uint8_t tx
         read_register(spi, free_buffer - 1, &is_send_it);
         if(is_send_it == 0) res = ERROR_OK;
 
-        furi_delay_us(1);
     } while((res != ERROR_OK) && ((furi_get_tick() - time_waiting) < 1));
 
     if(is_send_it) return res;
