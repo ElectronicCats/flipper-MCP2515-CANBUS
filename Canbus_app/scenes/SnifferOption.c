@@ -141,9 +141,6 @@ void draw_box_text(App* app) {
     text_box_set_focus(app->textBox, TextBoxFocusEnd);
 }
 
-// --------------------------- Thread on work
-// ------------------------------------------------------
-
 static int32_t worker_sniffing(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
@@ -151,8 +148,7 @@ static int32_t worker_sniffing(void* context) {
     FuriString* text_label = furi_string_alloc();
 
     uint8_t num_of_devices = 0;
-    uint32_t time_select = 0;
-    UNUSED(time_select);
+    uint32_t current_time = 0;
 
     bool run = true;
     bool first_address = true;
@@ -169,6 +165,8 @@ static int32_t worker_sniffing(void* context) {
         bool new = true;
 
         if(read_can_message(mcp_can, &frame) == ERROR_OK) {
+            current_time = furi_get_tick();
+
             if(first_address) {
                 app->frameArray[num_of_devices] = frame;
                 app->times[num_of_devices] = 0;
@@ -230,7 +228,7 @@ static int32_t worker_sniffing(void* context) {
 
                 if(app->log_file_ready && (app->save_logs == SaveAll)) {
                     app->can_frame = frame;
-                    write_data_on_file(app->can_frame, app->log_file, app->time);
+                    write_data_on_file(app->can_frame, app->log_file, current_time);
                 }
             }
 
@@ -246,7 +244,7 @@ static int32_t worker_sniffing(void* context) {
                         write_data_on_file(
                             app->frameArray[app->sniffer_index],
                             app->log_file,
-                            app->times[app->sniffer_index]);
+                            app->current_time[app->sniffer_index]);
                     }
                 }
             }
@@ -269,9 +267,6 @@ static int32_t worker_sniffing(void* context) {
     free_mcp2515(mcp_can);
     return 0;
 }
-
-// ------------------------------------------------------ SNIFFING MENU SCENE
-// ---------------------------
 
 void app_scene_sniffing_on_enter(void* context) {
     App* app = context;
@@ -328,9 +323,6 @@ void app_scene_sniffing_on_exit(void* context) {
     }
 }
 
-//-------------------------- FOR THE SNIFFING BOX
-//--------------------------------------------------------
-
 void app_scene_box_sniffing_on_enter(void* context) {
     App* app = context;
 
@@ -357,9 +349,6 @@ void app_scene_box_sniffing_on_exit(void* context) {
     furi_string_reset(app->text);
     text_box_reset(app->textBox);
 }
-
-//-------------------------- FOR THE UNPLUG DEVICE
-//--------------------------------------------------------
 
 void app_scene_device_no_connected_on_enter(void* context) {
     App* app = context;
