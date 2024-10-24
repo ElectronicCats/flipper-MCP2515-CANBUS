@@ -9,6 +9,8 @@
 #include <gui/modules/text_input.h>
 #include <gui/modules/variable_item_list.h>
 #include <gui/modules/widget.h>
+#include <gui/modules/file_browser.h>
+#include <gui/modules/file_browser_worker.h>
 #include <gui/scene_manager.h>
 #include <gui/view_dispatcher.h>
 #include <storage/storage.h>
@@ -51,9 +53,11 @@ typedef struct {
     VariableItemList* varList;
     TextBox* textBox;
     ByteInput* input_byte_value;
+    FileBrowser* file_browser;
 
     FuriString* text;
     FuriString* data;
+    FuriString* path;
 
     Storage* storage;
     DialogsApp* dialogs;
@@ -64,6 +68,8 @@ typedef struct {
 
     uint32_t sniffer_index;
     uint32_t sniffer_index_aux;
+
+    uint8_t config_timing_index;
 
     uint8_t num_of_devices;
     uint8_t sender_selected_item;
@@ -81,6 +87,7 @@ typedef enum {
     SenderOption,
     ObdiiOption,
     ReadLOGOption,
+    PlayLOGOption,
     SettingsOption,
     AboutUsOption,
 } MainMenuOptions;
@@ -92,6 +99,7 @@ typedef enum {
     SettingsOptionEvent,
     ObdiiOptionEvent,
     ReadLOGOptionEvent,
+    PlayLOGOptionEvent,
     AboutUsEvent,
 } MainMenuEvents;
 
@@ -114,6 +122,12 @@ typedef enum {
     SetIdEvent,
     ReturnEvent
 } SenderEvents;
+
+// These are the player events
+typedef enum {
+    ChooseTimingEvent,
+    ReturnTimingEvent
+} PlayerEvents;
 
 // These are the options to save
 typedef enum {
@@ -142,6 +156,7 @@ typedef enum {
     TextBoxView,
     DialogInfoView,
     InputByteView,
+    FileBrowserView,
 } scenesViews;
 
 char* sequential_file_resolve_path(
