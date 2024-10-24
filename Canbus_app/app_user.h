@@ -26,6 +26,8 @@
 
 #define DEVICE_NO_CONNECTED (0xFF)
 
+#define MESSAGE_ERROR 0xF0
+
 typedef enum {
     WorkerflagStop = (1 << 0),
     WorkerflagReceived = (1 << 1),
@@ -79,6 +81,8 @@ typedef struct {
     uint8_t flags;
 
     uint64_t size_of_storage;
+
+    uint8_t request_data;
 } App;
 
 // This is for the menu Options
@@ -159,8 +163,10 @@ typedef enum {
     FileBrowserView,
 } scenesViews;
 
-char* sequential_file_resolve_path(
-    Storage* storage,
-    const char* dir,
-    const char* prefix,
-    const char* extension);
+/**
+ * These functions works in other scenes and widget
+ */
+
+void draw_in_development(App* app);
+void draw_device_no_connected(App* app);
+void draw_send_wrong(App* app);
