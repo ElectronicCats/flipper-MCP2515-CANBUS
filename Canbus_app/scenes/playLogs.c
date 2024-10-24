@@ -136,6 +136,18 @@ void draw_finished(App* app) {
         app->widget, 62, 32, AlignCenter, AlignBottom, FontPrimary, "Replay Finished");
 }
 
+void draw_file_no_opened(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 62, 32, AlignCenter, AlignBottom, FontPrimary, "File cannot be opened");
+}
+
+void draw_starting_transmition(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 62, 32, AlignCenter, AlignBottom, FontPrimary, "Starting Transmition");
+}
+
 void play_data_frames_bk(void* context, int frame_interval) {
     App* app = context;
 
@@ -156,7 +168,8 @@ void play_data_frames_bk(void* context, int frame_interval) {
         return;
     }
 
-    log_info("File Open");
+    draw_starting_transmition(app);
+
     char buffer[256];
     //char next_buffer[256];
     size_t buffer_index = 0;
@@ -229,7 +242,17 @@ void play_data_frames_bk(void* context, int frame_interval) {
         // Apply timing based on frame_interval mode
         switch(frame_interval) {
         case TIMING_CUSTOM:
-            delay = 1000;
+            if(costum_timing == 0) {
+                costum_timing = 1;
+            }
+
+            delay = costum_timing * pow(10, multiply);
+
+            if(first_frame) {
+                delay = 0;
+                first_frame = false;
+            }
+
             break;
 
         case TIMING_TIMESTAMP:
@@ -285,10 +308,13 @@ int32_t thread_play_logs(void* context) {
 
     log_info("Entra al hilo");
 
-    play_data_frames_bk(app, TIMING_TIMESTAMP);
+    play_data_frames_bk(app, app->config_timing_index);
 
     return 0;
 }
+
+void draw_list(App* app);
+void draw_list_costum(App* app);
 
 // Option callback using button OK
 void callback_input_player_options(void* context, uint32_t index) {
@@ -322,6 +348,33 @@ void callback_player_timing_options(VariableItem* item) {
         variable_item_set_current_value_text(item, config_timing_names[index]);
 
         app->config_timing_index = index;
+
+        if(app->config_timing_index == TIMING_CUSTOM) {
+            draw_list_costum(app);
+        } else {
+            draw_list(app);
+        }
+
+        break;
+
+    case 3:
+        costum_timing = variable_item_get_current_value_index(item);
+
+        variable_item_set_current_value_index(item, costum_timing);
+
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "%lu", costum_timing);
+
+        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+
+        break;
+
+    case 4:
+        multiply = variable_item_get_current_value_index(item);
+
+        variable_item_set_current_value_index(item, multiply);
+
+        variable_item_set_current_value_text(item, multiply_timing[multiply]);
         break;
 
     default:
@@ -350,20 +403,65 @@ void draw_list(App* app) {
         callback_player_timing_options,
         app);
 
-    uint8_t config_timing_index = 0;
-    app->config_timing_index = config_timing_index;
-    variable_item_set_current_value_index(item, config_timing_index);
-    variable_item_set_current_value_text(item, config_timing_names[config_timing_index]);
+    variable_item_set_current_value_index(item, app->config_timing_index);
+    variable_item_set_current_value_text(item, config_timing_names[app->config_timing_index]);
 
     // Set the enter callback
     variable_item_list_set_enter_callback(app->varList, callback_input_player_options, app);
+}
+
+void draw_list_costum(App* app) {
+    VariableItem* item;
+
+    // reset list
+    variable_item_list_reset(app->varList);
+
+    // Play the logs
+    item = variable_item_list_add(app->varList, "Play", 0, NULL, app);
+
+    // Choose File
+    item = variable_item_list_add(app->varList, "File", 0, NULL, app);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->data));
+
+    // Timing options
+    item = variable_item_list_add(
+        app->varList,
+        "Timing",
+        COUNT_OF(config_timing_values),
+        callback_player_timing_options,
+        app);
+
+    variable_item_set_current_value_index(item, app->config_timing_index);
+    variable_item_set_current_value_text(item, config_timing_names[app->config_timing_index]);
+
+    // Timing options
+    item =
+        variable_item_list_add(app->varList, "Time(ms)", 99, callback_player_timing_options, app);
+    variable_item_set_current_value_index(item, costum_timing);
+
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "%lu", costum_timing);
+
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+
+    // Set the enter callback
+    variable_item_list_set_enter_callback(app->varList, callback_input_player_options, app);
+
+    item = variable_item_list_add(
+        app->varList, "Time(ms)", COUNT_OF(multiply_timing), callback_player_timing_options, app);
+    variable_item_set_current_value_index(item, multiply);
+    variable_item_set_current_value_text(item, multiply_timing[multiply]);
 }
 
 // The function to enter a Scene
 void app_scene_play_logs_on_enter(void* context) {
     App* app = context;
 
-    draw_list(app);
+    if(app->config_timing_index == TIMING_CUSTOM) {
+        draw_list_costum(app);
+    } else {
+        draw_list(app);
+    }
 
     // Switch View
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
