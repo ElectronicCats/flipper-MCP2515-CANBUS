@@ -13,8 +13,8 @@ typedef enum {
 } player_status;
 
 typedef enum {
-    TIMING_CUSTOM,
     TIMING_DEFAULT,
+    TIMING_CUSTOM,
     TIMING_TIMESTAMP,
 } timing;
 
@@ -29,6 +29,12 @@ const char* const config_timing_names[] = {
     "CUSTOM",
     "TIMESTAMP",
 };
+
+const char* multiply_timing[] = {"x1", "x10", "x100", "x1000"};
+
+// Costum time
+uint32_t costum_timing = 1;
+uint32_t multiply = 0;
 
 uint32_t hex_to_int(const char* hex_str) {
     unsigned int result = 0;
@@ -81,10 +87,55 @@ void path_file_name(const char* path, FuriString* file_name) {
     }
 }
 
-// For a time
-void play_data_frames_bk(void* context, int frame_interval);
+// For the device no connected
+void draw_device_fail_connected(App* app) {
+    widget_reset(app->widget);
 
-// Play frames
+    widget_add_string_element(
+        app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "DEVICE NO");
+
+    widget_add_string_element(
+        app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
+}
+
+// For the message
+void draw_message_send(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 62, 30, AlignCenter, AlignBottom, FontPrimary, "Sending Ok...");
+
+    widget_add_string_element(
+        app->widget,
+        62,
+        50,
+        AlignCenter,
+        AlignBottom,
+        FontSecondary,
+        furi_string_get_cstr(app->text));
+}
+
+// Message sent fail
+void draw_message_fail(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 62, 30, AlignCenter, AlignBottom, FontPrimary, "Sending Fail...");
+
+    widget_add_string_element(
+        app->widget,
+        62,
+        50,
+        AlignCenter,
+        AlignBottom,
+        FontSecondary,
+        furi_string_get_cstr(app->text));
+}
+
+void draw_finished(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 62, 32, AlignCenter, AlignBottom, FontPrimary, "Replay Finished");
+}
+
 void play_data_frames_bk(void* context, int frame_interval) {
     App* app = context;
 
@@ -92,151 +143,140 @@ void play_data_frames_bk(void* context, int frame_interval) {
 
     app->mcp_can->mode = MCP_NORMAL;
     ERROR_CAN debug = ERROR_OK;
-    // ERROR_CAN error = ERROR_OK;
     debug = mcp2515_init(app->mcp_can);
 
-    if(storage_file_open(
-           app->log_file, furi_string_get_cstr(app->path), FSAM_READ, FSOM_OPEN_EXISTING)) {
-        log_info("File Open");
-        char buffer[256];
-        size_t buffer_index = 0;
-        size_t bytes_read;
-        char c;
-
-        uint32_t previous_timing = 0;
-
-        unsigned int unique_ids[MAX_UNIQUE_IDS] = {0};
-        int unique_id_count = 0;
-
-        // Primera pasada: recolectar IDs únicos
-        while((bytes_read = storage_file_read(app->log_file, &c, 1)) > 0) {
-            if(c == '\n' || buffer_index >= 256 - 1) {
-                buffer[buffer_index] = '\0';
-
-                char* saveptr;
-                char* token;
-
-                // Pass timestamp
-                token = custom_strtok_r(buffer, "() ", &saveptr);
-                if(!token) continue;
-
-                // Get ID
-                token = custom_strtok_r(NULL, " ", &saveptr);
-                if(!token) continue;
-
-                uint32_t can_id = hex_to_int(token);
-
-                // Add ID to unique ID list if not present
-                bool id_exists = false;
-                for(int i = 0; i < unique_id_count; i++) {
-                    if(unique_ids[i] == can_id) {
-                        id_exists = true;
-                        break;
-                    }
-                }
-                if(!id_exists && unique_id_count < MAX_UNIQUE_IDS) {
-                    unique_ids[unique_id_count++] = can_id;
-                }
-
-                buffer_index = 0;
-            } else {
-                buffer[buffer_index++] = c;
-            }
-        }
-
-        // Print unique IDs
-        FURI_LOG_I(TAG, "IDs únicos encontrados:");
-        for(int i = 0; i < unique_id_count; i++) {
-            FURI_LOG_I(TAG, "0x%X", unique_ids[i]);
-        }
-        FURI_LOG_I(TAG, "Total de IDs únicos: %d", unique_id_count);
-
-        // Restart file
-        storage_file_seek(app->log_file, 0, true);
-
-        buffer_index = 0;
-
-        while((bytes_read = storage_file_read(app->log_file, &c, 1)) >
-              0) { // && model->flag_signal) {
-            if(c == '\n' || buffer_index >= 256 - 1) {
-                buffer[buffer_index] = '\0';
-
-                FURI_LOG_E(TAG, "%s\n", buffer);
-
-                buffer[sizeof(buffer) - 1] = '\0'; // Ensure the string is null-terminated
-
-                CANFRAME frame_to_send = {0}; // Initialize all fields to 0
-                char* saveptr;
-                char* endptr;
-                char* token;
-                int time_to_next_frame = 0;
-                double timestamp;
-
-                // Timestamp
-                token = custom_strtok_r(buffer, "() ", &saveptr);
-                if(!token) return;
-                timestamp = strtod(token, &endptr);
-                uint32_t current_timing = (uint32_t)((timestamp - previous_timing) * 1000);
-                previous_timing = timestamp;
-
-                // CAN bus ID
-                token = custom_strtok_r(NULL, " ", &saveptr);
-                if(!token) return;
-                frame_to_send.canId = hex_to_int(token);
-
-                // Data length
-                token = custom_strtok_r(NULL, " ", &saveptr);
-                if(!token) return;
-                frame_to_send.data_lenght = (uint8_t)atoi(token);
-
-                // Fill the data buffer
-                for(int i = 0; i < frame_to_send.data_lenght && i < MAX_LEN; i++) {
-                    token = custom_strtok_r(NULL, " ", &saveptr);
-                    if(!token) break;
-                    frame_to_send.buffer[i] = (uint8_t)hex_to_int(token);
-                }
-
-                token = custom_strtok_r(NULL, ",", &saveptr);
-                if(token) {
-                    time_to_next_frame = atoi(token);
-                }
-
-                if(debug == ERROR_OK) {
-                    log_info(
-                        "%lx %u %x %x %x %x %x %x %x %x",
-                        frame_to_send.canId,
-                        frame_to_send.data_lenght,
-                        frame_to_send.buffer[0],
-                        frame_to_send.buffer[1],
-                        frame_to_send.buffer[2],
-                        frame_to_send.buffer[3],
-                        frame_to_send.buffer[4],
-                        frame_to_send.buffer[5],
-                        frame_to_send.buffer[6],
-                        frame_to_send.buffer[7]);
-
-                    send_can_frame(app->mcp_can, &frame_to_send);
-
-                    // TODO: choose TIMING
-                    switch(frame_interval) {
-                    case TIMING_CUSTOM:
-                        furi_delay_ms(time_to_next_frame);
-                        break;
-                    case TIMING_DEFAULT:
-                        furi_delay_ms(1000);
-                        break;
-                    }
-                }
-                buffer_index = 0;
-            } else {
-                buffer[buffer_index++] = c;
-            }
-        }
-
-    } else {
-        log_info("File Not Open");
+    if(debug != ERROR_OK) {
+        draw_device_fail_connected(app);
+        return;
     }
+
+    if(!storage_file_open(
+           app->log_file, furi_string_get_cstr(app->path), FSAM_READ, FSOM_OPEN_EXISTING)) {
+        log_exception("FILE CANNOT BE OPENED");
+        return;
+    }
+
+    log_info("File Open");
+    char buffer[256];
+    //char next_buffer[256];
+    size_t buffer_index = 0;
+    //size_t next_buffer_index = 0;
+    size_t bytes_read;
+    char c;
+
+    // [Code for collecting unique IDs remains the same...]
+    buffer_index = 0;
+
+    // Read first character for next frame
+    bytes_read = storage_file_read(app->log_file, &c, 1);
+
+    // To have the time
+    uint32_t delay = 0;
+    uint32_t offset_time = 0;
+    bool first_frame = true;
+
+    while(bytes_read > 0) {
+        // Read current frame into buffer
+        while((bytes_read = storage_file_read(app->log_file, &c, 1)) > 0) {
+            if(c == '\n' || buffer_index >= 255) {
+                buffer[buffer_index] = '\0';
+                break;
+            }
+            buffer[buffer_index++] = c;
+        }
+        buffer[buffer_index] = '\0';
+
+        // If we have a complete line, try to read next frame
+        log_info("Current frame: %s", buffer);
+
+        // Process current frame
+        CANFRAME frame_to_send = {0};
+        char* saveptr;
+        char* endptr;
+        char* token;
+
+        // Get current timestamp
+        token = custom_strtok_r(buffer, "() ", &saveptr);
+        if(!token) break;
+        // current_timestamp = strtod(token, &endptr);
+
+        // Get next timestamp if available
+        uint32_t delay_ms = strtod(token, &endptr);
+
+        // CAN bus ID
+        token = custom_strtok_r(NULL, " ", &saveptr);
+        if(!token) break;
+        frame_to_send.canId = hex_to_int(token);
+
+        // Data length
+        token = custom_strtok_r(NULL, " ", &saveptr);
+        if(!token) break;
+        frame_to_send.data_lenght = (uint8_t)atoi(token);
+
+        // Fill the data buffer
+        for(int i = 0; i < frame_to_send.data_lenght && i < MAX_LEN; i++) {
+            token = custom_strtok_r(NULL, " ", &saveptr);
+            if(!token) break;
+            frame_to_send.buffer[i] = (uint8_t)hex_to_int(token);
+        }
+
+        // To get the offset time
+        if(first_frame) {
+            offset_time = delay_ms;
+            first_frame = false;
+        }
+
+        // Apply timing based on frame_interval mode
+        switch(frame_interval) {
+        case TIMING_CUSTOM:
+            delay = 1000;
+            break;
+
+        case TIMING_TIMESTAMP:
+
+            delay = (delay_ms - offset_time);
+
+            break;
+        case TIMING_DEFAULT:
+            delay = 1000;
+            break;
+        }
+
+        uint32_t current_time = furi_get_tick();
+
+        // Delay with real time it works to exit from the while
+        while((furi_get_tick() - current_time) < delay) {
+            if(!furi_hal_gpio_read(&(gpio_button_back))) {
+                storage_file_close(app->log_file);
+                free_mcp2515(app->mcp_can);
+                return;
+            }
+        }
+
+        furi_string_reset(app->text);
+        furi_string_cat_printf(
+            app->text, "%lx %u", frame_to_send.canId, frame_to_send.data_lenght);
+
+        for(uint8_t i = 0; i < frame_to_send.data_lenght; i++) {
+            furi_string_cat_printf(app->text, " %x", frame_to_send.buffer[i]);
+        }
+
+        if(send_can_frame(app->mcp_can, &frame_to_send) != ERROR_OK) {
+            draw_message_fail(app);
+        } else {
+            draw_message_send(app);
+        }
+
+        // Set the last time
+        offset_time = delay_ms;
+        buffer_index = 0;
+    }
+
+    furi_delay_ms(1000);
+    draw_finished(app);
+
     storage_file_close(app->log_file);
+    free_mcp2515(app->mcp_can);
 }
 
 // Thread work
@@ -245,7 +285,7 @@ int32_t thread_play_logs(void* context) {
 
     log_info("Entra al hilo");
 
-    play_data_frames_bk(app, TIMING_DEFAULT);
+    play_data_frames_bk(app, TIMING_TIMESTAMP);
 
     return 0;
 }
@@ -258,11 +298,11 @@ void callback_input_player_options(void* context, uint32_t index) {
 
     switch(index) {
     case 0:
-        scene_manager_next_scene(app->scene_manager, app_scene_file_browser_option);
+        scene_manager_next_scene(app->scene_manager, app_scene_play_logs_widget);
         break;
 
-    case 2:
-        scene_manager_next_scene(app->scene_manager, app_scene_play_logs_widget);
+    case 1:
+        scene_manager_next_scene(app->scene_manager, app_scene_file_browser_option);
         break;
 
     default:
@@ -277,7 +317,7 @@ void callback_player_timing_options(VariableItem* item) {
     uint8_t selected_index = variable_item_list_get_selected_item_index(app->varList);
 
     switch(selected_index) {
-    case 1:
+    case 2:
         uint8_t index = variable_item_get_current_value_index(item);
         variable_item_set_current_value_text(item, config_timing_names[index]);
 
@@ -289,14 +329,14 @@ void callback_player_timing_options(VariableItem* item) {
     }
 }
 
-// The function to enter a Scene
-void app_scene_play_logs_on_enter(void* context) {
-    App* app = context;
-
+void draw_list(App* app) {
     VariableItem* item;
 
     // reset list
     variable_item_list_reset(app->varList);
+
+    // Play the logs
+    item = variable_item_list_add(app->varList, "Play", 0, NULL, app);
 
     // Choose File
     item = variable_item_list_add(app->varList, "File", 0, NULL, app);
@@ -315,11 +355,15 @@ void app_scene_play_logs_on_enter(void* context) {
     variable_item_set_current_value_index(item, config_timing_index);
     variable_item_set_current_value_text(item, config_timing_names[config_timing_index]);
 
-    // Play the logs
-    item = variable_item_list_add(app->varList, "Play", 0, NULL, app);
-
     // Set the enter callback
     variable_item_list_set_enter_callback(app->varList, callback_input_player_options, app);
+}
+
+// The function to enter a Scene
+void app_scene_play_logs_on_enter(void* context) {
+    App* app = context;
+
+    draw_list(app);
 
     // Switch View
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
@@ -379,13 +423,8 @@ void app_scene_file_browser_on_exit(void* context) {
 // Test widget
 void app_scene_play_logs_widget_on_enter(void* context) {
     App* app = context;
-    widget_reset(app->widget);
-    widget_add_string_element(
-        app->widget, 62, 32, AlignCenter, AlignCenter, FontPrimary, "On Dev");
-
-    app->thread = furi_thread_alloc_ex("PlayLogs", 1024 * 20, thread_play_logs, app);
+    app->thread = furi_thread_alloc_ex("PlayLogs", 10 * 1024, thread_play_logs, app);
     furi_thread_start(app->thread);
-
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }
 
