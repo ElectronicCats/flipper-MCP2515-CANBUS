@@ -60,7 +60,7 @@ static int32_t obdii_get_car_data(void* context) {
                     FontSecondary,
                     furi_string_get_cstr(app->text));
             } else {
-                draw_send_wrong(app);
+                draw_transmition_failure(app);
             }
         }
         if(app->request_data == 2) {
@@ -77,7 +77,7 @@ static int32_t obdii_get_car_data(void* context) {
                     FontSecondary,
                     furi_string_get_cstr(app->text));
             } else {
-                draw_send_wrong(app);
+                draw_transmition_failure(app);
             }
         }
     } else

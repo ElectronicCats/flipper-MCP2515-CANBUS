@@ -301,6 +301,7 @@ bool app_scene_sniffing_on_event(void* context, SceneManagerEvent event) {
             break;
 
         case DEVICE_NO_CONNECTED:
+            scene_manager_set_scene_state(app->scene_manager, app_scene_sniffing_option, 1);
             scene_manager_next_scene(app->scene_manager, app_scene_device_no_connected);
             consumed = true;
             break;
@@ -348,31 +349,4 @@ void app_scene_box_sniffing_on_exit(void* context) {
     close_file_on_data_log(app);
     furi_string_reset(app->text);
     text_box_reset(app->textBox);
-}
-
-void app_scene_device_no_connected_on_enter(void* context) {
-    App* app = context;
-    widget_reset(app->widget);
-
-    widget_add_string_element(
-        app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "DEVICE NO");
-
-    widget_add_string_element(
-        app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
-
-    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
-}
-
-bool app_scene_device_no_connected_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
-    bool consumed = false;
-
-    return consumed;
-}
-
-void app_scene_device_no_connected_on_exit(void* context) {
-    App* app = context;
-    widget_reset(app->widget);
-    scene_manager_set_scene_state(app->scene_manager, app_scene_sniffing_option, 1);
 }

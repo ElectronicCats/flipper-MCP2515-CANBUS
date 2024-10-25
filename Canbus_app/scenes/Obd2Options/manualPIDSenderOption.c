@@ -289,7 +289,7 @@ void app_scene_obdii_warnings_on_enter(void* context) {
         scene_manager_get_scene_state(app->scene_manager, app_scene_obdii_warning_scenes);
 
     if(state == 0) draw_device_no_connected(app);
-    if(state == 1) draw_send_wrong(app);
+    if(state == 1) draw_transmition_failure(app);
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }
 

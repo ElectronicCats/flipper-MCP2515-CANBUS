@@ -169,4 +169,6 @@ typedef enum {
 
 void draw_in_development(App* app);
 void draw_device_no_connected(App* app);
+void draw_transmition_failure(App* app);
+void draw_send_ok(App* app);
 void draw_send_wrong(App* app);

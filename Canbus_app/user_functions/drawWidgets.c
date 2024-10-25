@@ -23,7 +23,7 @@ void draw_device_no_connected(App* app) {
 }
 
 // draw when a message is not recognized
-void draw_send_wrong(App* app) {
+void draw_transmition_failure(App* app) {
     widget_reset(app->widget);
 
     widget_add_string_element(
@@ -31,4 +31,18 @@ void draw_send_wrong(App* app) {
 
     widget_add_string_element(
         app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "FAILURE");
+}
+
+// draw when a message is send OK
+void draw_send_wrong(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MESSAGE SEND ERROR");
+}
+
+// draw when a message is send ok
+void draw_send_ok(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MESSAGE SEND OK");
 }

@@ -323,25 +323,15 @@ bool app_scene_send_message_on_event(void* context, SceneManagerEvent event) {
     if(event.type == SceneManagerEventTypeCustom) {
         switch(event.event) {
         case SEND_OK:
-            widget_reset(app->widget);
-            widget_add_string_element(
-                app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MESSAGE SEND OK");
+            draw_send_ok(app);
             break;
 
         case SEND_ERROR:
-            widget_reset(app->widget);
-            widget_add_string_element(
-                app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MESSAGE SEND ERROR");
+            draw_send_wrong(app);
             break;
 
         case DEVICE_NO_CONNECTED:
-            widget_reset(app->widget);
-
-            widget_add_string_element(
-                app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "DEVICE NO");
-
-            widget_add_string_element(
-                app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
+            draw_device_no_connected(app);
             break;
 
         default:
