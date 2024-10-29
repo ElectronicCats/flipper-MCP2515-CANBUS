@@ -45,6 +45,8 @@ static int32_t obdii_get_car_data(void* context) {
 
     bool run = pid_init(&scanner);
 
+    furi_delay_ms(500);
+
     if(run) {
         if(app->request_data == 1) {
             if(get_VIN(&scanner, app->text)) {

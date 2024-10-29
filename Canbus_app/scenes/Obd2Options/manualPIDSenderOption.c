@@ -326,6 +326,8 @@ static int32_t obdii_thread_response_manual_sender_on_work(void* context) {
 
     bool run = pid_init(&scanner);
 
+    furi_delay_ms(500);
+
     if(run) {
         furi_string_printf(text, "DEVICE CONNECTED!...\n");
         furi_string_cat_printf(
