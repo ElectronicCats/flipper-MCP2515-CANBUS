@@ -154,17 +154,6 @@ bool pid_manual_request(
 
         ret = ERROR_FAIL;
 
-        // time_delay = 0;
-
-        /*do {
-            if(read_can_message(CAN, &(frames_to_read[i]))) {
-                if(frames_to_read[i].canId == 0x7e8) ret = ERROR_OK;
-            }
-            furi_delay_us(1);
-            time_delay++;
-
-        } while((ret != ERROR_OK) && (time_delay < 6000));*/
-
         if(!read_frames(CAN, &(frames_to_read[i]))) {
             if(i == 0)
                 return false;
@@ -216,23 +205,11 @@ bool clear_dtc(OBDII* obdii) {
     frame.buffer[1] = CLEAR_STORAGE_DTC;
     frame.buffer[2] = 0;
 
-    uint32_t time_delay = 0;
-
     ret = send_can_frame(CAN, &frame);
 
-    furi_delay_ms(1);
-
     if(ret != ERROR_OK) return false;
-    furi_delay_ms(10);
 
-    time_delay = 0;
-    do {
-        ret = read_can_message(CAN, &frame_to_received);
-        furi_delay_ms(1);
-        time_delay++;
-    } while((ret != ERROR_OK) && (time_delay < 60));
-
-    if(ret != ERROR_OK) return false;
+    if(!read_frames(CAN, &frame_to_received)) return false;
 
     if(frame_to_received.buffer[1] != 0x44) return false;
 
