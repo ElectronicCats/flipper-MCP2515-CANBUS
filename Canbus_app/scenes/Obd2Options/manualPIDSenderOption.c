@@ -373,7 +373,7 @@ static int32_t obdii_thread_response_manual_sender_on_work(void* context) {
         }
 
     } else {
-        furi_string_printf(text, "DEVICE NO CONNECTED!");
+        furi_string_printf(text, "DEVICE NOT CONNECTED!");
         text_box_set_text(app->textBox, furi_string_get_cstr(text));
     }
 

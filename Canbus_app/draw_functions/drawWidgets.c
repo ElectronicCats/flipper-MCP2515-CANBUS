@@ -16,7 +16,7 @@ void draw_device_no_connected(App* app) {
     widget_reset(app->widget);
 
     widget_add_string_element(
-        app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "DEVICE NO");
+        app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "DEVICE NOT");
 
     widget_add_string_element(
         app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
