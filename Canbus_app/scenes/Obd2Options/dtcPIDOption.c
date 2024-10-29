@@ -89,7 +89,9 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
 
     bool run = pid_init(&scanner);
 
-    furi_delay_ms(500);
+    if(run) {
+        furi_delay_ms(500); // Time added to initialize
+    }
 
     if(delete_dtc && run) {
         if(clear_dtc(&scanner)) {

@@ -138,8 +138,6 @@ static int32_t obdii_thread_getting_pid_supported_on_work(void* context) {
 
     FuriString* text = app->text;
 
-    furi_delay_ms(500);
-
     // if the device is not detected the thread send an custom event
     if(!run) {
         scene_manager_set_scene_state(app->scene_manager, app_scene_supported_pid_option, 1);
@@ -148,6 +146,9 @@ static int32_t obdii_thread_getting_pid_supported_on_work(void* context) {
 
     // if it runs
     if(run) {
+        // Time delay added to initialize
+        furi_delay_ms(500);
+
         uint32_t flag = app->flags;
 
         if(pid_get_supported_pid(&scanner, flag)) {
