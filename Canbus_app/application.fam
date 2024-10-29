@@ -7,4 +7,5 @@ App(
     stack_size=30 * 1024,
     fap_icon="icon.png",
     fap_category="ElectronicCats",
+    fap_icon_assets="assets",
 )

@@ -201,7 +201,7 @@ bool clear_dtc(OBDII* obdii) {
 
     ERROR_CAN ret = ERROR_OK;
 
-    frame.buffer[0] = 2;
+    frame.buffer[0] = 1;
     frame.buffer[1] = CLEAR_STORAGE_DTC;
     frame.buffer[2] = 0;
 

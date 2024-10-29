@@ -20,6 +20,8 @@
 #include "libraries/mcp_can_2515.h"
 #include "libraries/pid_library.h"
 
+#include "canbus_app_icons.h"
+
 #define PATHAPP    "apps_data/canbus"
 #define PATHAPPEXT EXT_PATH(PATHAPP)
 #define PATHLOGS   PATHAPPEXT "/logs"
