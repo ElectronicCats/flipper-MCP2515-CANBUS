@@ -452,6 +452,8 @@ void app_scene_play_logs_on_enter(void* context) {
         draw_list(app);
     }
 
+    variable_item_list_set_selected_item(app->varList, 0);
+
     // Switch View
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
 }
