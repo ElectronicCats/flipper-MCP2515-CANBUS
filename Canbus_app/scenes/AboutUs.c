@@ -53,7 +53,7 @@ void draw_more_info_view(App* app) {
     widget_add_string_element(
         app->widget, 10, 5, AlignLeft, AlignCenter, FontPrimary, "More info:");
 
-    widget_add_icon_element(app->widget, 48, 15, &I_qr_code);
+    widget_add_icon_element(app->widget, 48, 15, &I_qrcode);
 
     widget_add_button_element(app->widget, GuiButtonTypeLeft, "Prev", button_callback, app);
 }
