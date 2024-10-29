@@ -151,8 +151,6 @@ void draw_starting_transmition(App* app) {
 void play_data_frames_bk(void* context, int frame_interval) {
     App* app = context;
 
-    log_info("Here 0");
-
     app->mcp_can->mode = MCP_NORMAL;
     ERROR_CAN debug = ERROR_OK;
     debug = mcp2515_init(app->mcp_can);
@@ -164,16 +162,14 @@ void play_data_frames_bk(void* context, int frame_interval) {
 
     if(!storage_file_open(
            app->log_file, furi_string_get_cstr(app->path), FSAM_READ, FSOM_OPEN_EXISTING)) {
-        log_exception("FILE CANNOT BE OPENED");
+        draw_file_no_opened(app);
         return;
     }
 
     draw_starting_transmition(app);
 
     char buffer[256];
-    //char next_buffer[256];
     size_t buffer_index = 0;
-    //size_t next_buffer_index = 0;
     size_t bytes_read;
     char c;
 
@@ -199,9 +195,6 @@ void play_data_frames_bk(void* context, int frame_interval) {
         }
         buffer[buffer_index] = '\0';
 
-        // If we have a complete line, try to read next frame
-        log_info("Current frame: %s", buffer);
-
         // Process current frame
         CANFRAME frame_to_send = {0};
         char* saveptr;
@@ -211,7 +204,6 @@ void play_data_frames_bk(void* context, int frame_interval) {
         // Get current timestamp
         token = custom_strtok_r(buffer, "() ", &saveptr);
         if(!token) break;
-        // current_timestamp = strtod(token, &endptr);
 
         // Get next timestamp if available
         uint32_t delay_ms = strtod(token, &endptr);
@@ -305,9 +297,6 @@ void play_data_frames_bk(void* context, int frame_interval) {
 // Thread work
 int32_t thread_play_logs(void* context) {
     App* app = context;
-
-    log_info("Entra al hilo");
-
     play_data_frames_bk(app, app->config_timing_index);
 
     return 0;
@@ -490,7 +479,7 @@ void file_browser_callback(void* context) {
     scene_manager_previous_scene(app->scene_manager);
 }
 
-// File Browser
+// File Browser scene on enter
 void app_scene_file_browser_on_enter(void* context) {
     App* app = context;
     file_browser_configure(app->file_browser, ".log", PATHLOGS, true, true, NULL, true);
@@ -503,6 +492,7 @@ void app_scene_file_browser_on_enter(void* context) {
     view_dispatcher_switch_to_view(app->view_dispatcher, FileBrowserView);
 }
 
+// File browser scene on event
 bool app_scene_file_browser_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
@@ -512,6 +502,7 @@ bool app_scene_file_browser_on_event(void* context, SceneManagerEvent event) {
     return consumed;
 }
 
+// File browser on exit
 void app_scene_file_browser_on_exit(void* context) {
     App* app = context;
     UNUSED(app);

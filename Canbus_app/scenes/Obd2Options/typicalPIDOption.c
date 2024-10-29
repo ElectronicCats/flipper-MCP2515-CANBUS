@@ -67,7 +67,7 @@ void draw_value(App* app, const char* text) {
     widget_add_string_element(app->widget, 65, 45, AlignCenter, AlignBottom, FontPrimary, text);
 }
 
-// Draws the calculated engine load
+// Draws the data
 void draw_scene(App* app, uint8_t selector, uint16_t variable) {
     FuriString* text_label = app->text;
 
@@ -127,6 +127,13 @@ void draw_scene(App* app, uint8_t selector, uint16_t variable) {
     furi_string_cat_printf(text_label, "%u %s", variable, text);
 
     draw_value(app, furi_string_get_cstr(text_label));
+}
+
+// Draw the waiting data
+void draw_waiting_data(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "Waiting Data");
 }
 
 // Scene on enter
@@ -219,6 +226,8 @@ static int32_t obdii_thread_on_work(void* context) {
     if(!state) {
         draw_device_no_connected(app);
     }
+
+    draw_waiting_data(app);
 
     while(state && furi_hal_gpio_read(&gpio_button_back)) {
         if((furi_get_tick() - time_delay) > 10) {
