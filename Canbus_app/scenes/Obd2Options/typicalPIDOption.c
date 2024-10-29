@@ -223,11 +223,10 @@ static int32_t obdii_thread_on_work(void* context) {
 
     uint32_t time_delay = furi_get_tick();
 
-    if(!state) {
+    if(!state)
         draw_device_no_connected(app);
-    }
-
-    draw_waiting_data(app);
+    else
+        draw_waiting_data(app);
 
     while(state && furi_hal_gpio_read(&gpio_button_back)) {
         if((furi_get_tick() - time_delay) > 10) {
