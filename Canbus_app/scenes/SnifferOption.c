@@ -2,8 +2,7 @@
 
 bool condition = true;
 
-// --------------------- Functons to save the logs
-// --------------------------------------------------
+// Function to save logs
 char* sequential_file_resolve_path(
     Storage* storage,
     const char* dir,
@@ -105,11 +104,12 @@ void close_file_on_data_log(App* app) {
 
 static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
     FuriString* text_file = furi_string_alloc();
-    furi_string_cat_printf(text_file, "id:%lx \t\tlen: %u \t", frame.canId, frame.data_lenght);
+
+    furi_string_cat_printf(text_file, "(%li) %lx %u", time, frame.canId, frame.data_lenght);
     for(uint8_t i = 0; i < (frame.data_lenght); i++) {
-        furi_string_cat_printf(text_file, "[%u]:%u \t\t", i, frame.buffer[i]);
+        furi_string_cat_printf(text_file, " %x", frame.buffer[i]);
     }
-    furi_string_cat_printf(text_file, " Time(ms): %li\n", time);
+    furi_string_cat_printf(text_file, "\n");
     storage_file_write(file, furi_string_get_cstr(text_file), furi_string_size(text_file));
     furi_string_reset(text_file);
     furi_string_free(text_file);
@@ -141,9 +141,6 @@ void draw_box_text(App* app) {
     text_box_set_focus(app->textBox, TextBoxFocusEnd);
 }
 
-// --------------------------- Thread on work
-// ------------------------------------------------------
-
 static int32_t worker_sniffing(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
@@ -151,8 +148,7 @@ static int32_t worker_sniffing(void* context) {
     FuriString* text_label = furi_string_alloc();
 
     uint8_t num_of_devices = 0;
-    uint32_t time_select = 0;
-    UNUSED(time_select);
+    uint32_t current_time = 0;
 
     bool run = true;
     bool first_address = true;
@@ -169,6 +165,8 @@ static int32_t worker_sniffing(void* context) {
         bool new = true;
 
         if(read_can_message(mcp_can, &frame) == ERROR_OK) {
+            current_time = furi_get_tick();
+
             if(first_address) {
                 app->frameArray[num_of_devices] = frame;
                 app->times[num_of_devices] = 0;
@@ -230,7 +228,7 @@ static int32_t worker_sniffing(void* context) {
 
                 if(app->log_file_ready && (app->save_logs == SaveAll)) {
                     app->can_frame = frame;
-                    write_data_on_file(app->can_frame, app->log_file, app->time);
+                    write_data_on_file(app->can_frame, app->log_file, current_time);
                 }
             }
 
@@ -246,7 +244,7 @@ static int32_t worker_sniffing(void* context) {
                         write_data_on_file(
                             app->frameArray[app->sniffer_index],
                             app->log_file,
-                            app->times[app->sniffer_index]);
+                            app->current_time[app->sniffer_index]);
                     }
                 }
             }
@@ -269,9 +267,6 @@ static int32_t worker_sniffing(void* context) {
     free_mcp2515(mcp_can);
     return 0;
 }
-
-// ------------------------------------------------------ SNIFFING MENU SCENE
-// ---------------------------
 
 void app_scene_sniffing_on_enter(void* context) {
     App* app = context;
@@ -306,6 +301,7 @@ bool app_scene_sniffing_on_event(void* context, SceneManagerEvent event) {
             break;
 
         case DEVICE_NO_CONNECTED:
+            scene_manager_set_scene_state(app->scene_manager, app_scene_sniffing_option, 1);
             scene_manager_next_scene(app->scene_manager, app_scene_device_no_connected);
             consumed = true;
             break;
@@ -327,9 +323,6 @@ void app_scene_sniffing_on_exit(void* context) {
         submenu_reset(app->submenu);
     }
 }
-
-//-------------------------- FOR THE SNIFFING BOX
-//--------------------------------------------------------
 
 void app_scene_box_sniffing_on_enter(void* context) {
     App* app = context;
@@ -356,34 +349,4 @@ void app_scene_box_sniffing_on_exit(void* context) {
     close_file_on_data_log(app);
     furi_string_reset(app->text);
     text_box_reset(app->textBox);
-}
-
-//-------------------------- FOR THE UNPLUG DEVICE
-//--------------------------------------------------------
-
-void app_scene_device_no_connected_on_enter(void* context) {
-    App* app = context;
-    widget_reset(app->widget);
-
-    widget_add_string_element(
-        app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "DEVICE NO");
-
-    widget_add_string_element(
-        app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
-
-    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
-}
-
-bool app_scene_device_no_connected_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
-    bool consumed = false;
-
-    return consumed;
-}
-
-void app_scene_device_no_connected_on_exit(void* context) {
-    App* app = context;
-    widget_reset(app->widget);
-    scene_manager_set_scene_state(app->scene_manager, app_scene_sniffing_option, 1);
 }

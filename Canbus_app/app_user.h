@@ -9,6 +9,8 @@
 #include <gui/modules/text_input.h>
 #include <gui/modules/variable_item_list.h>
 #include <gui/modules/widget.h>
+#include <gui/modules/file_browser.h>
+#include <gui/modules/file_browser_worker.h>
 #include <gui/scene_manager.h>
 #include <gui/view_dispatcher.h>
 #include <storage/storage.h>
@@ -16,12 +18,17 @@
 #include "scenes_config/app_scene_functions.h"
 
 #include "libraries/mcp_can_2515.h"
+#include "libraries/pid_library.h"
+
+#include "canbus_app_icons.h"
 
 #define PATHAPP    "apps_data/canbus"
 #define PATHAPPEXT EXT_PATH(PATHAPP)
 #define PATHLOGS   PATHAPPEXT "/logs"
 
 #define DEVICE_NO_CONNECTED (0xFF)
+
+#define MESSAGE_ERROR 0xF0
 
 typedef enum {
     WorkerflagStop = (1 << 0),
@@ -36,6 +43,8 @@ typedef struct {
     CANFRAME* frameArray;
     CANFRAME* frame_to_send;
 
+    OBDII obdii;
+
     uint32_t time;
     uint32_t times[100];
     uint32_t current_time[100];
@@ -48,9 +57,11 @@ typedef struct {
     VariableItemList* varList;
     TextBox* textBox;
     ByteInput* input_byte_value;
+    FileBrowser* file_browser;
 
     FuriString* text;
     FuriString* data;
+    FuriString* path;
 
     Storage* storage;
     DialogsApp* dialogs;
@@ -62,27 +73,39 @@ typedef struct {
     uint32_t sniffer_index;
     uint32_t sniffer_index_aux;
 
+    uint8_t config_timing_index;
+
     uint8_t num_of_devices;
     uint8_t sender_selected_item;
     uint8_t sender_id_compose[4];
 
+    uint32_t obdii_aux_index;
+    uint8_t flags;
+
     uint64_t size_of_storage;
+
+    uint8_t request_data;
 } App;
 
 // This is for the menu Options
 typedef enum {
     SniffingTestOption,
     SenderOption,
+    ObdiiOption,
     ReadLOGOption,
+    PlayLOGOption,
     SettingsOption,
     AboutUsOption,
 } MainMenuOptions;
 
+// These are the events on the main menu
 typedef enum {
     SniffingOptionEvent,
     SenderOptionEvent,
     SettingsOptionEvent,
+    ObdiiOptionEvent,
     ReadLOGOptionEvent,
+    PlayLOGOptionEvent,
     AboutUsEvent,
 } MainMenuEvents;
 
@@ -92,15 +115,25 @@ typedef enum {
     CristyalClkOption,
     SaveLogsOption
 } OptionSettings;
+
+// These are the events on the settings menu
 typedef enum {
     BitrateOptionEvent,
     CristyalClkOptionEvent
 } SettingsMenuEvent;
+
+// These are the sender events
 typedef enum {
     ChooseIdEvent,
     SetIdEvent,
     ReturnEvent
 } SenderEvents;
+
+// These are the player events
+typedef enum {
+    ChooseTimingEvent,
+    ReturnTimingEvent
+} PlayerEvents;
 
 // These are the options to save
 typedef enum {
@@ -129,10 +162,15 @@ typedef enum {
     TextBoxView,
     DialogInfoView,
     InputByteView,
+    FileBrowserView,
 } scenesViews;
 
-char* sequential_file_resolve_path(
-    Storage* storage,
-    const char* dir,
-    const char* prefix,
-    const char* extension);
+/**
+ * These functions works in other scenes and widget
+ */
+
+void draw_in_development(App* app);
+void draw_device_no_connected(App* app);
+void draw_transmition_failure(App* app);
+void draw_send_ok(App* app);
+void draw_send_wrong(App* app);

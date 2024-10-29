@@ -23,9 +23,6 @@ typedef enum {
     SEND_ERROR,
 } sender_status;
 
-// Threads To work
-// ------------------------------------------------------------------------------------
-
 static int32_t sender_on_work(void* context) {
     App* app = context;
     app->mcp_can->mode = MCP_NORMAL;
@@ -50,9 +47,6 @@ static int32_t sender_on_work(void* context) {
     free_mcp2515(app->mcp_can);
     return 0;
 }
-
-// Scenes
-// ---------------------------------------------------------------------------------------------
 
 // Option callback using button OK
 void callback_input_sender_options(void* context, uint32_t index) {
@@ -301,8 +295,6 @@ void app_scene_sender_on_exit(void* context) {
     variable_item_list_reset(app->varList);
 }
 
-// -----------------------------  SCENE TO SEND THE FRAME ---------------------
-
 void app_scene_send_message_on_enter(void* context) {
     App* app = context;
 
@@ -323,25 +315,15 @@ bool app_scene_send_message_on_event(void* context, SceneManagerEvent event) {
     if(event.type == SceneManagerEventTypeCustom) {
         switch(event.event) {
         case SEND_OK:
-            widget_reset(app->widget);
-            widget_add_string_element(
-                app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MESSAGE SEND OK");
+            draw_send_ok(app);
             break;
 
         case SEND_ERROR:
-            widget_reset(app->widget);
-            widget_add_string_element(
-                app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "MESSAGE SEND ERROR");
+            draw_send_wrong(app);
             break;
 
         case DEVICE_NO_CONNECTED:
-            widget_reset(app->widget);
-
-            widget_add_string_element(
-                app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "DEVICE NO");
-
-            widget_add_string_element(
-                app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, "CONNECTED");
+            draw_device_no_connected(app);
             break;
 
         default:
@@ -359,8 +341,6 @@ void app_scene_send_message_on_exit(void* context) {
 
     widget_reset(app->widget);
 }
-
-// ---------------------------- WARNING TO GET THE ID'S ------------------------
 
 void app_scene_warning_log_on_enter(void* context) {
     App* app = context;
@@ -447,8 +427,6 @@ void app_scene_id_list_on_exit(void* context) {
     App* app = context;
     submenu_reset(app->submenu);
 }
-
-// ---------------------------- TO SET THE VALUE OF THE FRAME ------------------
 
 void input_byte_sender_callback(void* context) {
     App* app = context;
