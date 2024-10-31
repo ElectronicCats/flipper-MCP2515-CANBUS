@@ -106,7 +106,7 @@ bool read_frames(MCP2515* CAN, CANFRAME* frame) {
     uint32_t time_delay = 0;
 
     do {
-        if(read_can_message(CAN, frame)) {
+        if(read_can_message(CAN, frame) == ERROR_OK) {
             if(frame->canId == 0x7e8) return true;
         }
         furi_delay_us(1);

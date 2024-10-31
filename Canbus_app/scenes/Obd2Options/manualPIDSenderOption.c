@@ -116,7 +116,7 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
     furi_string_reset(text);
     furi_string_cat_printf(text, "%u", count_of_bytes);
     item = variable_item_list_add(
-        app->varList, "Count Bytes", 7, callback_manual_pid_sender_options, app);
+        app->varList, "Count Bytes", 3, callback_manual_pid_sender_options, app);
     variable_item_set_current_value_index(item, 0);
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
     variable_item_set_current_value_index(item, count_of_bytes);
