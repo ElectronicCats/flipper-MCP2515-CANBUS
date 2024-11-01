@@ -108,7 +108,7 @@ void app_scene_manual_sender_pid_on_enter(void* context) {
     furi_string_reset(text);
     furi_string_cat_printf(text, "0x%x", service_to_send);
     item = variable_item_list_add(
-        app->varList, "Service", 96, callback_manual_pid_sender_options, app);
+        app->varList, "Service", 11, callback_manual_pid_sender_options, app);
     variable_item_set_current_value_index(item, service_to_send);
     variable_item_set_current_value_text(item, furi_string_get_cstr(text));
 
