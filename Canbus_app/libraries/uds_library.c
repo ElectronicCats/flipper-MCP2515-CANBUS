@@ -31,7 +31,26 @@ bool uds_init(UDS_SERVICE* uds_instance) {
 }
 
 // Free instance
-free_uds(UDS_SERVICE* uds_instance) {
+void free_uds(UDS_SERVICE* uds_instance) {
     free_mcp2515(uds_instance->CAN);
     free(uds_instance);
+}
+
+// Function to send a service
+bool manual_uds_service_request(
+    UDS_SERVICE* uds_instance,
+    CANFRAME* frames_to_received,
+    uint8_t count_of_frames) {
+    MCP2515* CAN = uds_instance->CAN;
+    CANFRAME frame_to_send = {0};
+    frame_to_send.canId = uds_instance->id_to_send;
+    uint32_t id_to_received = uds_instance->id_to_received;
+
+    UNUSED(frame_to_send);
+    UNUSED(id_to_received);
+    UNUSED(frames_to_received);
+    UNUSED(count_of_frames);
+    UNUSED(CAN);
+
+    return false;
 }

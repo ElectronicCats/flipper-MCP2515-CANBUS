@@ -40,4 +40,7 @@ ADD_SCENE(app, play_logs, play_logs)
 ADD_SCENE(app, file_browser, file_browser_option)
 ADD_SCENE(app, play_logs_widget, play_logs_widget)
 
+// For the UDS FUNCTIONS
 ADD_SCENE(app, uds_menu, uds_menu_option)
+ADD_SCENE(app, uds_manual_sender, uds_manual_sender_option)
+ADD_SCENE(app, uds_response_sender, uds_response_sender_option)
