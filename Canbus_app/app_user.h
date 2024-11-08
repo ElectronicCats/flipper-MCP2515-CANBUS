@@ -19,6 +19,7 @@
 
 #include "libraries/mcp_can_2515.h"
 #include "libraries/pid_library.h"
+#include "libraries/uds_library.h"
 
 #include "canbus_app_icons.h"
 
