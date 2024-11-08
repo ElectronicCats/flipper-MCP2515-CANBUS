@@ -26,9 +26,9 @@ void app_scene_obdii_typical_codes_on_enter(void* context) {
     submenu_add_item(app->submenu, "Engine Speed", 0, typical_menu_callback, app);
     submenu_add_item(app->submenu, "Vehicle Speed", 1, typical_menu_callback, app);
     submenu_add_item(app->submenu, "Calculated Engine Load", 2, typical_menu_callback, app);
-    submenu_add_item(app->submenu, "Thortle Position", 3, typical_menu_callback, app);
+    submenu_add_item(app->submenu, "Throttle Position", 3, typical_menu_callback, app);
     submenu_add_item(app->submenu, "Fuel Tank Input Level", 4, typical_menu_callback, app);
-    submenu_add_item(app->submenu, "Thortle Relative Position", 5, typical_menu_callback, app);
+    submenu_add_item(app->submenu, "Throttle Relative Position", 5, typical_menu_callback, app);
     submenu_add_item(app->submenu, "Time Engine Running", 6, typical_menu_callback, app);
 
     submenu_set_selected_item(
@@ -247,7 +247,7 @@ static int32_t obdii_thread_on_work(void* context) {
                     draw_scene(app, option, calculate_engine_load(data[3]));
                     break;
 
-                case 3: // Thortle Position
+                case 3: // Throttle Position
                     draw_scene(app, option, calculate_engine_load(data[3]));
                     break;
 
