@@ -55,7 +55,13 @@ static int32_t obdii_get_car_data(void* context) {
                 widget_add_string_element(
                     app->widget, 64, 36, AlignCenter, AlignCenter, FontPrimary, "VIN Number:");
                 widget_add_string_element(
-                    app->widget, 64, 51, AlignCenter, AlignCenter, FontSecondary, furi_string_get_cstr(app->text));
+                    app->widget,
+                    64,
+                    51,
+                    AlignCenter,
+                    AlignCenter,
+                    FontSecondary,
+                    furi_string_get_cstr(app->text));
             } else {
                 draw_transmition_failure(app);
             }
@@ -67,7 +73,13 @@ static int32_t obdii_get_car_data(void* context) {
                     app->widget, 65, 40, AlignCenter, AlignCenter, FontPrimary, "ECU Name:");
 
                 widget_add_string_element(
-                    app->widget, 64, 55, AlignCenter, AlignCenter, FontSecondary, furi_string_get_cstr(app->text));
+                    app->widget,
+                    64,
+                    55,
+                    AlignCenter,
+                    AlignCenter,
+                    FontSecondary,
+                    furi_string_get_cstr(app->text));
             } else {
                 draw_transmition_failure(app);
             }

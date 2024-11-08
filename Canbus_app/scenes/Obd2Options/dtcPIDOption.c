@@ -105,7 +105,6 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
 
             widget_add_string_multiline_element(
                 app->widget, 65, 43, AlignCenter, AlignBottom, FontPrimary, "E R R O R\nCLEARING");
-                
         }
     } else if(!delete_dtc && run) {
         if(request_dtc(&scanner, &(count_dtc), codes)) {
@@ -119,8 +118,7 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
         } else {
             widget_add_icon_element(app->widget, 43, 0, &I_MSGERROR41x38);
             widget_add_string_multiline_element(
-                app->widget, 65,60, AlignCenter, AlignBottom, FontPrimary, "REQUEST\nERROR");
-
+                app->widget, 65, 60, AlignCenter, AlignBottom, FontPrimary, "REQUEST\nERROR");
         }
 
     } else {
@@ -149,14 +147,26 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
             furi_string_printf(text, "%u of %u DTC", dtc_selector + 1, count_dtc);
 
             widget_add_string_element(
-                app->widget, 65, 20, AlignCenter, AlignBottom, FontSecondary, furi_string_get_cstr(text));
+                app->widget,
+                65,
+                20,
+                AlignCenter,
+                AlignBottom,
+                FontSecondary,
+                furi_string_get_cstr(text));
 
             furi_string_reset(text);
 
             furi_string_printf(text, "%s", codes[dtc_selector]);
 
             widget_add_string_element(
-                app->widget, 65, 35, AlignCenter, AlignBottom, FontPrimary, furi_string_get_cstr(text));
+                app->widget,
+                65,
+                35,
+                AlignCenter,
+                AlignBottom,
+                FontPrimary,
+                furi_string_get_cstr(text));
 
             past_selector = dtc_selector;
         }

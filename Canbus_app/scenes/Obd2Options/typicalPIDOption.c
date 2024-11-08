@@ -80,14 +80,14 @@ void draw_scene(App* app, uint8_t selector, uint16_t variable) {
         widget_add_icon_element(app->widget, 50, 3, &I_RPM30x23);
         widget_add_string_element(
             app->widget, 65, 40, AlignCenter, AlignBottom, FontPrimary, "ENGINE SPEED");
-        
+
         text = "RPM";
 
     } else if(selector == 1) { // Vehicle Speed
         widget_add_icon_element(app->widget, 37, 5, &I_SPD64x20);
         widget_add_string_element(
             app->widget, 65, 40, AlignCenter, AlignBottom, FontPrimary, "VEHICLE SPEED");
-        
+
         text = "km/h";
 
     } else if(selector == 2) { // CALCULATED ENGINE LOAD
@@ -114,7 +114,13 @@ void draw_scene(App* app, uint8_t selector, uint16_t variable) {
     } else if(selector == 5) { // Thortle Relative Position
         widget_add_icon_element(app->widget, 46, 0, &I_THR36x24);
         widget_add_string_multiline_element(
-            app->widget, 65, 45, AlignCenter, AlignBottom, FontPrimary, "THROTTLE\nRELATIVE POSITION");
+            app->widget,
+            65,
+            45,
+            AlignCenter,
+            AlignBottom,
+            FontPrimary,
+            "THROTTLE\nRELATIVE POSITION");
 
         text = "%";
     } else if(selector == 6) {

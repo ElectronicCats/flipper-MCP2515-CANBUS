@@ -350,7 +350,13 @@ void app_scene_warning_log_on_enter(void* context) {
         app->widget, 65, 20, AlignCenter, AlignBottom, FontPrimary, "W A R N I N G !");
 
     widget_add_string_multiline_element(
-        app->widget, 65, 35, AlignCenter, AlignCenter, FontSecondary, "First go to the Sniffing option\nin the menu and get the ID's");
+        app->widget,
+        65,
+        35,
+        AlignCenter,
+        AlignCenter,
+        FontSecondary,
+        "First go to the Sniffing option\nin the menu and get the ID's");
 
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }

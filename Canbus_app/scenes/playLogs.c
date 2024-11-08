@@ -94,8 +94,13 @@ void draw_message_send(App* app) {
         app->widget, 62, 25, AlignCenter, AlignBottom, FontPrimary, "Sending...");
 
     widget_add_string_element(
-        app->widget, 62, 40, AlignCenter, AlignBottom, FontSecondary, furi_string_get_cstr(app->text));
-
+        app->widget,
+        62,
+        40,
+        AlignCenter,
+        AlignBottom,
+        FontSecondary,
+        furi_string_get_cstr(app->text));
 }
 
 // Message sent fail
@@ -105,7 +110,13 @@ void draw_message_fail(App* app) {
         app->widget, 62, 30, AlignCenter, AlignBottom, FontPrimary, "Sending Failed...");
 
     widget_add_string_element(
-        app->widget, 62, 50, AlignCenter,AlignBottom, FontSecondary, furi_string_get_cstr(app->text));
+        app->widget,
+        62,
+        50,
+        AlignCenter,
+        AlignBottom,
+        FontSecondary,
+        furi_string_get_cstr(app->text));
 }
 
 void draw_finished(App* app) {
