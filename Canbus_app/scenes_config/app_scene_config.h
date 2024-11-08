@@ -39,3 +39,5 @@ ADD_SCENE(app, get_car_data, car_data_option)
 ADD_SCENE(app, play_logs, play_logs)
 ADD_SCENE(app, file_browser, file_browser_option)
 ADD_SCENE(app, play_logs_widget, play_logs_widget)
+
+ADD_SCENE(app, uds_menu, uds_menu_option)

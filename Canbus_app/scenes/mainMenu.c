@@ -72,9 +72,7 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
         break;
 
     case PlayLOGOption:
-
         scene_manager_handle_custom_event(app->scene_manager, PlayLOGOptionEvent);
-
         break;
 
     case SettingsOption:
@@ -83,6 +81,10 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
 
     case ObdiiOption:
         scene_manager_handle_custom_event(app->scene_manager, ObdiiOptionEvent);
+        break;
+
+    case UDSOption:
+        scene_manager_handle_custom_event(app->scene_manager, UDSOptionEvent);
         break;
 
     case ReadLOGOption:
@@ -114,6 +116,8 @@ void app_scene_menu_on_enter(void* context) {
     submenu_add_item(app->submenu, "Player", PlayLOGOption, basic_scenes_menu_callback, app);
 
     submenu_add_item(app->submenu, "Scanner OBD2", ObdiiOption, basic_scenes_menu_callback, app);
+
+    submenu_add_item(app->submenu, "UDS Services", UDSOption, basic_scenes_menu_callback, app);
 
     submenu_add_item(app->submenu, "Read LOG", ReadLOGOption, basic_scenes_menu_callback, app);
 
@@ -160,6 +164,11 @@ bool app_scene_menu_on_event(void* context, SceneManagerEvent event) {
 
         case ReadLOGOptionEvent:
             scene_manager_next_scene(app->scene_manager, app_scene_read_logs);
+            consumed = true;
+            break;
+
+        case UDSOptionEvent:
+            scene_manager_next_scene(app->scene_manager, app_scene_uds_menu_option);
             consumed = true;
             break;
 
