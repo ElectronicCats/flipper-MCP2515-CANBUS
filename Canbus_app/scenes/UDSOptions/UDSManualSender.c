@@ -134,7 +134,7 @@ void app_scene_uds_set_data_on_enter(void* context) {
     ByteInput* scene = app->input_byte_value;
 
     for(int i = count_of_bytes; i < 7; i++) {
-        data_to_send[i] = 0;
+        data_to_send[i] = 0xAA;
     }
 
     byte_input_set_result_callback(
@@ -201,9 +201,76 @@ void app_scene_uds_response_sender_on_exit(void* context) {
 
 static int32_t obdii_thread_response_manual_uds_sender_on_work(void* context) {
     App* app = context;
-    UNUSED(app);
+    MCP2515* CAN = app->mcp_can;
 
-    log_info("Hola");
+    FuriString* text = app->text;
+
+    furi_string_reset(text);
+
+    UDS_SERVICE* uds_service =
+        uds_service_alloc(id_request, id_response, CAN->mode, CAN->clck, CAN->bitRate);
+
+    bool run = uds_init(uds_service);
+
+    uint8_t data[8];
+
+    memset(data, 0xaa, sizeof(data));
+
+    data[0] = count_of_bytes;
+
+    for(uint8_t i = 1; i < (count_of_bytes + 1); i++) {
+        data[i] = data_to_send[i - 1];
+    }
+
+    CANFRAME canframes[count_of_frames];
+
+    memset(canframes, 0, sizeof(canframes));
+
+    if(run) {
+        // Time delay added to initialize
+        furi_delay_ms(500);
+        furi_string_printf(text, "DEVICE CONNECTED!...\n");
+        furi_string_cat_printf(text, "%lx ", id_request);
+
+        for(uint8_t i = 0; i < 8; i++) {
+            furi_string_cat_printf(text, "%x ", data[i]);
+        }
+
+        furi_string_cat_printf(text, "\n");
+
+        text_box_set_text(app->textBox, furi_string_get_cstr(text));
+
+        if(uds_manual_service_request(uds_service, data, canframes, count_of_frames)) {
+            for(uint8_t i = 0; i < count_of_frames; i++) {
+                CANFRAME frame_received = canframes[i];
+                if(frame_received.canId == 0x00) break;
+                furi_string_cat_printf(
+                    text,
+                    "<-(%u) %lx %x %x %x %x %x %x %x %x\n",
+                    i,
+                    frame_received.canId,
+                    frame_received.buffer[0],
+                    frame_received.buffer[1],
+                    frame_received.buffer[2],
+                    frame_received.buffer[3],
+                    frame_received.buffer[4],
+                    frame_received.buffer[5],
+                    frame_received.buffer[6],
+                    frame_received.buffer[7]);
+            }
+            text_box_reset(app->textBox);
+            text_box_set_text(app->textBox, furi_string_get_cstr(text));
+        } else {
+            text_box_reset(app->textBox);
+            furi_string_cat_printf(text, "FAILURE TRANSMITION!!\n");
+            text_box_set_text(app->textBox, furi_string_get_cstr(text));
+        }
+    } else {
+        furi_string_printf(text, "DEVICE NOT CONNECTED!");
+        text_box_set_text(app->textBox, furi_string_get_cstr(text));
+    }
+
+    free_uds(uds_service);
 
     return 0;
 }

@@ -13,8 +13,23 @@ typedef struct {
     uint32_t id_to_received;
 } UDS_SERVICE;
 
-UDS_SERVICE* uds_service_alloc(MCP2515* CAN, uint32_t id_to_send, uint32_t id_to_received);
+UDS_SERVICE* uds_service_alloc(
+    uint32_t id_to_send,
+    uint32_t id_to_received,
+    MCP_MODE mode,
+    MCP_CLOCK clk,
+    MCP_BITRATE bitrate);
+
+// Init Uds
 bool uds_init(UDS_SERVICE* uds_instance);
+
+// send a manual request
+bool uds_manual_service_request(
+    UDS_SERVICE* uds_instance,
+    uint8_t* data_to_send,
+    CANFRAME* frames_to_received,
+    uint8_t count_of_frames);
+
 void free_uds(UDS_SERVICE* uds_instance);
 
 #endif
