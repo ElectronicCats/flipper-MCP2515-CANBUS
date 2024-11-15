@@ -12,7 +12,8 @@ void uds_menu_callback(void* context, uint32_t index) {
 
     switch(index) {
     case 0: // Manual Sender UDS service
-        scene_manager_next_scene(app->scene_manager, app_scene_uds_manual_sender_option);
+        scene_manager_next_scene(
+            app->scene_manager, app_scene_uds_single_frame_request_sender_option);
         break;
 
     default:
@@ -26,7 +27,8 @@ void app_scene_uds_menu_on_enter(void* context) {
 
     submenu_reset(app->submenu);
     submenu_set_header(app->submenu, "UDS Services");
-    submenu_add_item(app->submenu, "Send Manual UDS Service", 0, uds_menu_callback, app);
+    submenu_add_item(app->submenu, "Send Single Frame Request", 0, uds_menu_callback, app);
+    submenu_add_item(app->submenu, "Send Multiple Frame Request", 1, uds_menu_callback, app);
 
     submenu_set_selected_item(app->submenu, selector_option);
 

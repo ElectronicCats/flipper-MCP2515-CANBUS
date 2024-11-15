@@ -22,8 +22,6 @@ ADD_SCENE(app, input_text, input_text_option)
 ADD_SCENE(app, read_logs, read_logs)
 ADD_SCENE(app, settings, settings_option)
 ADD_SCENE(app, about_us, about_us)
-
-// On development
 ADD_SCENE(app, obdii_menu, obdii_option)
 ADD_SCENE(app, obdii_typical_codes, obdii_typical_codes_option)
 ADD_SCENE(app, draw_obdii, draw_obii_option)
@@ -42,6 +40,6 @@ ADD_SCENE(app, play_logs_widget, play_logs_widget)
 
 // For the UDS FUNCTIONS
 ADD_SCENE(app, uds_menu, uds_menu_option)
-ADD_SCENE(app, uds_manual_sender, uds_manual_sender_option)
-ADD_SCENE(app, uds_response_sender, uds_response_sender_option)
-ADD_SCENE(app, uds_set_data, uds_set_data_option)
+ADD_SCENE(app, uds_single_frame_request_sender, uds_single_frame_request_sender_option)
+ADD_SCENE(app, uds_single_frame_request_response, uds_single_frame_request_response_option)
+ADD_SCENE(app, uds_single_frame_data, uds_single_frame_data_option)

@@ -62,7 +62,7 @@ bool read_frames_uds(MCP2515* CAN, uint32_t id, CANFRAME* frame) {
 }
 
 // Function to send a service
-bool uds_manual_service_request(
+bool uds_single_frame_request(
     UDS_SERVICE* uds_instance,
     uint8_t* data_to_send,
     uint8_t count_of_bytes,

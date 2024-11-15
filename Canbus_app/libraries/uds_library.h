@@ -24,7 +24,7 @@ UDS_SERVICE* uds_service_alloc(
 bool uds_init(UDS_SERVICE* uds_instance);
 
 // send a manual request
-bool uds_manual_service_request(
+bool uds_single_frame_request(
     UDS_SERVICE* uds_instance,
     uint8_t* data_to_send,
     uint8_t count_of_bytes,
