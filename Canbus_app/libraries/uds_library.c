@@ -42,17 +42,21 @@ void free_uds(UDS_SERVICE* uds_instance) {
 }
 
 // Get Frames
-bool read_frames_uds(MCP2515* CAN, uint8_t id, CANFRAME* frame) {
+bool read_frames_uds(MCP2515* CAN, uint32_t id, CANFRAME* frame) {
     uint32_t time_delay = 0;
 
     do {
         if(read_can_message(CAN, frame) == ERROR_OK) {
-            if(frame->canId == id) return true;
+            if(frame->canId == id) {
+                return true;
+            }
         }
         furi_delay_us(1);
         time_delay++;
 
     } while((time_delay < 6000));
+
+    log_exception("Error");
 
     return false;
 }
@@ -61,19 +65,17 @@ bool read_frames_uds(MCP2515* CAN, uint8_t id, CANFRAME* frame) {
 bool uds_manual_service_request(
     UDS_SERVICE* uds_instance,
     uint8_t* data_to_send,
+    uint8_t count_of_bytes,
     CANFRAME* frames_to_received,
     uint8_t count_of_frames) {
     MCP2515* CAN = uds_instance->CAN;
     CANFRAME frame_to_send = {0};
     frame_to_send.canId = uds_instance->id_to_send;
-    frame_to_send.data_lenght = 8;
+    frame_to_send.data_lenght = count_of_bytes + 1;
     uint32_t id_to_received = uds_instance->id_to_received;
     ERROR_CAN ret = ERROR_OK;
 
-    UNUSED(id_to_received);
-    UNUSED(frames_to_received);
-
-    for(uint8_t i = 0; i < 8; i++)
+    for(uint8_t i = 0; i < frame_to_send.data_lenght; i++)
         frame_to_send.buffer[i] = data_to_send[i];
 
     ret = send_can_frame(CAN, &frame_to_send);
@@ -82,6 +84,7 @@ bool uds_manual_service_request(
 
     memset(frame_to_send.buffer, 0, sizeof(frame_to_send.buffer));
     frame_to_send.buffer[0] = 0x30;
+    frame_to_send.data_lenght = 3;
 
     for(uint8_t i = 0; i < count_of_frames; i++) {
         if(i == 1) {

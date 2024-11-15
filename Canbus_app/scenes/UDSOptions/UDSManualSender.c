@@ -1,7 +1,7 @@
 #include "../../app_user.h"
 
-static uint32_t id_request = DEFAULT_ECU_REQUEST;
-static uint32_t id_response = DEFAULT_ECU_RESPONSE;
+static uint32_t id_request = 0x7e1;
+static uint32_t id_response = 0x7e9;
 
 static uint8_t count_of_frames = 1;
 static uint8_t count_of_bytes = 1;
@@ -134,7 +134,7 @@ void app_scene_uds_set_data_on_enter(void* context) {
     ByteInput* scene = app->input_byte_value;
 
     for(int i = count_of_bytes; i < 7; i++) {
-        data_to_send[i] = 0xAA;
+        data_to_send[i] = 0x00;
     }
 
     byte_input_set_result_callback(
@@ -212,27 +212,24 @@ static int32_t obdii_thread_response_manual_uds_sender_on_work(void* context) {
 
     bool run = uds_init(uds_service);
 
-    uint8_t data[8];
+    uint8_t size = count_of_bytes + 1;
 
-    memset(data, 0xaa, sizeof(data));
+    uint8_t data[size];
 
     data[0] = count_of_bytes;
 
-    for(uint8_t i = 1; i < (count_of_bytes + 1); i++) {
+    for(uint8_t i = 1; i < size; i++) {
         data[i] = data_to_send[i - 1];
     }
 
-    CANFRAME canframes[count_of_frames];
-
-    memset(canframes, 0, sizeof(canframes));
-
     if(run) {
-        // Time delay added to initialize
-        furi_delay_ms(500);
+        CANFRAME canframes[count_of_frames];
+        memset(canframes, 0, sizeof(canframes));
+        furi_delay_ms(500); // Time delay added to initialize
         furi_string_printf(text, "DEVICE CONNECTED!...\n");
-        furi_string_cat_printf(text, "%lx ", id_request);
+        furi_string_cat_printf(text, "-> %lx ", id_request);
 
-        for(uint8_t i = 0; i < 8; i++) {
+        for(uint8_t i = 0; i < size; i++) {
             furi_string_cat_printf(text, "%x ", data[i]);
         }
 
@@ -240,7 +237,8 @@ static int32_t obdii_thread_response_manual_uds_sender_on_work(void* context) {
 
         text_box_set_text(app->textBox, furi_string_get_cstr(text));
 
-        if(uds_manual_service_request(uds_service, data, canframes, count_of_frames)) {
+        if(uds_manual_service_request(
+               uds_service, data, count_of_bytes, canframes, count_of_frames)) {
             for(uint8_t i = 0; i < count_of_frames; i++) {
                 CANFRAME frame_received = canframes[i];
                 if(frame_received.canId == 0x00) break;

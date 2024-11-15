@@ -27,6 +27,7 @@ bool uds_init(UDS_SERVICE* uds_instance);
 bool uds_manual_service_request(
     UDS_SERVICE* uds_instance,
     uint8_t* data_to_send,
+    uint8_t count_of_bytes,
     CANFRAME* frames_to_received,
     uint8_t count_of_frames);
 
