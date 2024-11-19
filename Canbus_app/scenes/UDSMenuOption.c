@@ -16,6 +16,10 @@ void uds_menu_callback(void* context, uint32_t index) {
             app->scene_manager, app_scene_uds_single_frame_request_sender_option);
         break;
 
+    case 2: // Request VIN from car
+        scene_manager_next_scene(app->scene_manager, app_scene_uds_request_vin_option);
+        break;
+
     default:
         break;
     }
@@ -29,6 +33,7 @@ void app_scene_uds_menu_on_enter(void* context) {
     submenu_set_header(app->submenu, "UDS Services");
     submenu_add_item(app->submenu, "Send Single Frame Request", 0, uds_menu_callback, app);
     submenu_add_item(app->submenu, "Send Multiple Frame Request", 1, uds_menu_callback, app);
+    submenu_add_item(app->submenu, "Get VIN Number", 2, uds_menu_callback, app);
 
     submenu_set_selected_item(app->submenu, selector_option);
 
