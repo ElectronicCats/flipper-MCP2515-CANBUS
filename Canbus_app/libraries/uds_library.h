@@ -31,6 +31,10 @@ bool uds_single_frame_request(
     CANFRAME* frames_to_received,
     uint8_t count_of_frames);
 
+// Get VIN Number
+bool uds_get_vin(UDS_SERVICE* uds_instance, FuriString* text);
+
+// Free uds
 void free_uds(UDS_SERVICE* uds_instance);
 
 #endif
