@@ -44,10 +44,26 @@ void app_scene_uds_request_vin_on_exit(void* context) {
 
 static int32_t uds_get_vin_thread(void* context) {
     App* app = context;
+    MCP2515* CAN = app->mcp_can;
 
     FuriString* text = app->text;
 
-    UNUSED(text);
+    furi_string_reset(text);
+
+    UDS_SERVICE* uds_service = uds_service_alloc(0x7e1, 0x7e9, CAN->mode, CAN->clck, CAN->bitRate);
+
+    if(uds_init(uds_service)) {
+        furi_delay_ms(500);
+        if(uds_get_vin(uds_service, text)) {
+            log_info(furi_string_get_cstr(text));
+        } else {
+            log_warning("Error");
+        }
+    } else {
+        log_exception("Not connected");
+    }
+
+    free_uds(uds_service);
 
     return 0;
 }

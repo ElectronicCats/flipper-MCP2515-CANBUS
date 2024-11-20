@@ -109,29 +109,30 @@ bool uds_get_vin(UDS_SERVICE* uds_instance, FuriString* text) {
 
     memset(canframes, 0, sizeof(canframes));
 
-    uint8_t request[] = {0x22, 0xf1, 0x90};
+    uint8_t request[4] = {0x3, 0x22, 0xf1, 0x90};
 
     if(!uds_single_frame_request(uds_instance, request, 3, canframes, 3)) return false;
 
-    if(canframes[0].buffer[0] != 0x62) return false;
+    if(canframes[0].buffer[2] != 0x62) return false;
 
-    char vin_name[17];
+    char vin_name[17] = {'\0'};
 
     uint8_t pos = 0;
 
     for(uint8_t i = 0; i < 3; i++) {
-        uint8_t start_num = 1; // The byte to start saving
-        if(i == 0) start_num = 5;
+        uint8_t start_num = (i == 0) ? 5 : 1;
 
         // Save bytes in the char array
         for(uint8_t j = start_num; j < 8; j++) {
-            vin_name[pos++] = canframes[i].buffer[j];
+            vin_name[pos] = (char)canframes[i].buffer[j];
+            if(pos >= sizeof(vin_name) - 1) break;
+            pos++;
         }
     }
 
     furi_string_reset(text);
 
-    furi_string_cat_str(text, vin_name);
+    furi_string_cat_printf(text, "%.17s", vin_name);
 
     return true;
 }
