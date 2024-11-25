@@ -136,3 +136,22 @@ bool uds_get_vin(UDS_SERVICE* uds_instance, FuriString* text) {
 
     return true;
 }
+
+// Function to send multiframes
+// This will be on development
+bool uds_multi_frame_request(
+    UDS_SERVICE* uds,
+    uint8_t service,
+    uint8_t* data,
+    uint8_t length,
+    CANFRAME* canframes) {
+    UNUSED(uds);
+    UNUSED(service);
+    UNUSED(data);
+    UNUSED(length);
+    UNUSED(canframes);
+
+    // CANFRAME canframes_to_send[20] = {0};
+
+    return true;
+}
