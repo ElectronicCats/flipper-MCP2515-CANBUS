@@ -12,9 +12,6 @@ void app_scene_uds_request_vin_on_enter(void* context) {
 
     widget_reset(app->widget);
 
-    widget_add_string_multiline_element(
-        app->widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "On\nDevelopment");
-
     app->thread = furi_thread_alloc_ex("ManualUDS", 1024, uds_get_vin_thread, app);
     furi_thread_start(app->thread);
 
@@ -55,12 +52,21 @@ static int32_t uds_get_vin_thread(void* context) {
     if(uds_init(uds_service)) {
         furi_delay_ms(500);
         if(uds_get_vin(uds_service, text)) {
-            log_info(furi_string_get_cstr(text));
+            widget_add_string_element(
+                app->widget, 64, 25, AlignCenter, AlignCenter, FontPrimary, "VIN:");
+            widget_add_string_element(
+                app->widget,
+                64,
+                35,
+                AlignCenter,
+                AlignCenter,
+                FontSecondary,
+                furi_string_get_cstr(text));
         } else {
-            log_warning("Error");
+            draw_transmition_failure(app);
         }
     } else {
-        log_exception("Not connected");
+        draw_device_no_connected(app);
     }
 
     free_uds(uds_service);
