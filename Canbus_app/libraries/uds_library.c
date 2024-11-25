@@ -141,17 +141,68 @@ bool uds_get_vin(UDS_SERVICE* uds_instance, FuriString* text) {
 // This will be on development
 bool uds_multi_frame_request(
     UDS_SERVICE* uds,
-    uint8_t service,
     uint8_t* data,
     uint8_t length,
-    CANFRAME* canframes) {
-    UNUSED(uds);
-    UNUSED(service);
-    UNUSED(data);
-    UNUSED(length);
-    UNUSED(canframes);
+    CANFRAME* canframes_to_send,
+    CANFRAME* canframes_to_received) {
+    UNUSED(canframes_to_received);
+    uint8_t size_frames_to_send = 1;
 
-    // CANFRAME canframes_to_send[20] = {0};
+    // Condition to know the count of frames to send if the data need more frames
+    if(length > 7) {
+        if(((length - 6) % 7) != 0) {
+            size_frames_to_send = ((length - 6) / 7) + 2;
+        } else {
+            size_frames_to_send = ((length - 6) / 7) + 1;
+        }
+    }
+
+    // log_info("count of frames to send: %u", size_frames_to_send);
+
+    // Set the frames if the data need more than one can frame
+    if(size_frames_to_send > 1) {
+        canframes_to_send[0].buffer[0] = 0x10; // Set the byte to indicate the first frame
+        canframes_to_send[0].buffer[1] = length; // The length of the data
+
+        // This counter works as a pivot to save the data in it respective byte of any frame
+        uint8_t counter = 0;
+
+        for(uint8_t i = 0; i < size_frames_to_send; i++) {
+            canframes_to_send[i].canId = uds->id_to_send; // Set the id to be sent
+            canframes_to_send[i].data_lenght = 8; // Set the lenght
+
+            if(i >= 1) canframes_to_send[i].buffer[0] = (0x20) + (i & 0xf); // every
+
+            uint8_t start_num = (i == 0) ? 2 : 1;
+
+            for(uint8_t j = start_num; j < 8; j++) {
+                // log_info("counter: %u data: %x", counter, data[counter]);
+                canframes_to_send[i].buffer[j] = data[counter++];
+
+                if(counter == length) {
+                    canframes_to_send[i].data_lenght = j + 1;
+                }
+            }
+        }
+
+    }
+    // If the data only needs one frame
+    else {
+        canframes_to_send[0].canId = uds->id_to_send;
+        canframes_to_send[0].data_lenght = length + 1;
+        canframes_to_send[0].buffer[0] = length;
+        for(uint8_t i = 1; i < (length + 1); i++) {
+            canframes_to_send[0].buffer[i] = data[i - 1];
+        }
+    }
+
+    /*  Just for debbug
+    for(uint8_t j = 0; j < size_frames_to_send; j++) {
+        log_info("--------------Frame %u-----------------------", j);
+        for(uint8_t i = 0; i < canframes_to_send[j].data_lenght; i++) {
+            log_info("data[%u]: %x ", i, canframes_to_send[j].buffer[i]);
+        }
+    }*/
 
     return true;
 }

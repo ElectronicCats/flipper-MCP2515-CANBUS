@@ -34,10 +34,10 @@ bool uds_single_frame_request(
 // Send a multi frame request
 bool uds_multi_frame_request(
     UDS_SERVICE* uds,
-    uint8_t service,
     uint8_t* data,
     uint8_t length,
-    CANFRAME* canframes);
+    CANFRAME* canframes_to_send,
+    CANFRAME* canframes_to_received);
 
 // Get VIN Number
 bool uds_get_vin(UDS_SERVICE* uds_instance, FuriString* text);
