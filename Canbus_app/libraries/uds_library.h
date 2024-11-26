@@ -37,6 +37,7 @@ bool uds_multi_frame_request(
     uint8_t* data,
     uint8_t length,
     CANFRAME* canframes_to_send,
+    uint8_t count_of_frames_to_received,
     CANFRAME* canframes_to_received);
 
 // Get VIN Number

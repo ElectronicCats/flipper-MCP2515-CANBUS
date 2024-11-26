@@ -254,7 +254,7 @@ void app_scene_uds_single_frame_request_response_on_enter(void* context) {
     text_box_reset(app->textBox);
     text_box_set_focus(app->textBox, TextBoxFocusEnd);
 
-    app->thread = furi_thread_alloc_ex("ManualUDS", 1024 * 3, uds_multiframe_request_thread, app);
+    app->thread = furi_thread_alloc_ex("ManualUDS", 10 * 1024, uds_multiframe_request_thread, app);
     furi_thread_start(app->thread);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
@@ -361,7 +361,6 @@ static int32_t uds_multiframe_request_thread(void* context) {
     App* app = context;
     FuriString* text = app->text;
     furi_string_reset(text);
-    furi_string_cat_printf(text, "On Development");
     text_box_set_text(app->textBox, furi_string_get_cstr(text));
 
     MCP2515* CAN = app->mcp_can;
@@ -370,6 +369,11 @@ static int32_t uds_multiframe_request_thread(void* context) {
         uds_service_alloc(id_request, id_response, CAN->mode, CAN->clck, CAN->bitRate);
 
     bool run = uds_init(uds_service);
+
+    furi_delay_ms(500);
+
+    log_info("Here");
+
     if(run) {
         CANFRAME canframes_to_received[count_of_frames];
 
@@ -379,8 +383,38 @@ static int32_t uds_multiframe_request_thread(void* context) {
 
         memset(canframes_to_send, 0, sizeof(canframes_to_send));
 
-        uds_multi_frame_request(
-            uds_service, data_to_send, count_of_bytes, canframes_to_send, canframes_to_received);
+        if(uds_multi_frame_request(
+               uds_service,
+               data_to_send,
+               count_of_bytes,
+               canframes_to_send,
+               count_of_frames,
+               canframes_to_received)) {
+            for(uint8_t i = 0; i < 15; i++) {
+                if(canframes_to_send[i].canId != uds_service->id_to_send) break;
+
+                furi_string_cat_printf(text, "->%lx  ", canframes_to_send[i].canId);
+                for(uint8_t j = 0; j < canframes_to_send[i].data_lenght; j++) {
+                    furi_string_cat_printf(text, "%x ", canframes_to_send[i].buffer[j]);
+                }
+
+                furi_string_cat_printf(text, "\n");
+            }
+
+            for(uint8_t i = 0; i < count_of_frames; i++) {
+                if(canframes_to_received[i].canId != uds_service->id_to_received) break;
+                furi_string_cat_printf(text, "<-%lx  ", canframes_to_received[i].canId);
+                for(uint8_t j = 0; j < canframes_to_received[i].data_lenght; j++) {
+                    furi_string_cat_printf(text, "%x ", canframes_to_received[i].buffer[j]);
+                }
+
+                furi_string_cat_printf(text, "\n");
+            }
+
+            text_box_set_text(app->textBox, furi_string_get_cstr(text));
+        } else {
+            text_box_set_text(app->textBox, "Transmition Failure");
+        }
 
     } else {
     }
