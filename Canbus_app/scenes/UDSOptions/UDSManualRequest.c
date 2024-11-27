@@ -365,6 +365,10 @@ static int32_t uds_multiframe_request_thread(void* context) {
 
     MCP2515* CAN = app->mcp_can;
 
+    CANFRAME* canframes_to_received = (CANFRAME*)calloc(count_of_frames, sizeof(CANFRAME));
+
+    CANFRAME* canframes_to_send = (CANFRAME*)calloc(15, sizeof(CANFRAME));
+
     UDS_SERVICE* uds_service =
         uds_service_alloc(id_request, id_response, CAN->mode, CAN->clck, CAN->bitRate);
 
@@ -375,14 +379,6 @@ static int32_t uds_multiframe_request_thread(void* context) {
     log_info("Here");
 
     if(run) {
-        CANFRAME canframes_to_received[count_of_frames];
-
-        CANFRAME canframes_to_send[15];
-
-        memset(canframes_to_received, 0, sizeof(canframes_to_received));
-
-        memset(canframes_to_send, 0, sizeof(canframes_to_send));
-
         if(uds_multi_frame_request(
                uds_service,
                data_to_send,
@@ -417,8 +413,11 @@ static int32_t uds_multiframe_request_thread(void* context) {
         }
 
     } else {
+        text_box_set_text(app->textBox, "Device not connected");
     }
 
+    free(canframes_to_received);
+    free(canframes_to_send);
     free_uds(uds_service);
 
     return 0;
