@@ -140,7 +140,7 @@ bool uds_get_vin(UDS_SERVICE* uds_instance, FuriString* text) {
 // Function to send multiframes
 // This will be on development
 bool uds_multi_frame_request(
-    UDS_SERVICE* uds,
+    UDS_SERVICE* uds_instance,
     uint8_t* data,
     uint8_t length,
     CANFRAME* canframes_to_send,
@@ -170,7 +170,7 @@ bool uds_multi_frame_request(
         uint8_t counter = 0;
 
         for(uint8_t i = 0; i < size_frames_to_send; i++) {
-            canframes_to_send[i].canId = uds->id_to_send; // Set the id to be sent
+            canframes_to_send[i].canId = uds_instance->id_to_send; // Set the id to be sent
             canframes_to_send[i].data_lenght = 8; // Set the lenght
 
             if(i >= 1) canframes_to_send[i].buffer[0] = (0x20) + (i & 0xf); // every
@@ -190,7 +190,7 @@ bool uds_multi_frame_request(
 
     // If the data only needs one frame
     else {
-        canframes_to_send[0].canId = uds->id_to_send;
+        canframes_to_send[0].canId = uds_instance->id_to_send;
         canframes_to_send[0].data_lenght = length + 1;
         canframes_to_send[0].buffer[0] = length;
         for(uint8_t i = 1; i < (length + 1); i++) {
@@ -198,7 +198,7 @@ bool uds_multi_frame_request(
         }
     }
 
-    canframes_to_send[size_frames_to_send].canId = uds->id_to_send;
+    canframes_to_send[size_frames_to_send].canId = uds_instance->id_to_send;
     canframes_to_send[size_frames_to_send].data_lenght = 3;
     canframes_to_send[size_frames_to_send].buffer[0] = 0x30;
 
@@ -224,13 +224,14 @@ bool uds_multi_frame_request(
     // From here is the work to send de canbus data
 
     // Send the first frame
-    if(send_can_frame(uds->CAN, &canframes_to_send[0]) != ERROR_OK) {
+    if(send_can_frame(uds_instance->CAN, &canframes_to_send[0]) != ERROR_OK) {
         log_exception("First message wasnt send");
         return false;
     }
 
     // Wait message of the response
-    if(!read_frames_uds(uds->CAN, uds->id_to_received, &canframes_to_received[0])) {
+    if(!read_frames_uds(
+           uds_instance->CAN, uds_instance->id_to_received, &canframes_to_received[0])) {
         log_exception("message wasnt received");
         return false;
     }
@@ -238,10 +239,12 @@ bool uds_multi_frame_request(
     // To received multiple frames
     if(canframes_to_received[0].buffer[0] == 0x10 && count_of_frames_to_received > 1) {
         // If there no more data will pass this code
-        send_can_frame(uds->CAN, &canframes_to_send[size_frames_to_send]);
+        send_can_frame(uds_instance->CAN, &canframes_to_send[size_frames_to_send]);
 
         for(uint8_t i = 1; i < count_of_frames_to_received; i++) {
-            if(!read_frames_uds(uds->CAN, uds->id_to_received, &canframes_to_received[i])) break;
+            if(!read_frames_uds(
+                   uds_instance->CAN, uds_instance->id_to_received, &canframes_to_received[i]))
+                break;
         }
     }
 
@@ -264,11 +267,12 @@ bool uds_multi_frame_request(
 
     // Send the rest of the data
     for(uint8_t i = 1; i < size_frames_to_send; i++) {
-        send_can_frame(uds->CAN, &canframes_to_send[i]);
+        send_can_frame(uds_instance->CAN, &canframes_to_send[i]);
     }
 
     // Read the first ECU's response
-    if(!read_frames_uds(uds->CAN, uds->id_to_received, &canframes_to_received[0])) {
+    if(!read_frames_uds(
+           uds_instance->CAN, uds_instance->id_to_received, &canframes_to_received[0])) {
         log_exception("Error to read the frame");
         return false;
     }
@@ -276,10 +280,12 @@ bool uds_multi_frame_request(
     // To received multiple frames
     if(canframes_to_received[0].buffer[0] == 0x10 && count_of_frames_to_received > 1) {
         // If there no more data will pass this code
-        send_can_frame(uds->CAN, &canframes_to_send[size_frames_to_send]);
+        send_can_frame(uds_instance->CAN, &canframes_to_send[size_frames_to_send]);
 
         for(uint8_t i = 1; i < count_of_frames_to_received; i++) {
-            if(!read_frames_uds(uds->CAN, uds->id_to_received, &canframes_to_received[i])) break;
+            if(!read_frames_uds(
+                   uds_instance->CAN, uds_instance->id_to_received, &canframes_to_received[i]))
+                break;
         }
     }
 

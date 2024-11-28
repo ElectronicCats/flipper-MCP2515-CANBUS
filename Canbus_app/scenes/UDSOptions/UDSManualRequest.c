@@ -376,8 +376,6 @@ static int32_t uds_multiframe_request_thread(void* context) {
 
     furi_delay_ms(500);
 
-    log_info("Here");
-
     if(run) {
         if(uds_multi_frame_request(
                uds_service,
