@@ -311,3 +311,21 @@ bool uds_set_diagnostic_session(UDS_SERVICE* uds_instance, diagnostic_session se
 
     return true;
 }
+
+// Reset the ECU
+bool uds_reset_ecu(UDS_SERVICE* uds_instance, type_ecu_reset type) {
+    uint8_t data[2] = {0x11, (uint8_t)type};
+
+    if(type == 0) return false;
+
+    CANFRAME frame_to_send = {0};
+    CANFRAME frame_to_received = {0};
+
+    if(!uds_multi_frame_request(
+           uds_instance, data, COUNT_OF(data), &frame_to_send, 1, &frame_to_received))
+        return false;
+
+    if(frame_to_received.buffer[1] != 0x51) return false;
+
+    return true;
+}

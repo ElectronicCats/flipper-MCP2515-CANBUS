@@ -7,12 +7,20 @@
 #define DEFAULT_ECU_REQUEST  0x7e0
 #define DEFAULT_ECU_RESPONSE 0x7e8
 
+// For the type of session
 typedef enum {
     DEFAULT_UDS_SESSION = 1,
     PROGRAMMING_UDS_SESSION = 2,
     EXTENDED_UDS_SESSION = 3,
     SAFETY_UDS_SESSION = 4,
 } diagnostic_session;
+
+// For the type of RESET
+typedef enum {
+    HARD_RESET = 1,
+    KEY_OFF_ON_RESET = 2,
+    SOFT_RESET = 3,
+} type_ecu_reset;
 
 typedef struct {
     MCP2515* CAN;
@@ -52,6 +60,9 @@ bool uds_get_vin(UDS_SERVICE* uds_instance, FuriString* text);
 
 // Set the diagnostic session
 bool uds_set_diagnostic_session(UDS_SERVICE* uds_instance, diagnostic_session session);
+
+// Reset the ECU
+bool uds_reset_ecu(UDS_SERVICE* uds_instance, type_ecu_reset type);
 
 // Free uds
 void free_uds(UDS_SERVICE* uds_instance);
