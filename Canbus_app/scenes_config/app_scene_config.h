@@ -44,3 +44,5 @@ ADD_SCENE(app, uds_single_frame_request_sender, uds_single_frame_request_sender_
 ADD_SCENE(app, uds_single_frame_request_response, uds_single_frame_request_response_option)
 ADD_SCENE(app, uds_single_frame_data, uds_single_frame_data_option)
 ADD_SCENE(app, uds_request_vin, uds_request_vin_option)
+ADD_SCENE(app, uds_set_diagnostic_session, uds_set_diagnostic_session_option)
+ADD_SCENE(app, uds_set_session_response, uds_set_session_response)

@@ -1,5 +1,11 @@
 #include "../app_user.h"
 
+typedef enum {
+    MANUAL_UDS_OPTION,
+    SET_DIAGNOSTIC_SESSION_OPTION,
+    GET_VIN_OPTION
+} uds_elements_list;
+
 // Variable to set the item selected
 uint32_t selector_option = 0;
 
@@ -11,12 +17,16 @@ void uds_menu_callback(void* context, uint32_t index) {
     selector_option = index;
 
     switch(index) {
-    case 0: // Manual Sender UDS service
+    case MANUAL_UDS_OPTION: // Manual Sender UDS service
         scene_manager_next_scene(
             app->scene_manager, app_scene_uds_single_frame_request_sender_option);
         break;
 
-    case 1: // Request VIN from car
+    case SET_DIAGNOSTIC_SESSION_OPTION: // To set the diagnostic Session
+        scene_manager_next_scene(app->scene_manager, app_scene_uds_set_diagnostic_session_option);
+        break;
+
+    case GET_VIN_OPTION: // Request VIN from car
         scene_manager_next_scene(app->scene_manager, app_scene_uds_request_vin_option);
         break;
 
@@ -31,8 +41,10 @@ void app_scene_uds_menu_on_enter(void* context) {
 
     submenu_reset(app->submenu);
     submenu_set_header(app->submenu, "UDS Services");
-    submenu_add_item(app->submenu, "Manual Request", 0, uds_menu_callback, app);
-    submenu_add_item(app->submenu, "Get VIN Number", 1, uds_menu_callback, app);
+    submenu_add_item(app->submenu, "Manual Request", MANUAL_UDS_OPTION, uds_menu_callback, app);
+    submenu_add_item(
+        app->submenu, "Set Session", SET_DIAGNOSTIC_SESSION_OPTION, uds_menu_callback, app);
+    submenu_add_item(app->submenu, "Get VIN Number", GET_VIN_OPTION, uds_menu_callback, app);
 
     submenu_set_selected_item(app->submenu, selector_option);
 
