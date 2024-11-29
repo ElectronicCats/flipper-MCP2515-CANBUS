@@ -3,6 +3,7 @@
 typedef enum {
     MANUAL_UDS_OPTION,
     SET_DIAGNOSTIC_SESSION_OPTION,
+    ECU_RESET_OPTION,
     GET_VIN_OPTION
 } uds_elements_list;
 
@@ -30,6 +31,10 @@ void uds_menu_callback(void* context, uint32_t index) {
         scene_manager_next_scene(app->scene_manager, app_scene_uds_request_vin_option);
         break;
 
+    case ECU_RESET_OPTION: // Reset the ECU
+        scene_manager_next_scene(app->scene_manager, app_scene_uds_ecu_reset_option);
+        break;
+
     default:
         break;
     }
@@ -44,6 +49,7 @@ void app_scene_uds_menu_on_enter(void* context) {
     submenu_add_item(app->submenu, "Manual Request", MANUAL_UDS_OPTION, uds_menu_callback, app);
     submenu_add_item(
         app->submenu, "Set Session", SET_DIAGNOSTIC_SESSION_OPTION, uds_menu_callback, app);
+    submenu_add_item(app->submenu, "ECU Reset", ECU_RESET_OPTION, uds_menu_callback, app);
     submenu_add_item(app->submenu, "Get VIN Number", GET_VIN_OPTION, uds_menu_callback, app);
 
     submenu_set_selected_item(app->submenu, selector_option);

@@ -31,7 +31,7 @@
 
 #define MESSAGE_ERROR 0xF0
 
-#define UDS_REQUEST_ID_DEFAULT  0x7e1
+#define UDS_REQUEST_ID_DEFAULT  0x7df
 #define UDS_RESPONSE_ID_DEFAULT 0x7e9
 
 typedef enum {
