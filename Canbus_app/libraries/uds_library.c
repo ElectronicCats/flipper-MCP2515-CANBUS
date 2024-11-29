@@ -293,3 +293,21 @@ bool uds_multi_frame_request(
 
     return true;
 }
+
+// Set diagnostic session
+bool uds_set_diagnostic_session(UDS_SERVICE* uds_instance, diagnostic_session session) {
+    uint8_t data[2] = {0x10, (uint8_t)session};
+
+    if(session == 0) return false;
+
+    CANFRAME frame_to_send = {0};
+    CANFRAME frame_to_received = {0};
+
+    if(!uds_multi_frame_request(
+           uds_instance, data, COUNT_OF(data), &frame_to_send, 1, &frame_to_received))
+        return false;
+
+    if(frame_to_received.buffer[0] != 0x50) return false;
+
+    return true;
+}

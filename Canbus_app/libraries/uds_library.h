@@ -7,6 +7,13 @@
 #define DEFAULT_ECU_REQUEST  0x7e0
 #define DEFAULT_ECU_RESPONSE 0x7e8
 
+typedef enum {
+    DEFAULT_UDS_SESSION = 1,
+    PROGRAMMING_UDS_SESSION = 2,
+    EXTENDED_UDS_SESSION = 3,
+    SAFETY_UDS_SESSION = 4,
+} diagnostic_session;
+
 typedef struct {
     MCP2515* CAN;
     uint32_t id_to_send;
@@ -42,6 +49,9 @@ bool uds_multi_frame_request(
 
 // Get VIN Number
 bool uds_get_vin(UDS_SERVICE* uds_instance, FuriString* text);
+
+// Set the diagnostic session
+bool uds_set_diagnostic_session(UDS_SERVICE* uds_instance, diagnostic_session session);
 
 // Free uds
 void free_uds(UDS_SERVICE* uds_instance);
