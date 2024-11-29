@@ -329,3 +329,21 @@ bool uds_reset_ecu(UDS_SERVICE* uds_instance, type_ecu_reset type) {
 
     return true;
 }
+
+// Get Storaged DTC
+bool uds_get_storaged_dtc(UDS_SERVICE* uds_instance, char* codes[]) {
+    uint8_t data[3] = {0x19, 0x1, 0x4};
+
+    CANFRAME frame_to_send = {0};
+    CANFRAME frame_to_received = {0};
+
+    if(!uds_multi_frame_request(
+           uds_instance, data, COUNT_OF(data), &frame_to_send, 1, &frame_to_received))
+        return false;
+
+    if(frame_to_received.buffer[1] != 0x59) return false;
+
+    UNUSED(codes);
+
+    return true;
+}
