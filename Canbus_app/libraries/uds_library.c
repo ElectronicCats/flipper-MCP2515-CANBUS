@@ -307,7 +307,7 @@ bool uds_set_diagnostic_session(UDS_SERVICE* uds_instance, diagnostic_session se
            uds_instance, data, COUNT_OF(data), &frame_to_send, 1, &frame_to_received))
         return false;
 
-    if(frame_to_received.buffer[0] != 0x50) return false;
+    if(frame_to_received.buffer[1] != 0x50) return false;
 
     return true;
 }

@@ -31,8 +31,8 @@
 
 #define MESSAGE_ERROR 0xF0
 
-#define UDS_REQUEST_ID_DEFAULT  0x7e0
-#define UDS_RESPONSE_ID_DEFAULT 0x7e8
+#define UDS_REQUEST_ID_DEFAULT  0x7e1
+#define UDS_RESPONSE_ID_DEFAULT 0x7e9
 
 typedef enum {
     WorkerflagStop = (1 << 0),

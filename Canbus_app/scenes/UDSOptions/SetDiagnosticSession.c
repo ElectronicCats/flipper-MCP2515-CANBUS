@@ -9,7 +9,7 @@ static int32_t set_diagnostic_session_thread(void* context);
 // callback for the diagnostic sessions menu
 void submenu_diagnostic_session_callback(void* context, uint32_t index) {
     App* app = context;
-    session = index;
+    session = index + 1;
     scene_manager_next_scene(app->scene_manager, app_scene_uds_set_session_response);
 }
 
@@ -80,6 +80,37 @@ void app_scene_uds_set_session_response_on_exit(void* context) {
 // Thread to work
 static int32_t set_diagnostic_session_thread(void* context) {
     App* app = context;
-    UNUSED(app);
+    MCP2515* CAN = app->mcp_can;
+
+    FuriString* text = app->text;
+
+    furi_string_reset(text);
+
+    UDS_SERVICE* uds_service = uds_service_alloc(
+        UDS_REQUEST_ID_DEFAULT, UDS_RESPONSE_ID_DEFAULT, CAN->mode, CAN->clck, CAN->bitRate);
+
+    if(uds_init(uds_service)) {
+        furi_delay_ms(500);
+
+        if(uds_set_diagnostic_session(uds_service, (diagnostic_session)session)) {
+            widget_add_string_multiline_element(
+                app->widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "Session Set Okay");
+
+        } else {
+            widget_add_string_multiline_element(
+                app->widget,
+                64,
+                32,
+                AlignCenter,
+                AlignCenter,
+                FontPrimary,
+                "ERROR:\nSession could not be set");
+        }
+    } else {
+        draw_device_no_connected(app);
+    }
+
+    free_uds(uds_service);
+
     return 0;
 }
