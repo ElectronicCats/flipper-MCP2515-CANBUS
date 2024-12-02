@@ -65,7 +65,7 @@ bool uds_set_diagnostic_session(UDS_SERVICE* uds_instance, diagnostic_session se
 bool uds_reset_ecu(UDS_SERVICE* uds_instance, type_ecu_reset type);
 
 // Get ECU Storage Data Troubles Codes
-bool uds_get_storaged_dtc(UDS_SERVICE* uds_instance, FuriString* text);
+bool uds_get_count_storaged_dtc(UDS_SERVICE* uds_instance, uint16_t* count_of_dtc);
 
 // Free uds
 void free_uds(UDS_SERVICE* uds_instance);

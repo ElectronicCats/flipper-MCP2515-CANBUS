@@ -331,8 +331,8 @@ bool uds_reset_ecu(UDS_SERVICE* uds_instance, type_ecu_reset type) {
 }
 
 // Get Storaged DTC
-bool uds_get_storaged_dtc(UDS_SERVICE* uds_instance, char* codes[]) {
-    uint8_t data[3] = {0x19, 0x1, 0x4};
+bool uds_get_count_storaged_dtc(UDS_SERVICE* uds_instance, uint16_t* count_of_dtc) {
+    uint8_t data[3] = {0x19, 0x1, 0xff};
 
     CANFRAME frame_to_send = {0};
     CANFRAME frame_to_received = {0};
@@ -343,7 +343,7 @@ bool uds_get_storaged_dtc(UDS_SERVICE* uds_instance, char* codes[]) {
 
     if(frame_to_received.buffer[1] != 0x59) return false;
 
-    UNUSED(codes);
+    *count_of_dtc = (uint16_t)frame_to_received.buffer[5] << 8 | frame_to_received.buffer[6];
 
     return true;
 }
