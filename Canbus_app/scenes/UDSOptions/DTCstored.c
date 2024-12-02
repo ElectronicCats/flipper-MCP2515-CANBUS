@@ -20,7 +20,7 @@ void app_scene_uds_get_dtc_menu_on_enter(void* context) {
 
     submenu_reset(app->submenu);
 
-    submenu_set_header(app->submenu, "MENU DTC STORAGED");
+    submenu_set_header(app->submenu, "MENU DTC STORED");
 
     submenu_add_item(app->submenu, "Read DTC", 0, storage_dtc_menu_callback, app);
     submenu_add_item(app->submenu, "Delete DTC", 1, storage_dtc_menu_callback, app);
@@ -109,7 +109,7 @@ static int32_t thread_uds_protocol_dtc(void* context) {
 
     uint16_t count_of_dtc = 0;
 
-    if(!uds_get_count_storaged_dtc(uds_service, &count_of_dtc)) {
+    if(!uds_get_count_stored_dtc(uds_service, &count_of_dtc)) {
         draw_transmition_failure(app);
         free_uds(uds_service);
         return 0;

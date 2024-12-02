@@ -5,7 +5,7 @@ typedef enum {
     SET_DIAGNOSTIC_SESSION_OPTION,
     ECU_RESET_OPTION,
     GET_VIN_OPTION,
-    STORAGED_DTC
+    STORED_DTC
 } uds_elements_list;
 
 // Variable to set the item selected
@@ -36,7 +36,7 @@ void uds_menu_callback(void* context, uint32_t index) {
         scene_manager_next_scene(app->scene_manager, app_scene_uds_ecu_reset_option);
         break;
 
-    case STORAGED_DTC:
+    case STORED_DTC:
         scene_manager_next_scene(app->scene_manager, app_scene_uds_get_dtc_menu_option);
         break;
 
@@ -56,7 +56,7 @@ void app_scene_uds_menu_on_enter(void* context) {
         app->submenu, "Set Session", SET_DIAGNOSTIC_SESSION_OPTION, uds_menu_callback, app);
     submenu_add_item(app->submenu, "ECU Reset", ECU_RESET_OPTION, uds_menu_callback, app);
     submenu_add_item(app->submenu, "Get VIN Number", GET_VIN_OPTION, uds_menu_callback, app);
-    submenu_add_item(app->submenu, "GET DTC", STORAGED_DTC, uds_menu_callback, app);
+    submenu_add_item(app->submenu, "GET DTC", STORED_DTC, uds_menu_callback, app);
 
     submenu_set_selected_item(app->submenu, selector_option);
 

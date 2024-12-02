@@ -330,8 +330,8 @@ bool uds_reset_ecu(UDS_SERVICE* uds_instance, type_ecu_reset type) {
     return true;
 }
 
-// Get Storaged DTC
-bool uds_get_count_storaged_dtc(UDS_SERVICE* uds_instance, uint16_t* count_of_dtc) {
+// Get  DTC
+bool uds_get_count_stored_dtc(UDS_SERVICE* uds_instance, uint16_t* count_of_dtc) {
     uint8_t data[3] = {0x19, 0x1, 0xff};
 
     CANFRAME frame_to_send = {0};
