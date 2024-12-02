@@ -38,6 +38,7 @@ bool uds_init(UDS_SERVICE* uds_instance) {
 // Free instance
 void free_uds(UDS_SERVICE* uds_instance) {
     free_mcp2515(uds_instance->CAN);
+    free(uds_instance->CAN);
     free(uds_instance);
 }
 
@@ -330,7 +331,7 @@ bool uds_reset_ecu(UDS_SERVICE* uds_instance, type_ecu_reset type) {
     return true;
 }
 
-// Get  DTC
+// Get count of DTC
 bool uds_get_count_stored_dtc(UDS_SERVICE* uds_instance, uint16_t* count_of_dtc) {
     uint8_t data[3] = {0x19, 0x1, 0xff};
 
@@ -345,5 +346,89 @@ bool uds_get_count_stored_dtc(UDS_SERVICE* uds_instance, uint16_t* count_of_dtc)
 
     *count_of_dtc = (uint16_t)frame_to_received.buffer[5] << 8 | frame_to_received.buffer[6];
 
+    return true;
+}
+
+// Get the DTC
+bool uds_get_stored_dtc(UDS_SERVICE* uds_instance, uint8_t* codes, uint16_t* count_of_dtc) {
+    // To get the count of DTC stored
+    if(!uds_get_count_stored_dtc(uds_instance, count_of_dtc)) {
+        log_exception("Salimos Aqui 1");
+        return true;
+    }
+
+    UNUSED(codes);
+
+    log_info("Vamos aqui 1");
+
+    uint8_t data[3] = {0x19, 0x2, 0xff};
+
+    CANFRAME frame_to_send = {0};
+    CANFRAME* frame_to_received = calloc(5, sizeof(CANFRAME));
+
+    log_info("Vamos aqui 2");
+
+    // Get the canframes with the data
+    if(!uds_multi_frame_request(
+           uds_instance, data, COUNT_OF(data), &frame_to_send, 5, frame_to_received)) {
+        log_exception("Salimos Aqui 2");
+        free(frame_to_received);
+        return false;
+    }
+
+    log_info("Vamos aqui 3");
+
+    // If the message has error
+    if(frame_to_received[0].buffer[0] == 0x7F) {
+        log_exception("Salimos Aqui 3");
+        free(frame_to_received);
+        return false;
+    }
+
+    log_info("Vamos aqui 4");
+
+    // If the data has only 1 DTC code
+    if(*count_of_dtc == 1) {
+        log_info("Pues practicamente esto esta bien");
+
+        for(uint8_t i = 3; i < frame_to_received[0].data_lenght; i++) {
+            log_info("value of %u %x", i - 3, frame_to_received[0].buffer[i]);
+            codes[i - 3] = frame_to_received[0].buffer[i];
+        }
+
+        log_info("Casi Sale");
+
+        free(frame_to_received);
+
+        log_info("Debe Sale");
+
+        return true;
+    }
+
+    // If the data has more than only one dtc
+
+    log_info("Vamos aqui 5");
+
+    uint8_t count_of_bytes = frame_to_received[0].buffer[1] - 2;
+
+    uint8_t data_codes[count_of_bytes];
+
+    UNUSED(data_codes);
+
+    for(uint8_t i = 0; i < 5; i++) {
+        if(frame_to_received[i].canId != uds_instance->id_to_received) break;
+
+        uint32_t start_num = (i == 0) ? 4 : 1;
+
+        uint8_t counter = 0;
+
+        for(uint8_t j = start_num; j < frame_to_received[i].data_lenght; j++) {
+            data_codes[counter++] = frame_to_received[i].buffer[j];
+        }
+    }
+
+    log_info("Vamos aqui 6");
+
+    free(frame_to_received);
     return true;
 }
