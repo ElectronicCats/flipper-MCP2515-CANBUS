@@ -3,7 +3,10 @@
 bool delete_dtc = false;
 
 // Thread to work with for dtc
-static int32_t thread_uds_protocol_dtc(void* context);
+static int32_t thread_uds_protocol_get_dtc(void* context);
+
+// Thread to delete dtc
+static int32_t thread_uds_protocol_delete_dtc(void* context);
 
 // Callback for the menu
 void storage_dtc_menu_callback(void* context, uint32_t index) {
@@ -47,7 +50,12 @@ void app_scene_uds_dtc_response_on_enter(void* context) {
 
     widget_reset(app->widget);
 
-    app->thread = furi_thread_alloc_ex("Get DTCs", 2 * 1024, thread_uds_protocol_dtc, app);
+    if(delete_dtc) {
+        app->thread =
+            furi_thread_alloc_ex("Get DTCs", 4 * 1024, thread_uds_protocol_delete_dtc, app);
+    } else {
+        app->thread = furi_thread_alloc_ex("Get DTCs", 4 * 1024, thread_uds_protocol_get_dtc, app);
+    }
     furi_thread_start(app->thread);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
@@ -83,7 +91,67 @@ void draw_no_dtc(App* app) {
  * Thread to work with DTC and UDS protocol
  */
 
-static int32_t thread_uds_protocol_dtc(void* context) {
+static int32_t thread_uds_protocol_get_dtc(void* context) {
+    App* app = context;
+    MCP2515* CAN = app->mcp_can;
+
+    FuriString* text = app->text;
+
+    furi_string_reset(text);
+
+    UDS_SERVICE* uds_service = uds_service_alloc(
+        UDS_REQUEST_ID_DEFAULT, UDS_RESPONSE_ID_DEFAULT, CAN->mode, CAN->clck, CAN->bitRate);
+
+    bool debug = uds_init(uds_service);
+
+    furi_delay_ms(100);
+
+    if(debug) {
+        uint16_t count_of_dtc = 0;
+
+        debug = uds_get_count_stored_dtc(uds_service, &count_of_dtc);
+
+        if(!debug) {
+            draw_transmition_failure(app);
+        }
+
+        if(count_of_dtc == 0 && debug) {
+            draw_no_dtc(app);
+            debug = false;
+        }
+
+        uint8_t data_count = 4 * count_of_dtc;
+
+        uint8_t codes[data_count];
+
+        if(debug) {
+            if(uds_get_stored_dtc(uds_service, codes, &count_of_dtc)) {
+                debug = true;
+            } else {
+                draw_transmition_failure(app);
+                debug = false;
+            }
+        }
+    } else {
+        draw_device_no_connected(app);
+    }
+
+    while(debug && furi_hal_gpio_read(&gpio_button_back)) {
+        furi_delay_ms(1);
+    }
+
+    free_uds(uds_service);
+
+    log_info("Espacio liberado");
+
+    return 0;
+}
+
+/**
+ * Thread to delete the DTC stored
+ */
+
+static int32_t thread_uds_protocol_delete_dtc(void* context) {
     App* app = context;
     MCP2515* CAN = app->mcp_can;
 
@@ -100,27 +168,9 @@ static int32_t thread_uds_protocol_dtc(void* context) {
         return 0;
     }
 
-    if(delete_dtc) {
-        delete_dtc = 0;
-
-        free_uds(uds_service);
-        return 0;
-    }
-
-    uint16_t count_of_dtc = 0;
-
-    if(!uds_get_count_stored_dtc(uds_service, &count_of_dtc)) {
-        draw_transmition_failure(app);
-        free_uds(uds_service);
-        return 0;
-    }
-
-    if(count_of_dtc > 0) {
-    } else {
-        draw_no_dtc(app);
-    }
-
     free_uds(uds_service);
+
+    log_info("Espacio liberado");
 
     return 0;
 }
