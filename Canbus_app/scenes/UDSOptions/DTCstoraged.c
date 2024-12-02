@@ -69,6 +69,17 @@ void app_scene_uds_dtc_response_on_exit(void* context) {
 }
 
 /**
+ * Functions to Draw the responses
+ */
+
+// To show no DTC read it
+void draw_no_dtc(App* app) {
+    widget_reset(app->widget);
+    widget_add_string_multiline_element(
+        app->widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "No DTC\nStored to show");
+}
+
+/**
  * Thread to work with DTC and UDS protocol
  */
 
@@ -106,6 +117,7 @@ static int32_t thread_uds_protocol_dtc(void* context) {
 
     if(count_of_dtc > 0) {
     } else {
+        draw_no_dtc(app);
     }
 
     free_uds(uds_service);
