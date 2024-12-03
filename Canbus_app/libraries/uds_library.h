@@ -68,7 +68,8 @@ bool uds_reset_ecu(UDS_SERVICE* uds_instance, type_ecu_reset type);
 bool uds_get_count_stored_dtc(UDS_SERVICE* uds_instance, uint16_t* count_of_dtc);
 
 // Get the Data Troubles Codes
-bool uds_get_stored_dtc(UDS_SERVICE* uds_instance, uint8_t* codes, uint16_t* count_of_dtc);
+//bool uds_get_stored_dtc(UDS_SERVICE* uds_instance, uint8_t* codes, uint16_t* count_of_dtc);
+bool uds_get_stored_dtc(UDS_SERVICE* uds_instance, char* codes[], uint16_t* count_of_dtc);
 
 // Free uds
 void free_uds(UDS_SERVICE* uds_instance);

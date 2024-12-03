@@ -120,9 +120,15 @@ static int32_t thread_uds_protocol_get_dtc(void* context) {
             debug = false;
         }
 
-        uint8_t data_count = 4 * count_of_dtc;
+        debug = true;
 
-        uint8_t codes[data_count];
+        count_of_dtc = 1;
+
+        char* codes[count_of_dtc];
+
+        for(uint16_t i = 0; i < count_of_dtc; i++) {
+            codes[i] = (char*)malloc(5 * sizeof(char));
+        }
 
         if(debug) {
             if(uds_get_stored_dtc(uds_service, codes, &count_of_dtc)) {
@@ -132,12 +138,17 @@ static int32_t thread_uds_protocol_get_dtc(void* context) {
                 debug = false;
             }
         }
+
+        while(debug && furi_hal_gpio_read(&gpio_button_back)) {
+            furi_delay_ms(1);
+        }
+
+        for(uint16_t i = 0; i < count_of_dtc; i++) {
+            free(codes[i]);
+        }
+
     } else {
         draw_device_no_connected(app);
-    }
-
-    while(debug && furi_hal_gpio_read(&gpio_button_back)) {
-        furi_delay_ms(1);
     }
 
     free_uds(uds_service);
