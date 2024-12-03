@@ -351,13 +351,13 @@ bool uds_get_count_stored_dtc(UDS_SERVICE* uds_instance, uint16_t* count_of_dtc)
 
 // Show the real DTC
 void get_data_trouble_code(char* text, uint8_t* data) {
+    FuriString* code = furi_string_alloc();
+
     uint8_t letter = data[0] >> 6;
     uint8_t first_digit = (data[0] >> 4) & 0b0011;
     uint8_t second_digit = data[0] & 0xf;
     uint8_t third_digit = (data[1]) >> 4;
     uint8_t fourth_digit = data[1] & 0xf;
-
-    UNUSED(text);
 
     switch(letter) {
     case 0:
@@ -380,9 +380,14 @@ void get_data_trouble_code(char* text, uint8_t* data) {
         break;
     }
 
-    UNUSED(text);
+    furi_string_printf(
+        code, "%c%u%u%u%u", text[0], first_digit, second_digit, third_digit, fourth_digit);
 
-    log_info("%x%x%x%x", first_digit, second_digit, third_digit, fourth_digit);
+    for(uint8_t i = 0; i < 5; i++) {
+        text[i] = furi_string_get_char(code, i);
+    }
+
+    furi_string_free(code);
 }
 
 // Get the DTC
