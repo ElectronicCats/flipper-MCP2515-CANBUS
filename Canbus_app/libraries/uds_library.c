@@ -158,10 +158,6 @@ bool uds_multi_frame_request(
         }
     }
 
-    // log_info("count of frames to send: %u", size_frames_to_send);
-
-    // log_info("Start"); // 0
-
     // Set the frames if the data need more than one can frame
     if(size_frames_to_send > 1) {
         canframes_to_send[0].buffer[0] = 0x10; // Set the byte to indicate the first frame
@@ -179,7 +175,6 @@ bool uds_multi_frame_request(
             uint8_t start_num = (i == 0) ? 2 : 1;
 
             for(uint8_t j = start_num; j < 8; j++) {
-                // log_info("counter: %u data: %x", counter, data[counter]);
                 canframes_to_send[i].buffer[j] = data[counter++];
 
                 if(counter == length) {
@@ -203,12 +198,8 @@ bool uds_multi_frame_request(
     canframes_to_send[size_frames_to_send].data_lenght = 3;
     canframes_to_send[size_frames_to_send].buffer[0] = 0x30;
 
-    log_info("Messages already set, count of frames: %u", size_frames_to_send); // 1
-
     //  Just for debbug
     FuriString* text = furi_string_alloc();
-
-    log_info("------------To send--------------------------");
 
     for(uint8_t j = 0; j < size_frames_to_send; j++) {
         furi_string_reset(text);
@@ -216,8 +207,6 @@ bool uds_multi_frame_request(
         for(uint8_t i = 0; i < canframes_to_send[j].data_lenght; i++) {
             furi_string_cat_printf(text, "%x ", canframes_to_send[j].buffer[i]);
         }
-
-        log_info(furi_string_get_cstr(text));
     }
 
     furi_string_free(text);
@@ -226,14 +215,12 @@ bool uds_multi_frame_request(
 
     // Send the first frame
     if(send_can_frame(uds_instance->CAN, &canframes_to_send[0]) != ERROR_OK) {
-        log_exception("First message wasnt send");
         return false;
     }
 
     // Wait message of the response
     if(!read_frames_uds(
            uds_instance->CAN, uds_instance->id_to_received, &canframes_to_received[0])) {
-        log_exception("message wasnt received");
         return false;
     }
 
@@ -262,7 +249,6 @@ bool uds_multi_frame_request(
 
     // If the flow control is not ok
     if(canframes_to_received[0].buffer[0] != 0x30) {
-        log_exception("Message to flow_control was a error");
         return false;
     }
 
@@ -274,7 +260,6 @@ bool uds_multi_frame_request(
     // Read the first ECU's response
     if(!read_frames_uds(
            uds_instance->CAN, uds_instance->id_to_received, &canframes_to_received[0])) {
-        log_exception("Error to read the frame");
         return false;
     }
 
