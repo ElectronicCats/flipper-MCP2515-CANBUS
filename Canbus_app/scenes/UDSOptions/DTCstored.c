@@ -87,6 +87,25 @@ void draw_no_dtc(App* app) {
         app->widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "No DTC\nStored to show");
 }
 
+// To draw the dtc
+void draw_data_trouble_codes(App* app, uint8_t count, uint8_t current_count, const char* text) {
+    widget_reset(app->widget);
+
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "%u of %u", current_count, count);
+
+    widget_add_string_element(
+        app->widget,
+        64,
+        20,
+        AlignCenter,
+        AlignCenter,
+        FontSecondary,
+        furi_string_get_cstr(app->text));
+
+    widget_add_string_element(app->widget, 64, 35, AlignCenter, AlignCenter, FontPrimary, text);
+}
+
 /**
  * Thread to work with DTC and UDS protocol
  */
@@ -122,7 +141,7 @@ static int32_t thread_uds_protocol_get_dtc(void* context) {
 
         debug = true;
 
-        count_of_dtc = 1;
+        count_of_dtc = 3;
 
         char* codes[count_of_dtc];
 
@@ -139,7 +158,26 @@ static int32_t thread_uds_protocol_get_dtc(void* context) {
             }
         }
 
+        uint8_t counter = 0;
+
+        uint8_t last_count = 1;
+
         while(debug && furi_hal_gpio_read(&gpio_button_back)) {
+            if(!furi_hal_gpio_read(&gpio_button_right) && counter < (count_of_dtc - 1)) {
+                counter++;
+                furi_delay_ms(200);
+            }
+
+            if(!furi_hal_gpio_read(&gpio_button_left) && counter != 0) {
+                counter--;
+                furi_delay_ms(200);
+            }
+
+            if(last_count != counter) {
+                draw_data_trouble_codes(app, count_of_dtc, counter + 1, codes[counter]);
+                last_count = counter;
+            }
+
             furi_delay_ms(1);
         }
 
