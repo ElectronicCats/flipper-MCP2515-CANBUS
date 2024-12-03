@@ -393,114 +393,71 @@ void get_data_trouble_code(char* text, uint8_t* data) {
 // Get the DTC
 bool uds_get_stored_dtc(UDS_SERVICE* uds_instance, char* codes[], uint16_t* count_of_dtc) {
     // To get the count of DTC stored
-    /*if(!uds_get_count_stored_dtc(uds_instance, count_of_dtc)) {
-        log_exception("Salimos Aqui 1");
-        return true;
-    }*/
-
-    // -------------- PART FOR THE TEST -------------------------------
-    *count_of_dtc = 1;
-    // ----------------------------------------------------------------
-
-    UNUSED(codes);
-
-    log_info("Vamos aqui 1");
+    if(!uds_get_count_stored_dtc(uds_instance, count_of_dtc)) {
+        return false;
+    }
 
     uint8_t data[3] = {0x19, 0x2, 0xff};
 
     CANFRAME frame_to_send = {0};
-    CANFRAME* frame_to_received = calloc(5, sizeof(CANFRAME));
-
-    UNUSED(uds_instance);
-    UNUSED(frame_to_send);
-    UNUSED(data);
-
-    log_info("Vamos aqui 2");
+    CANFRAME* frame_to_received = calloc(20, sizeof(CANFRAME));
 
     // Get the canframes with the data
-    /*if(!uds_multi_frame_request(
-           uds_instance, data, COUNT_OF(data), &frame_to_send, 5, frame_to_received)) {
-        log_exception("Salimos Aqui 2");
-        free(frame_to_received);
-        return false;
-    }*/
-
-    // -------------- PART FOR THE TEST -------------------------------
-
-    frame_to_received[0].data_lenght = 8;
-    frame_to_received[0].buffer[0] = 7;
-    frame_to_received[0].buffer[1] = 0x59;
-    frame_to_received[0].buffer[2] = 0x02;
-    frame_to_received[0].buffer[3] = 0x04;
-    frame_to_received[0].buffer[4] = 0x45;
-    frame_to_received[0].buffer[5] = 0x63;
-    frame_to_received[0].buffer[6] = 0x00;
-    frame_to_received[0].buffer[7] = 0x04;
-
-    // ----------------------------------------------------------------
-
-    log_info("Vamos aqui 3");
-
-    uint8_t data_count = *count_of_dtc * 4;
-    uint8_t data_dtc[*count_of_dtc][data_count];
-
-    UNUSED(data_dtc);
-
-    log_info("Count of datas %u", data_count);
-
-    // If the message has error
-    if(frame_to_received[0].buffer[0] == 0x7F) {
-        log_exception("Salimos Aqui 3");
+    if(!uds_multi_frame_request(
+           uds_instance, data, COUNT_OF(data), &frame_to_send, 20, frame_to_received)) {
         free(frame_to_received);
         return false;
     }
 
-    log_info("Vamos aqui 4");
+    uint8_t data_count = *count_of_dtc * 4;
+    uint8_t data_dtc[*count_of_dtc][data_count];
+
+    // If the message has error
+    if(frame_to_received[0].buffer[0] == 0x7F) {
+        free(frame_to_received);
+        return false;
+    }
 
     // If the data has only 1 DTC code
     if(*count_of_dtc == 1) {
-        log_info("Pues practicamente esto esta bien");
-
         for(uint8_t i = 4; i < frame_to_received[0].data_lenght; i++) {
-            log_info("value of %u %x", i - 3, frame_to_received[0].buffer[i]);
             data_dtc[0][i - 4] = frame_to_received[0].buffer[i];
         }
-
-        log_info("Casi Sale");
-
         free(frame_to_received);
-
-        for(uint8_t i = 0; i < 4; i++) {
-            log_info("Data 0: %x", data_dtc[0][i]);
-        }
-
         get_data_trouble_code(codes[0], data_dtc[0]);
 
-        log_info("Debe Sale");
         return true;
     }
 
     // If the data has more than only one dtc
 
-    log_info("Vamos aqui 5");
-
     uint8_t data_saver[data_count];
 
-    UNUSED(data_saver);
+    memset(data_saver, 0, sizeof(data_saver));
+
+    uint8_t counter = 0;
 
     for(uint8_t i = 0; i < 5; i++) {
         if(frame_to_received[i].canId != uds_instance->id_to_received) break;
 
         uint32_t start_num = (i == 0) ? 5 : 1;
 
-        uint8_t counter = 0;
-
         for(uint8_t j = start_num; j < frame_to_received[i].data_lenght; j++) {
             data_saver[counter++] = frame_to_received[i].buffer[j];
         }
     }
 
-    log_info("Vamos aqui 6");
+    counter = 0;
+
+    for(uint8_t i = 0; i < (*count_of_dtc); i++) {
+        for(uint8_t j = 0; j < 4; j++) {
+            data_dtc[i][j] = data_saver[counter++];
+        }
+    }
+
+    for(uint8_t i = 0; i < *count_of_dtc; i++) {
+        get_data_trouble_code(codes[i], data_dtc[i]);
+    }
 
     free(frame_to_received);
     return true;

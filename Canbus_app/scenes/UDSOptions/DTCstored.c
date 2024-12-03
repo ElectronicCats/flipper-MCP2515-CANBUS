@@ -139,10 +139,6 @@ static int32_t thread_uds_protocol_get_dtc(void* context) {
             debug = false;
         }
 
-        debug = true;
-
-        count_of_dtc = 3;
-
         char* codes[count_of_dtc];
 
         for(uint16_t i = 0; i < count_of_dtc; i++) {
@@ -190,8 +186,6 @@ static int32_t thread_uds_protocol_get_dtc(void* context) {
     }
 
     free_uds(uds_service);
-
-    log_info("Espacio liberado");
 
     return 0;
 }
