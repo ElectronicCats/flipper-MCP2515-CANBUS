@@ -357,7 +357,7 @@ void get_data_trouble_code(char* text, uint8_t* data) {
         text[0] = 'B';
         break;
 
-    case 4:
+    case 3:
         text[0] = 'U';
         break;
 

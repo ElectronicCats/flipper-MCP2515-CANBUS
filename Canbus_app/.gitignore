@@ -9,5 +9,4 @@
 Makefile
 
 #ignore folder
-/scripts_python
 /dist
