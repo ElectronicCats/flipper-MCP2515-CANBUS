@@ -127,7 +127,7 @@ static int32_t thread_uds_protocol_get_dtc(void* context) {
     furi_string_reset(text);
 
     UDS_SERVICE* uds_service = uds_service_alloc(
-        UDS_REQUEST_ID_DEFAULT, UDS_RESPONSE_ID_DEFAULT, CAN->mode, CAN->clck, CAN->bitRate);
+        app->uds_send_id, app->uds_received_id, CAN->mode, CAN->clck, CAN->bitRate);
 
     bool debug = uds_init(uds_service);
 
@@ -211,7 +211,7 @@ static int32_t thread_uds_protocol_delete_dtc(void* context) {
     furi_string_reset(text);
 
     UDS_SERVICE* uds_service = uds_service_alloc(
-        UDS_REQUEST_ID_DEFAULT, UDS_RESPONSE_ID_DEFAULT, CAN->mode, CAN->clck, CAN->bitRate);
+        app->uds_send_id, app->uds_received_id, CAN->mode, CAN->clck, CAN->bitRate);
 
     bool debug = uds_init(uds_service);
 

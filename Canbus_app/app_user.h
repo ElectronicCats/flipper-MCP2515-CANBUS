@@ -77,6 +77,9 @@ typedef struct {
     uint32_t sniffer_index;
     uint32_t sniffer_index_aux;
 
+    uint32_t uds_received_id;
+    uint32_t uds_send_id;
+
     uint8_t config_timing_index;
 
     uint8_t num_of_devices;

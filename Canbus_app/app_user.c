@@ -79,6 +79,9 @@ static App* app_alloc() {
 
     app->obdii.bitrate = app->mcp_can->bitRate;
 
+    app->uds_received_id = UDS_RESPONSE_ID_DEFAULT;
+    app->uds_send_id = UDS_REQUEST_ID_DEFAULT;
+
     makePaths(app);
 
     return app;

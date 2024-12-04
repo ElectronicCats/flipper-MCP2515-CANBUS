@@ -48,7 +48,7 @@ static int32_t uds_get_vin_thread(void* context) {
     furi_string_reset(text);
 
     UDS_SERVICE* uds_service = uds_service_alloc(
-        UDS_REQUEST_ID_DEFAULT, UDS_RESPONSE_ID_DEFAULT, CAN->mode, CAN->clck, CAN->bitRate);
+        app->uds_send_id, app->uds_received_id, CAN->mode, CAN->clck, CAN->bitRate);
 
     if(uds_init(uds_service)) {
         furi_delay_ms(500);
