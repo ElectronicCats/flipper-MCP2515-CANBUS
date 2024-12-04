@@ -230,7 +230,5 @@ static int32_t thread_uds_protocol_delete_dtc(void* context) {
 
     free_uds(uds_service);
 
-    log_info("Espacio liberado");
-
     return 0;
 }

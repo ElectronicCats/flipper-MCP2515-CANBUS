@@ -12,8 +12,7 @@ static uint8_t count_of_bytes = 1;
 
 static uint8_t data_to_send[100] = {0};
 
-// Thread to work
-//static int32_t uds_single_frame_request_thread(void* context);
+static uint32_t selected_item = 0;
 
 // Thread to test
 static int32_t uds_multiframe_request_thread(void* context);
@@ -24,6 +23,9 @@ static int32_t uds_multiframe_request_thread(void* context);
 
 void callback_input_manual_sender_uds(void* context, uint32_t index) {
     App* app = context;
+
+    selected_item = index;
+
     switch(index) {
     case 0:
         scene_manager_set_scene_state(
@@ -130,6 +132,8 @@ void app_scene_uds_single_frame_request_sender_on_enter(void* context) {
 
     // Set the callback to the View
     variable_item_list_set_enter_callback(app->varList, callback_input_manual_sender_uds, app);
+
+    variable_item_list_set_selected_item(app->varList, selected_item);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
 }

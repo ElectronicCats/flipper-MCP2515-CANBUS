@@ -3,6 +3,8 @@
 // To know the session
 uint8_t session = 0;
 
+static uint32_t selected_item = 0;
+
 // Thread to send the message
 static int32_t set_diagnostic_session_thread(void* context);
 
@@ -10,6 +12,7 @@ static int32_t set_diagnostic_session_thread(void* context);
 void submenu_diagnostic_session_callback(void* context, uint32_t index) {
     App* app = context;
     session = index + 1;
+    selected_item = index;
     scene_manager_next_scene(app->scene_manager, app_scene_uds_set_session_response);
 }
 
@@ -28,6 +31,8 @@ void app_scene_uds_set_diagnostic_session_on_enter(void* context) {
         app->submenu, "Extended Session", 2, submenu_diagnostic_session_callback, app);
 
     submenu_add_item(app->submenu, "Safety Session", 3, submenu_diagnostic_session_callback, app);
+
+    submenu_set_selected_item(app->submenu, selected_item);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
 }

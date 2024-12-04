@@ -1,10 +1,14 @@
 #include "../../app_user.h"
 
-uint8_t id_request_array[4];
-uint8_t id_response_array[4];
+static uint8_t id_request_array[4];
+static uint8_t id_response_array[4];
+
+static uint32_t selected_item = 0;
 
 void settings_input_callback(void* context, uint32_t index) {
     App* app = context;
+
+    selected_item = index;
 
     scene_manager_set_scene_state(app->scene_manager, app_scene_uds_set_ids_option, index);
 
@@ -36,6 +40,8 @@ void app_scene_uds_settings_on_enter(void* context) {
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     variable_item_list_set_enter_callback(app->varList, settings_input_callback, app);
+
+    variable_item_list_set_selected_item(app->varList, selected_item);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
 }
