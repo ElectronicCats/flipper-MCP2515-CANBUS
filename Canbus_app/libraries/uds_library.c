@@ -447,3 +447,22 @@ bool uds_get_stored_dtc(UDS_SERVICE* uds_instance, char* codes[], uint16_t* coun
     free(frame_to_received);
     return true;
 }
+
+// Delete DTC Storaged
+bool uds_delete_dtc(UDS_SERVICE* uds_instance) {
+    uint8_t data[4] = {0x14, 0xff, 0xff, 0xff};
+
+    CANFRAME frame_to_send = {0};
+    CANFRAME frame_to_received = {0};
+
+    if(!uds_multi_frame_request(
+           uds_instance, data, COUNT_OF(data), &frame_to_send, 1, &frame_to_received)) {
+        return false;
+    }
+
+    if(frame_to_received.buffer[0] == 0x7e) {
+        return false;
+    }
+
+    return true;
+}

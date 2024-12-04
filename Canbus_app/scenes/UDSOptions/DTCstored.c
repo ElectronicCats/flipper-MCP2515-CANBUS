@@ -80,14 +80,14 @@ void app_scene_uds_dtc_response_on_exit(void* context) {
  * Functions to Draw the responses
  */
 
-// To show no DTC read it
+// to display dtc's no read it
 void draw_no_dtc(App* app) {
     widget_reset(app->widget);
     widget_add_string_multiline_element(
         app->widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "No DTC\nStored to show");
 }
 
-// To draw the dtc
+// to display the dtc's
 void draw_data_trouble_codes(App* app, uint8_t count, uint8_t current_count, const char* text) {
     widget_reset(app->widget);
 
@@ -104,6 +104,14 @@ void draw_data_trouble_codes(App* app, uint8_t count, uint8_t current_count, con
         furi_string_get_cstr(app->text));
 
     widget_add_string_element(app->widget, 64, 35, AlignCenter, AlignCenter, FontPrimary, text);
+}
+
+// To display cleared dtc
+void draw_dtc_deleted(App* app) {
+    widget_reset(app->widget);
+    widget_add_icon_element(app->widget, 40, 0, &I_DTCLN47x20);
+    widget_add_string_multiline_element(
+        app->widget, 65, 43, AlignCenter, AlignBottom, FontPrimary, "ALL DTC\nCLEARED");
 }
 
 /**
@@ -205,10 +213,19 @@ static int32_t thread_uds_protocol_delete_dtc(void* context) {
     UDS_SERVICE* uds_service = uds_service_alloc(
         UDS_REQUEST_ID_DEFAULT, UDS_RESPONSE_ID_DEFAULT, CAN->mode, CAN->clck, CAN->bitRate);
 
-    if(!uds_init(uds_service)) {
+    bool debug = uds_init(uds_service);
+
+    furi_delay_ms(100);
+
+    if(debug) {
+        if(uds_delete_dtc(uds_service)) {
+            draw_dtc_deleted(app);
+        } else {
+            widget_add_string_multiline_element(
+                app->widget, 65, 43, AlignCenter, AlignBottom, FontPrimary, "E R R O R\nCLEARING");
+        }
+    } else {
         draw_device_no_connected(app);
-        free_uds(uds_service);
-        return 0;
     }
 
     free_uds(uds_service);
