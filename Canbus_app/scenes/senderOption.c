@@ -1,5 +1,9 @@
 #include "../app_user.h"
 
+uint8_t data_lenght = 0;
+uint32_t can_id = 0;
+uint8_t request = 0;
+
 // LIST
 typedef enum {
     SEND_MESSAGE,
@@ -23,30 +27,26 @@ typedef enum {
     SEND_ERROR,
 } sender_status;
 
-static int32_t sender_on_work(void* context) {
-    App* app = context;
-    app->mcp_can->mode = MCP_NORMAL;
-    ERROR_CAN debug = ERROR_OK;
-    ERROR_CAN error = ERROR_OK;
-    debug = mcp2515_init(app->mcp_can);
+// This part is for the time
+enum {
+    ONCE,
+    PERIODIC
+} sender_periods;
 
-    furi_delay_ms(10);
+static uint8_t timing = 0;
 
-    if(debug == ERROR_OK) {
-        error = send_can_frame(app->mcp_can, app->frame_to_send);
-        furi_delay_ms(500);
+static const char* timing_texts[] = {"ONCE", "PERIODIC"};
+static const char* timing_multiply[] = {"x1", "x10", "x100", "x1000"};
 
-        if(error != ERROR_OK)
-            scene_manager_handle_custom_event(app->scene_manager, SEND_ERROR);
-        else
-            scene_manager_handle_custom_event(app->scene_manager, SEND_OK);
-    } else {
-        scene_manager_handle_custom_event(app->scene_manager, DEVICE_NO_CONNECTED);
-    }
+static uint8_t time = 1;
+static uint8_t multiply = 0;
 
-    free_mcp2515(app->mcp_can);
-    return 0;
-}
+// Thread to work with the sender
+static int32_t sender_on_work(void* context);
+
+/**
+ *  Scene for the Menu Sender
+ */
 
 // Option callback using button OK
 void callback_input_sender_options(void* context, uint32_t index) {
@@ -150,20 +150,15 @@ void callback_sender_options(VariableItem* item) {
     }
 }
 
-// Sender Scene On enter
-void app_scene_sender_on_enter(void* context) {
-    App* app = context;
+/*
+void set_bytes_to_send(App* app) {
+    UNUSED(app);
+}
+*/
+
+/*
+void default_list_for_sender_menu(App* app) {
     VariableItem* item;
-
-    uint8_t data_lenght = app->frame_to_send->data_lenght;
-    uint32_t can_id = app->frame_to_send->canId;
-    uint8_t request = app->frame_to_send->req;
-
-    app->sender_id_compose[3] = can_id;
-    app->sender_id_compose[2] = can_id >> 8;
-    app->sender_id_compose[1] = can_id >> 16;
-    app->sender_id_compose[0] = can_id >> 24;
-
     variable_item_list_reset(app->varList);
 
     // 0
@@ -270,9 +265,86 @@ void app_scene_sender_on_enter(void* context) {
 
     variable_item_list_set_enter_callback(app->varList, callback_input_sender_options, app);
     variable_item_list_set_selected_item(app->varList, app->sender_selected_item);
+}
+*/
+
+void default_list_for_sender_menu(App* app);
+
+void set_timings_callback(VariableItem* item) {
+    App* app = variable_item_get_context(item);
+    timing = variable_item_get_current_value_index(item);
+    variable_item_set_current_value_text(item, timing_texts[timing]);
+
+    default_list_for_sender_menu(app);
+}
+
+void set_time_sender(VariableItem* item) {
+    App* app = variable_item_get_context(item);
+    time = variable_item_get_current_value_index(item) + 1;
+
+    furi_string_reset(app->text);
+
+    furi_string_cat_printf(app->text, "%u", time);
+
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+}
+
+void set_multiply_time(VariableItem* item) {
+    multiply = variable_item_get_current_value_index(item);
+    variable_item_set_current_value_text(item, timing_multiply[multiply]);
+}
+
+void default_list_for_sender_menu(App* app) {
+    VariableItem* item;
+    variable_item_list_reset(app->varList);
+
+    // First Item
+    item = variable_item_list_add(app->varList, "SEND MESSAGE", 0, NULL, app);
+    variable_item_set_current_value_index(item, 0);
+
+    // Set data
+    item = variable_item_list_add(app->varList, "Set Data", 0, NULL, app);
+    variable_item_set_current_value_index(item, 0);
+
+    // Third Item
+    item = variable_item_list_add(app->varList, "Timing", 2, set_timings_callback, app);
+    variable_item_set_current_value_index(item, timing);
+    variable_item_set_current_value_text(item, timing_texts[timing]);
+
+    if(timing) {
+        item = variable_item_list_add(app->varList, "Time(ms)", 100, set_time_sender, app);
+        variable_item_set_current_value_index(item, time - 1);
+
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "%u", time);
+
+        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+
+        item = variable_item_list_add(app->varList, "Multiply by", 3, set_multiply_time, app);
+        variable_item_set_current_value_index(item, multiply);
+        variable_item_set_current_value_text(item, timing_multiply[multiply]);
+    }
+}
+
+// Menu sender Scene On enter
+void app_scene_sender_on_enter(void* context) {
+    App* app = context;
+
+    data_lenght = app->frame_to_send->data_lenght;
+    can_id = app->frame_to_send->canId;
+    request = app->frame_to_send->req;
+
+    app->sender_id_compose[3] = can_id;
+    app->sender_id_compose[2] = can_id >> 8;
+    app->sender_id_compose[1] = can_id >> 16;
+    app->sender_id_compose[0] = can_id >> 24;
+
+    default_list_for_sender_menu(app);
+
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
 }
 
+// Menu Sender On event
 bool app_scene_sender_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
@@ -290,11 +362,17 @@ bool app_scene_sender_on_event(void* context, SceneManagerEvent event) {
     return consumed;
 }
 
+// Menu Sender On exit
 void app_scene_sender_on_exit(void* context) {
     App* app = context;
     variable_item_list_reset(app->varList);
 }
 
+/**
+ *  Scene for display the sender
+ */
+
+// Sender on enter
 void app_scene_send_message_on_enter(void* context) {
     App* app = context;
 
@@ -308,6 +386,7 @@ void app_scene_send_message_on_enter(void* context) {
     furi_thread_start(app->thread);
 }
 
+// Sender on event
 bool app_scene_send_message_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
@@ -334,6 +413,7 @@ bool app_scene_send_message_on_event(void* context, SceneManagerEvent event) {
     return consumed;
 }
 
+// Sender on exit
 void app_scene_send_message_on_exit(void* context) {
     App* app = context;
     furi_thread_join(app->thread);
@@ -341,6 +421,10 @@ void app_scene_send_message_on_exit(void* context) {
 
     widget_reset(app->widget);
 }
+
+/**
+ * Scene to display the when there are not ids recorded
+ */
 
 void app_scene_warning_log_on_enter(void* context) {
     App* app = context;
@@ -374,8 +458,11 @@ void app_scene_warning_log_on_exit(void* context) {
     widget_reset(app->widget);
 }
 
-// ---------------------------- MENU OF THE CAN ID's ---------------------------
+/**
+ *  Scene for the id list
+ */
 
+// Callback for menus id
 void menu_ids_callback(void* context, uint32_t index) {
     App* app = context;
     app->frame_to_send->canId = app->frameArray[index].canId;
@@ -419,6 +506,10 @@ void app_scene_id_list_on_exit(void* context) {
     App* app = context;
     submenu_reset(app->submenu);
 }
+
+/**
+ * Scene used for the input on the menu sender
+ */
 
 void input_byte_sender_callback(void* context) {
     App* app = context;
@@ -489,4 +580,33 @@ bool app_scene_input_text_on_event(void* context, SceneManagerEvent event) {
 
 void app_scene_input_text_on_exit(void* context) {
     UNUSED(context);
+}
+
+/**
+ * Thread to work with
+ */
+
+static int32_t sender_on_work(void* context) {
+    App* app = context;
+    app->mcp_can->mode = MCP_NORMAL;
+    ERROR_CAN debug = ERROR_OK;
+    ERROR_CAN error = ERROR_OK;
+    debug = mcp2515_init(app->mcp_can);
+
+    furi_delay_ms(10);
+
+    if(debug == ERROR_OK) {
+        error = send_can_frame(app->mcp_can, app->frame_to_send);
+        furi_delay_ms(500);
+
+        if(error != ERROR_OK)
+            scene_manager_handle_custom_event(app->scene_manager, SEND_ERROR);
+        else
+            scene_manager_handle_custom_event(app->scene_manager, SEND_OK);
+    } else {
+        scene_manager_handle_custom_event(app->scene_manager, DEVICE_NO_CONNECTED);
+    }
+
+    free_mcp2515(app->mcp_can);
+    return 0;
 }
