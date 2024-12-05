@@ -1,9 +1,5 @@
 #include "../app_user.h"
 
-uint8_t data_length = 0;
-uint32_t can_id = 0;
-uint8_t request = 0;
-
 typedef enum {
     SEND_OK,
     SEND_ERROR,
@@ -90,7 +86,7 @@ void default_list_for_sender_menu(App* app) {
     // This is for the
     furi_string_reset(app->text);
 
-    for(uint8_t i = 0; i < data_length; i++) {
+    for(uint8_t i = 0; i < app->frame_to_send->data_lenght; i++) {
         if(app->frame_to_send->buffer[i] < 0x10) {
             furi_string_cat_printf(app->text, "0%x ", app->frame_to_send->buffer[i]);
         } else {
@@ -98,7 +94,7 @@ void default_list_for_sender_menu(App* app) {
         }
     }
 
-    if(data_length == 0 || request == 1) {
+    if(app->frame_to_send->data_lenght == 0 || app->frame_to_send->req == 1) {
         furi_string_reset(app->text);
         furi_string_cat_printf(app->text, "---");
     }
@@ -114,10 +110,6 @@ void default_list_for_sender_menu(App* app) {
 // Menu sender Scene On enter
 void app_scene_sender_on_enter(void* context) {
     App* app = context;
-
-    data_length = app->frame_to_send->data_lenght;
-    can_id = app->frame_to_send->canId;
-    request = app->frame_to_send->req;
 
     default_list_for_sender_menu(app);
 
@@ -229,20 +221,29 @@ void app_scene_set_timing_on_exit(void* context) {
 
 void set_data_view(App* app);
 
+// Go to set the option
 void input_set_data(void* context, uint32_t index) {
     App* app = context;
-    app->sender_selected_item = index;
 
-    UNUSED(index);
-    UNUSED(app);
+    switch(index) {
+    case 0:
+        if(app->num_of_devices > 0) {
+            scene_manager_next_scene(app->scene_manager, app_scene_id_list_option);
+        } else {
+            scene_manager_next_scene(app->scene_manager, app_scene_warning_log_sender);
+        }
+        break;
+
+    default:
+        break;
+    }
 }
 
 // Callback for the frame
 void set_frame_request_callback(VariableItem* item) {
     App* app = variable_item_get_context(item);
 
-    request = variable_item_get_current_value_index(item);
-    app->frame_to_send->req = request;
+    app->frame_to_send->req = variable_item_get_current_value_index(item);
 
     set_data_view(app);
 }
@@ -251,8 +252,7 @@ void set_frame_request_callback(VariableItem* item) {
 void set_data_length_callback(VariableItem* item) {
     App* app = variable_item_get_context(item);
 
-    data_length = variable_item_get_current_value_index(item);
-    app->frame_to_send->data_lenght = data_length;
+    app->frame_to_send->data_lenght = variable_item_get_current_value_index(item);
 
     set_data_view(app);
 }
@@ -270,28 +270,36 @@ void set_data_view(App* app) {
     // second item [1]
     item = variable_item_list_add(app->varList, "Set Id", 0, NULL, app);
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "0x%lx", can_id);
+    furi_string_cat_printf(app->text, "0x%lx", app->frame_to_send->canId);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
     // third item [2]
     item =
         variable_item_list_add(app->varList, "Frame request", 2, set_frame_request_callback, app);
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", request);
-    variable_item_set_current_value_index(item, request);
+    furi_string_cat_printf(app->text, "%u", app->frame_to_send->req);
+    variable_item_set_current_value_index(item, app->frame_to_send->req);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    if(request) return;
+    if(app->frame_to_send->req) return;
 
     // fourth item [4]
     item = variable_item_list_add(app->varList, "Data Length", 9, set_data_length_callback, app);
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", data_length);
-    variable_item_set_current_value_index(item, data_length);
+    furi_string_cat_printf(app->text, "%u", app->frame_to_send->data_lenght);
+    variable_item_set_current_value_index(item, app->frame_to_send->data_lenght);
     variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-    for(uint8_t i = 0; i < data_length; i++) {
+    for(uint8_t i = 0; i < app->frame_to_send->data_lenght; i++) {
         item = variable_item_list_add(app->varList, text_bytes[i], 0, NULL, app);
+
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "0x");
+        if(app->frame_to_send->buffer[i] < 0x10) {
+            furi_string_cat_printf(app->text, "0");
+        }
+        furi_string_cat_printf(app->text, "%x", app->frame_to_send->buffer[i]);
+        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
     }
 }
 
