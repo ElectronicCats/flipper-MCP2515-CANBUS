@@ -1,26 +1,8 @@
 #include "../app_user.h"
 
-uint8_t data_lenght = 0;
+uint8_t data_length = 0;
 uint32_t can_id = 0;
 uint8_t request = 0;
-
-// LIST
-typedef enum {
-    SEND_MESSAGE,
-    CHOOSE_ID,
-    SET_ID,
-    SET_DATA_LENGHT,
-    SET_REQ,
-    SET_DATA,
-    SET_FIRST_DATA,
-    SET_SECOND_DATA,
-    SET_THIRD_DATA,
-    SET_FOURTH_DATA,
-    SET_FIFTH_DATA,
-    SET_SIXTH_DATA,
-    SET_SEVENTH_DATA,
-    SET_EIGHTH_DATA
-} list_of_items;
 
 typedef enum {
     SEND_OK,
@@ -41,8 +23,27 @@ static const char* timing_multiply[] = {"x1", "x10", "x100", "x1000"};
 static uint8_t time = 1;
 static uint8_t multiply = 0;
 
+// Only solution I think for the text with
+// the dynamic menu in set data to get the bytes
+static const char* text_bytes[] = {
+    "Byte [0]",
+    "Byte [1]",
+    "Byte [2]",
+    "Byte [3]",
+    "Byte [4]",
+    "Byte [5]",
+    "Byte [6]",
+    "Byte [7]",
+};
+
 // Thread to work with the sender
 static int32_t sender_on_work(void* context);
+
+// Empty Callback
+void empty_input_callback(void* context, uint32_t index) {
+    UNUSED(context);
+    UNUSED(index);
+}
 
 /**
  *  Scene for the Menu Sender
@@ -57,6 +58,9 @@ void callback_input_sender_options(void* context, uint32_t index) {
     case 1:
         scene_manager_next_scene(app->scene_manager, app_scene_set_timing_option);
         break;
+
+    case 2:
+        scene_manager_next_scene(app->scene_manager, app_scene_set_data_sender_option);
 
     default:
         break;
@@ -85,18 +89,16 @@ void default_list_for_sender_menu(App* app) {
 
     // This is for the
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%lx ", app->frame_to_send->canId);
 
-    for(uint8_t i = 0; i < app->frame_to_send->data_lenght; i++) {
+    for(uint8_t i = 0; i < data_length; i++) {
         if(app->frame_to_send->buffer[i] < 0x10) {
             furi_string_cat_printf(app->text, "0%x ", app->frame_to_send->buffer[i]);
-            continue;
+        } else {
+            furi_string_cat_printf(app->text, "%x ", app->frame_to_send->buffer[i]);
         }
-
-        furi_string_cat_printf(app->text, "%x ", app->frame_to_send->buffer[i]);
     }
 
-    if(app->frame_to_send->data_lenght == 0) {
+    if(data_length == 0 || request == 1) {
         furi_string_reset(app->text);
         furi_string_cat_printf(app->text, "---");
     }
@@ -113,14 +115,9 @@ void default_list_for_sender_menu(App* app) {
 void app_scene_sender_on_enter(void* context) {
     App* app = context;
 
-    data_lenght = app->frame_to_send->data_lenght;
+    data_length = app->frame_to_send->data_lenght;
     can_id = app->frame_to_send->canId;
     request = app->frame_to_send->req;
-
-    app->sender_id_compose[3] = can_id;
-    app->sender_id_compose[2] = can_id >> 8;
-    app->sender_id_compose[1] = can_id >> 16;
-    app->sender_id_compose[0] = can_id >> 24;
 
     default_list_for_sender_menu(app);
 
@@ -175,6 +172,7 @@ void set_multiply_time(VariableItem* item) {
 void set_timing_view(App* app) {
     VariableItem* item;
     variable_item_list_reset(app->varList);
+    variable_item_list_set_enter_callback(app->varList, empty_input_callback, app);
 
     // First Item
     item = variable_item_list_add(app->varList, "Timing", 2, set_timings_callback, app);
@@ -226,57 +224,99 @@ void app_scene_set_timing_on_exit(void* context) {
 }
 
 /**
- *  Scene for display the sender
+ * Scene to set the timing
  */
 
-// Sender on enter
-void app_scene_send_message_on_enter(void* context) {
+void set_data_view(App* app);
+
+void input_set_data(void* context, uint32_t index) {
     App* app = context;
+    app->sender_selected_item = index;
 
-    widget_reset(app->widget);
-    widget_add_string_element(
-        app->widget, 65, 32, AlignCenter, AlignCenter, FontPrimary, "Waiting to send...");
-
-    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
-
-    app->thread = furi_thread_alloc_ex("Sender_on_work", 1024, sender_on_work, app);
-    furi_thread_start(app->thread);
+    UNUSED(index);
+    UNUSED(app);
 }
 
-// Sender on event
-bool app_scene_send_message_on_event(void* context, SceneManagerEvent event) {
-    App* app = context;
-    bool consumed = false;
+// Callback for the frame
+void set_frame_request_callback(VariableItem* item) {
+    App* app = variable_item_get_context(item);
 
-    if(event.type == SceneManagerEventTypeCustom) {
-        switch(event.event) {
-        case SEND_OK:
-            draw_send_ok(app);
-            break;
+    request = variable_item_get_current_value_index(item);
+    app->frame_to_send->req = request;
 
-        case SEND_ERROR:
-            draw_send_wrong(app);
-            break;
+    set_data_view(app);
+}
 
-        case DEVICE_NO_CONNECTED:
-            draw_device_no_connected(app);
-            break;
+// Callback to set the data length
+void set_data_length_callback(VariableItem* item) {
+    App* app = variable_item_get_context(item);
 
-        default:
-            break;
-        }
+    data_length = variable_item_get_current_value_index(item);
+    app->frame_to_send->data_lenght = data_length;
+
+    set_data_view(app);
+}
+
+// View to set the Data
+void set_data_view(App* app) {
+    VariableItem* item;
+    variable_item_list_reset(app->varList);
+
+    variable_item_list_set_enter_callback(app->varList, input_set_data, app);
+
+    // first item [0]
+    item = variable_item_list_add(app->varList, "Choose last ID", 0, NULL, app);
+
+    // second item [1]
+    item = variable_item_list_add(app->varList, "Set Id", 0, NULL, app);
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "0x%lx", can_id);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+
+    // third item [2]
+    item =
+        variable_item_list_add(app->varList, "Frame request", 2, set_frame_request_callback, app);
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "%u", request);
+    variable_item_set_current_value_index(item, request);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+
+    if(request) return;
+
+    // fourth item [4]
+    item = variable_item_list_add(app->varList, "Data Length", 9, set_data_length_callback, app);
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "%u", data_length);
+    variable_item_set_current_value_index(item, data_length);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+
+    for(uint8_t i = 0; i < data_length; i++) {
+        item = variable_item_list_add(app->varList, text_bytes[i], 0, NULL, app);
     }
+}
 
+// Menu sender Scene On enter
+void app_scene_set_data_sender_on_enter(void* context) {
+    App* app = context;
+
+    variable_item_list_set_selected_item(app->varList, 0);
+    set_data_view(app);
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
+}
+
+// Menu Sender On event
+bool app_scene_set_data_sender_on_event(void* context, SceneManagerEvent event) {
+    UNUSED(context);
+    UNUSED(event);
+    bool consumed = false;
     return consumed;
 }
 
-// Sender on exit
-void app_scene_send_message_on_exit(void* context) {
+// Menu Sender On exit
+void app_scene_set_data_sender_on_exit(void* context) {
     App* app = context;
-    furi_thread_join(app->thread);
-    furi_thread_free(app->thread);
-
-    widget_reset(app->widget);
+    variable_item_list_reset(app->varList);
 }
 
 /**
@@ -369,51 +409,14 @@ void app_scene_id_list_on_exit(void* context) {
  */
 
 void input_byte_sender_callback(void* context) {
-    App* app = context;
-    app->frame_to_send->canId = app->sender_id_compose[3] | (app->sender_id_compose[2] << 8) |
-                                (app->sender_id_compose[1] << 16) |
-                                (app->sender_id_compose[0] << 24);
-    scene_manager_handle_custom_event(app->scene_manager, ReturnEvent);
+    UNUSED(context);
 }
 
 void app_scene_input_text_on_enter(void* context) {
     App* app = context;
     ByteInput* scene = app->input_byte_value;
 
-    uint32_t state =
-        scene_manager_get_scene_state(app->scene_manager, app_scene_input_text_option);
-
-    app->sender_selected_item = state;
-
-    switch(state) {
-    case SET_ID:
-        byte_input_set_result_callback(
-            scene, input_byte_sender_callback, NULL, app, app->sender_id_compose, 4);
-        byte_input_set_header_text(app->input_byte_value, "SET ADDRESS");
-        break;
-
-    case SET_DATA:
-        byte_input_set_result_callback(
-            scene, input_byte_sender_callback, NULL, app, app->frame_to_send->buffer, 8);
-        byte_input_set_header_text(app->input_byte_value, "SET ALL DATA");
-        break;
-
-    default:
-        if(state > 5) {
-            byte_input_set_result_callback(
-                scene,
-                input_byte_sender_callback,
-                NULL,
-                app,
-                &(app->frame_to_send->buffer[state - 6]),
-                1);
-
-            furi_string_reset(app->text);
-            furi_string_cat_printf(app->text, "SET BYTE [%lu]", state - 6);
-            byte_input_set_header_text(app->input_byte_value, furi_string_get_cstr(app->text));
-        }
-        break;
-    }
+    UNUSED(scene);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, InputByteView);
 }
@@ -421,22 +424,68 @@ void app_scene_input_text_on_enter(void* context) {
 bool app_scene_input_text_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
+    UNUSED(event);
+    UNUSED(app);
+
+    return consumed;
+}
+
+void app_scene_input_text_on_exit(void* context) {
+    UNUSED(context);
+}
+
+/**
+ *  Scene for display the sender
+ */
+
+// Sender on enter
+void app_scene_send_message_on_enter(void* context) {
+    App* app = context;
+
+    widget_reset(app->widget);
+    widget_add_string_element(
+        app->widget, 65, 32, AlignCenter, AlignCenter, FontPrimary, "Waiting to send...");
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+
+    app->thread = furi_thread_alloc_ex("Sender_on_work", 1024, sender_on_work, app);
+    furi_thread_start(app->thread);
+}
+
+// Sender on event
+bool app_scene_send_message_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    bool consumed = false;
 
     if(event.type == SceneManagerEventTypeCustom) {
         switch(event.event) {
-        case ReturnEvent:
-            scene_manager_previous_scene(app->scene_manager);
+        case SEND_OK:
+            draw_send_ok(app);
+            break;
+
+        case SEND_ERROR:
+            draw_send_wrong(app);
+            break;
+
+        case DEVICE_NO_CONNECTED:
+            draw_device_no_connected(app);
             break;
 
         default:
             break;
         }
     }
+
     return consumed;
 }
 
-void app_scene_input_text_on_exit(void* context) {
-    UNUSED(context);
+// Sender on exit
+void app_scene_send_message_on_exit(void* context) {
+    App* app = context;
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
+
+    widget_reset(app->widget);
 }
 
 /**
