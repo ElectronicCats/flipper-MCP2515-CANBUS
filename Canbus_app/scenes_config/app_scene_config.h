@@ -23,7 +23,7 @@ ADD_SCENE(app, set_data_sender, set_data_sender_option)
 ADD_SCENE(app, send_message, send_message)
 ADD_SCENE(app, warning_log, warning_log_sender)
 ADD_SCENE(app, id_list, id_list_option)
-ADD_SCENE(app, input_text, input_text_option)
+ADD_SCENE(app, input_data, input_data_option)
 
 // ----------------------------------------------------
 

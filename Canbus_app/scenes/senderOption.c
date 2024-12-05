@@ -32,6 +32,9 @@ static const char* text_bytes[] = {
     "Byte [7]",
 };
 
+// Data for the can Id
+uint8_t can_id[4];
+
 // Thread to work with the sender
 static int32_t sender_on_work(void* context);
 
@@ -57,6 +60,11 @@ void callback_input_sender_options(void* context, uint32_t index) {
 
     case 2:
         scene_manager_next_scene(app->scene_manager, app_scene_set_data_sender_option);
+        break;
+
+    case 3:
+        scene_manager_set_scene_state(app->scene_manager, app_scene_input_data_option, 0xff);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_data_option);
 
     default:
         break;
@@ -235,6 +243,8 @@ void input_set_data(void* context, uint32_t index) {
         break;
 
     default:
+        scene_manager_set_scene_state(app->scene_manager, app_scene_input_data_option, index);
+        scene_manager_next_scene(app->scene_manager, app_scene_input_data_option);
         break;
     }
 }
@@ -417,19 +427,65 @@ void app_scene_id_list_on_exit(void* context) {
  */
 
 void input_byte_sender_callback(void* context) {
-    UNUSED(context);
+    App* app = context;
+
+    uint32_t state =
+        scene_manager_get_scene_state(app->scene_manager, app_scene_input_data_option);
+
+    switch(state) {
+    case 1:
+        app->frame_to_send->canId = (can_id[0] << 24) | (can_id[1] << 16) | (can_id[2] << 8) |
+                                    (can_id[3]);
+        break;
+
+    default:
+        break;
+    }
+
+    scene_manager_previous_scene(app->scene_manager);
 }
 
-void app_scene_input_text_on_enter(void* context) {
+void app_scene_input_data_on_enter(void* context) {
     App* app = context;
     ByteInput* scene = app->input_byte_value;
 
-    UNUSED(scene);
+    uint32_t state =
+        scene_manager_get_scene_state(app->scene_manager, app_scene_input_data_option);
+
+    if(state == 1) {
+        can_id[3] = app->frame_to_send->canId;
+        can_id[2] = app->frame_to_send->canId >> 8;
+        can_id[1] = app->frame_to_send->canId >> 16;
+        can_id[0] = app->frame_to_send->canId >> 24;
+
+        byte_input_set_header_text(scene, "SET ID");
+        byte_input_set_result_callback(scene, input_byte_sender_callback, NULL, app, can_id, 4);
+    }
+    if(state < 0xff) {
+        state = state - 4;
+
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "Set Byte [%lu]", state);
+        byte_input_set_header_text(scene, furi_string_get_cstr(app->text));
+        byte_input_set_result_callback(
+            scene, input_byte_sender_callback, NULL, app, &(app->frame_to_send->buffer[state]), 1);
+    }
+
+    if(state == 0xff) {
+        byte_input_set_header_text(scene, "Set Data");
+        byte_input_set_result_callback(
+            scene,
+            input_byte_sender_callback,
+            NULL,
+            app,
+            app->frame_to_send->buffer,
+            app->frame_to_send->data_lenght);
+    }
 
     view_dispatcher_switch_to_view(app->view_dispatcher, InputByteView);
 }
 
-bool app_scene_input_text_on_event(void* context, SceneManagerEvent event) {
+bool app_scene_input_data_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
     UNUSED(event);
@@ -438,7 +494,7 @@ bool app_scene_input_text_on_event(void* context, SceneManagerEvent event) {
     return consumed;
 }
 
-void app_scene_input_text_on_exit(void* context) {
+void app_scene_input_data_on_exit(void* context) {
     UNUSED(context);
 }
 
