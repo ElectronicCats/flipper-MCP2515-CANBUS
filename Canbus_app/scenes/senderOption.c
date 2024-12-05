@@ -52,73 +52,10 @@ static int32_t sender_on_work(void* context);
 void callback_input_sender_options(void* context, uint32_t index) {
     App* app = context;
     app->sender_selected_item = index;
+
     switch(index) {
-    case SEND_MESSAGE:
-        scene_manager_next_scene(app->scene_manager, app_scene_send_message);
-        break;
-    case CHOOSE_ID:
-        if(app->num_of_devices > 0) {
-            scene_manager_next_scene(app->scene_manager, app_scene_id_list_option);
-        } else {
-            scene_manager_next_scene(app->scene_manager, app_scene_warning_log_sender);
-        }
-        break;
-    case SET_ID:
-        scene_manager_set_scene_state(app->scene_manager, app_scene_input_text_option, SET_ID);
-        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
-        break;
-
-    case SET_DATA:
-        scene_manager_set_scene_state(app->scene_manager, app_scene_input_text_option, SET_DATA);
-        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
-        break;
-
-    case SET_FIRST_DATA:
-        scene_manager_set_scene_state(
-            app->scene_manager, app_scene_input_text_option, SET_FIRST_DATA);
-        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
-        break;
-
-    case SET_SECOND_DATA:
-        scene_manager_set_scene_state(
-            app->scene_manager, app_scene_input_text_option, SET_SECOND_DATA);
-        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
-        break;
-
-    case SET_THIRD_DATA:
-        scene_manager_set_scene_state(
-            app->scene_manager, app_scene_input_text_option, SET_THIRD_DATA);
-        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
-        break;
-
-    case SET_FOURTH_DATA:
-        scene_manager_set_scene_state(
-            app->scene_manager, app_scene_input_text_option, SET_FOURTH_DATA);
-        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
-        break;
-
-    case SET_FIFTH_DATA:
-        scene_manager_set_scene_state(
-            app->scene_manager, app_scene_input_text_option, SET_FIFTH_DATA);
-        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
-        break;
-
-    case SET_SIXTH_DATA:
-        scene_manager_set_scene_state(
-            app->scene_manager, app_scene_input_text_option, SET_SIXTH_DATA);
-        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
-        break;
-
-    case SET_SEVENTH_DATA:
-        scene_manager_set_scene_state(
-            app->scene_manager, app_scene_input_text_option, SET_SEVENTH_DATA);
-        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
-        break;
-
-    case SET_EIGHTH_DATA:
-        scene_manager_set_scene_state(
-            app->scene_manager, app_scene_input_text_option, SET_EIGHTH_DATA);
-        scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
+    case 1:
+        scene_manager_next_scene(app->scene_manager, app_scene_set_timing_option);
         break;
 
     default:
@@ -126,204 +63,50 @@ void callback_input_sender_options(void* context, uint32_t index) {
     }
 }
 
-// Options Callback
-void callback_sender_options(VariableItem* item) {
-    App* app = variable_item_get_context(item);
-    uint8_t selected_index = variable_item_list_get_selected_item_index(app->varList);
-    uint8_t index_item = variable_item_get_current_value_index(item);
-
-    switch(selected_index) {
-    case SET_DATA_LENGHT:
-        furi_string_reset(app->text);
-        furi_string_cat_printf(app->text, "%u", index_item);
-        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-        app->frame_to_send->data_lenght = index_item;
-        break;
-    case SET_REQ:
-        furi_string_reset(app->text);
-        furi_string_cat_printf(app->text, "%u", index_item);
-        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-        app->frame_to_send->req = index_item;
-        break;
-    default:
-        break;
-    }
-}
-
-/*
-void set_bytes_to_send(App* app) {
-    UNUSED(app);
-}
-*/
-
-/*
+// To display the variable list
 void default_list_for_sender_menu(App* app) {
     VariableItem* item;
     variable_item_list_reset(app->varList);
 
-    // 0
-    item = variable_item_list_add(app->varList, "SEND MESSAGE", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    // 1
-    item = variable_item_list_add(app->varList, "Choose Id", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-    variable_item_set_current_value_text(item, "SEARCH");
-
-    // 2
-    item = variable_item_list_add(app->varList, "Id", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "0x%lx", can_id);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    // 3
-    item = variable_item_list_add(app->varList, "DLC", 9, callback_sender_options, app);
-    variable_item_set_current_value_index(item, data_lenght);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", data_lenght);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    // 4
-    item = variable_item_list_add(app->varList, "Request", 2, callback_sender_options, app);
-    variable_item_set_current_value_index(item, request);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%u", request);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    // 5
-    item =
-        variable_item_list_add(app->varList, "CLIC TO SET DATA", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    // 6
-    item = variable_item_list_add(app->varList, "BYTE [0]", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[0]);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    // 7
-    item = variable_item_list_add(app->varList, "BYTE [1]", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[1]);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    // 8
-    item = variable_item_list_add(app->varList, "BYTE [2]", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[2]);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    // 9
-    item = variable_item_list_add(app->varList, "BYTE [3]", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[3]);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    // 10
-    item = variable_item_list_add(app->varList, "BYTE [4]", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[4]);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    // 11
-    item = variable_item_list_add(app->varList, "BYTE [5]", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[5]);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    // 12
-    item = variable_item_list_add(app->varList, "BYTE [6]", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[6]);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    // 13
-    item = variable_item_list_add(app->varList, "BYTE [7]", 0, callback_sender_options, app);
-    variable_item_set_current_value_index(item, 0);
-
-    furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "0x%x", app->frame_to_send->buffer[7]);
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-
-    variable_item_list_set_enter_callback(app->varList, callback_input_sender_options, app);
-    variable_item_list_set_selected_item(app->varList, app->sender_selected_item);
-}
-*/
-
-void default_list_for_sender_menu(App* app);
-
-void set_timings_callback(VariableItem* item) {
-    App* app = variable_item_get_context(item);
-    timing = variable_item_get_current_value_index(item);
-    variable_item_set_current_value_text(item, timing_texts[timing]);
-
-    default_list_for_sender_menu(app);
-}
-
-void set_time_sender(VariableItem* item) {
-    App* app = variable_item_get_context(item);
-    time = variable_item_get_current_value_index(item) + 1;
-
-    furi_string_reset(app->text);
-
-    furi_string_cat_printf(app->text, "%u", time);
-
-    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
-}
-
-void set_multiply_time(VariableItem* item) {
-    multiply = variable_item_get_current_value_index(item);
-    variable_item_set_current_value_text(item, timing_multiply[multiply]);
-}
-
-void default_list_for_sender_menu(App* app) {
-    VariableItem* item;
-    variable_item_list_reset(app->varList);
-
-    // First Item
+    // First Item [0]
     item = variable_item_list_add(app->varList, "SEND MESSAGE", 0, NULL, app);
     variable_item_set_current_value_index(item, 0);
 
-    // Set data
-    item = variable_item_list_add(app->varList, "Set Data", 0, NULL, app);
-    variable_item_set_current_value_index(item, 0);
-
-    // Third Item
-    item = variable_item_list_add(app->varList, "Timing", 2, set_timings_callback, app);
+    // Second Item [1]
+    item = variable_item_list_add(app->varList, "Timing", 0, NULL, app);
     variable_item_set_current_value_index(item, timing);
     variable_item_set_current_value_text(item, timing_texts[timing]);
 
-    if(timing) {
-        item = variable_item_list_add(app->varList, "Time(ms)", 100, set_time_sender, app);
-        variable_item_set_current_value_index(item, time - 1);
+    // Third Item [2]
+    item = variable_item_list_add(app->varList, "DATA", 0, NULL, app);
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "0x%lx", app->frame_to_send->canId);
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
 
-        furi_string_reset(app->text);
-        furi_string_cat_printf(app->text, "%u", time);
+    // This is for the
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "%lx ", app->frame_to_send->canId);
 
-        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+    for(uint8_t i = 0; i < app->frame_to_send->data_lenght; i++) {
+        if(app->frame_to_send->buffer[i] < 0x10) {
+            furi_string_cat_printf(app->text, "0%x ", app->frame_to_send->buffer[i]);
+            continue;
+        }
 
-        item = variable_item_list_add(app->varList, "Multiply by", 3, set_multiply_time, app);
-        variable_item_set_current_value_index(item, multiply);
-        variable_item_set_current_value_text(item, timing_multiply[multiply]);
+        furi_string_cat_printf(app->text, "%x ", app->frame_to_send->buffer[i]);
     }
+
+    if(app->frame_to_send->data_lenght == 0) {
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "---");
+    }
+
+    // Fourth Item [3]
+    item = variable_item_list_add(app->varList, furi_string_get_cstr(app->text), 0, NULL, app);
+
+    variable_item_list_set_enter_callback(app->varList, callback_input_sender_options, app);
+
+    variable_item_list_set_selected_item(app->varList, app->sender_selected_item);
 }
 
 // Menu sender Scene On enter
@@ -346,24 +129,98 @@ void app_scene_sender_on_enter(void* context) {
 
 // Menu Sender On event
 bool app_scene_sender_on_event(void* context, SceneManagerEvent event) {
-    App* app = context;
+    UNUSED(context);
+    UNUSED(event);
     bool consumed = false;
-    if(event.type == SceneManagerEventTypeCustom) {
-        switch(event.event) {
-        case SET_ID:
-            scene_manager_next_scene(app->scene_manager, app_scene_input_text_option);
-            consumed = true;
-            break;
-
-        default:
-            break;
-        }
-    }
     return consumed;
 }
 
 // Menu Sender On exit
 void app_scene_sender_on_exit(void* context) {
+    App* app = context;
+    variable_item_list_reset(app->varList);
+}
+
+/**
+ * Scene to set the timming
+ */
+
+void set_timing_view(App* app);
+
+void set_timings_callback(VariableItem* item) {
+    App* app = variable_item_get_context(item);
+    timing = variable_item_get_current_value_index(item);
+    variable_item_set_current_value_text(item, timing_texts[timing]);
+
+    set_timing_view(app);
+}
+
+void set_time_sender(VariableItem* item) {
+    App* app = variable_item_get_context(item);
+    time = variable_item_get_current_value_index(item) + 1;
+
+    furi_string_reset(app->text);
+
+    furi_string_cat_printf(app->text, "%u ms", time);
+
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+}
+
+void set_multiply_time(VariableItem* item) {
+    multiply = variable_item_get_current_value_index(item);
+    variable_item_set_current_value_text(item, timing_multiply[multiply]);
+}
+
+// View to display
+void set_timing_view(App* app) {
+    VariableItem* item;
+    variable_item_list_reset(app->varList);
+
+    // First Item
+    item = variable_item_list_add(app->varList, "Timing", 2, set_timings_callback, app);
+    variable_item_set_current_value_index(item, timing);
+    variable_item_set_current_value_text(item, timing_texts[timing]);
+
+    // Second Item
+    if(timing) {
+        item = variable_item_list_add(app->varList, "Time", 255, set_time_sender, app);
+        variable_item_set_current_value_index(item, time - 1);
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "%u ms", time);
+        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+    } else {
+        item = variable_item_list_add(app->varList, "After", 255, set_time_sender, app);
+        variable_item_set_current_value_index(item, time - 1);
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "%u ms", time);
+        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+    }
+
+    // Third Item
+
+    item = variable_item_list_add(app->varList, "Multiply by", 4, set_multiply_time, app);
+    variable_item_set_current_value_index(item, multiply);
+    variable_item_set_current_value_text(item, timing_multiply[multiply]);
+}
+
+// Menu sender Scene On enter
+void app_scene_set_timing_on_enter(void* context) {
+    App* app = context;
+
+    set_timing_view(app);
+    view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);
+}
+
+// Menu Sender On event
+bool app_scene_set_timing_on_event(void* context, SceneManagerEvent event) {
+    UNUSED(context);
+    UNUSED(event);
+    bool consumed = false;
+    return consumed;
+}
+
+// Menu Sender On exit
+void app_scene_set_timing_on_exit(void* context) {
     App* app = context;
     variable_item_list_reset(app->varList);
 }

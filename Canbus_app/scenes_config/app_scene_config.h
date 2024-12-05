@@ -14,11 +14,18 @@ ADD_SCENE(app, menu, main_menu)
 ADD_SCENE(app, sniffing, sniffing_option)
 ADD_SCENE(app, box_sniffing, box_sniffing)
 ADD_SCENE(app, device_no_connected, device_no_connected)
+
+// ----------------------------------------------------
+
 ADD_SCENE(app, sender, sender_option)
+ADD_SCENE(app, set_timing, set_timing_option)
 ADD_SCENE(app, send_message, send_message)
 ADD_SCENE(app, warning_log, warning_log_sender)
 ADD_SCENE(app, id_list, id_list_option)
 ADD_SCENE(app, input_text, input_text_option)
+
+// ----------------------------------------------------
+
 ADD_SCENE(app, read_logs, read_logs)
 ADD_SCENE(app, settings, settings_option)
 ADD_SCENE(app, about_us, about_us)
@@ -37,8 +44,6 @@ ADD_SCENE(app, get_car_data, car_data_option)
 ADD_SCENE(app, play_logs, play_logs)
 ADD_SCENE(app, file_browser, file_browser_option)
 ADD_SCENE(app, play_logs_widget, play_logs_widget)
-
-// For the UDS FUNCTIONS
 ADD_SCENE(app, uds_menu, uds_menu_option)
 ADD_SCENE(app, uds_single_frame_request_sender, uds_single_frame_request_sender_option)
 ADD_SCENE(app, uds_single_frame_request_response, uds_single_frame_request_response_option)
