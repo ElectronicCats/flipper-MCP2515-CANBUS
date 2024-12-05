@@ -317,7 +317,6 @@ void set_data_view(App* app) {
 void app_scene_set_data_sender_on_enter(void* context) {
     App* app = context;
 
-    variable_item_list_set_selected_item(app->varList, 0);
     set_data_view(app);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, VarListView);

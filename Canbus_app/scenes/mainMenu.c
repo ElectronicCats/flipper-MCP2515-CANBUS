@@ -42,21 +42,6 @@ bool OpenLogFile(App* app) {
     return true;
 }
 
-// This function works to reset the values in the sender Option
-void reset_sender_values(void* context) {
-    App* app = context;
-    app->sender_selected_item = 0;
-    app->frame_to_send->canId = 0;
-    app->frame_to_send->data_lenght = 0;
-    app->frame_to_send->req = 0;
-    app->frame_to_send->ext = 0;
-    for(uint8_t i = 0; i < 8; i++)
-        app->frame_to_send->buffer[i] = 0;
-
-    for(uint8_t i = 0; i < 4; i++)
-        app->sender_id_compose[i] = 0;
-}
-
 void basic_scenes_menu_callback(void* context, uint32_t index) {
     App* app = context;
 
@@ -129,7 +114,6 @@ void app_scene_menu_on_enter(void* context) {
 
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
 
-    reset_sender_values(app);
     app->obdii_aux_index = 0;
 }
 
