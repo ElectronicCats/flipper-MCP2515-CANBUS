@@ -574,8 +574,6 @@ void draw_timer_to_send(App* app, double time) {
 void draw_data_send(App* app, bool was_send_it, uint32_t count) {
     widget_reset(app->widget);
 
-    UNUSED(was_send_it);
-
     if(was_send_it) {
         widget_add_string_element(
             app->widget, 64, 10, AlignCenter, AlignCenter, FontPrimary, "Successfully");
@@ -692,6 +690,20 @@ void draw_data_send_repeat(App* app, bool was_send_it, uint32_t count, uint32_t 
         furi_string_get_cstr(app->text));
 }
 
+void draw_waiting_time_to_send(App* app) {
+    widget_reset(app->widget);
+
+    widget_add_string_multiline_element(
+        app->widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "WAITING TIME\n TO SEND");
+}
+
+void draw_finished_to_send(App* app) {
+    widget_reset(app->widget);
+
+    widget_add_string_multiline_element(
+        app->widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "FINISHED\n TO SEND");
+}
+
 // Sender on enter
 void app_scene_send_message_on_enter(void* context) {
     App* app = context;
@@ -802,7 +814,7 @@ int32_t thread_to_send_periodic(void* context) {
 
     if(!debug) draw_device_no_connected(app);
 
-    draw_data_send(app, true, 1);
+    draw_waiting_time_to_send(app);
 
     uint32_t timer_send = time * (pow(10, multiply));
 
@@ -817,8 +829,6 @@ int32_t thread_to_send_periodic(void* context) {
             last_time = furi_get_tick();
         } else
             furi_delay_ms(1);
-
-        furi_delay_ms(1);
     }
 
     free_mcp2515(mcp_can);
@@ -835,16 +845,33 @@ int32_t thread_to_send_repeat(void* context) {
     MCP2515* mcp_can = app->mcp_can;
     mcp_can->mode = MCP_NORMAL;
 
-    log_info("REPEAT");
-
     bool debug = (mcp2515_init(mcp_can) == ERROR_OK) ? true : false;
 
     if(!debug) draw_device_no_connected(app);
 
-    draw_data_send_repeat(app, true, 1, 1);
+    draw_waiting_time_to_send(app);
+
+    uint32_t timer_send = time * (pow(10, multiply));
+
+    uint32_t last_time = furi_get_tick();
+
+    uint8_t total_count = quantity_to_repeat * (pow(10, multiply_quantity));
+
+    uint32_t count = 1;
 
     while(debug && furi_hal_gpio_read(&gpio_button_back)) {
-        furi_delay_ms(1);
+        if(timer_send < (furi_get_tick() - last_time)) {
+            draw_data_send(app, (send_can_frame(mcp_can, app->frame_to_send) == ERROR_OK), count);
+            count++;
+            last_time = furi_get_tick();
+        } else
+            furi_delay_ms(1);
+
+        if(count > total_count) {
+            furi_delay_ms(500);
+            draw_finished_to_send(app);
+            break;
+        }
     }
 
     free_mcp2515(mcp_can);
