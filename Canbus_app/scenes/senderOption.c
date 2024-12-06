@@ -13,11 +13,14 @@ enum {
 
 static uint8_t timing = 0;
 
-static const char* timing_texts[] = {"ONCE", "PERIODIC"};
-static const char* timing_multiply[] = {"x1", "x10", "x100", "x1000"};
+static const char* timing_texts[] = {"ONCE", "PERIODIC", "REPEAT"};
+static const char* timing_multiply[] = {"x1", "x10", "x100", "x1000", "x10000", "x100000"};
 
 static uint8_t time = 1;
 static uint8_t multiply = 0;
+
+static uint8_t quantity_to_repeat = 1;
+static uint8_t multiply_quantity = 0;
 
 // Only solution I think for the text with
 // the dynamic menu in set data to get the bytes
@@ -35,14 +38,19 @@ static const char* text_bytes[] = {
 // Data for the can Id
 uint8_t can_id[4];
 
-// Thread to work with the sender
-static int32_t sender_on_work(void* context);
-
 // Empty Callback
 void empty_input_callback(void* context, uint32_t index) {
     UNUSED(context);
     UNUSED(index);
 }
+
+/**
+ * Threads
+ */
+
+int32_t thread_to_send_once(void* context);
+int32_t thread_to_send_periodic(void* context);
+int32_t thread_to_send_repeat(void* context);
 
 /**
  *  Scene for the Menu Sender
@@ -54,6 +62,9 @@ void callback_input_sender_options(void* context, uint32_t index) {
     app->sender_selected_item = index;
 
     switch(index) {
+    case 0:
+        scene_manager_next_scene(app->scene_manager, app_scene_send_message_option);
+        break;
     case 1:
         scene_manager_next_scene(app->scene_manager, app_scene_set_timing_option);
         break;
@@ -168,6 +179,22 @@ void set_multiply_time(VariableItem* item) {
     variable_item_set_current_value_text(item, timing_multiply[multiply]);
 }
 
+void set_multiply_count(VariableItem* item) {
+    multiply_quantity = variable_item_get_current_value_index(item);
+    variable_item_set_current_value_text(item, timing_multiply[multiply_quantity]);
+}
+
+void set_count_to_send(VariableItem* item) {
+    App* app = variable_item_get_context(item);
+    quantity_to_repeat = variable_item_get_current_value_index(item) + 1;
+
+    furi_string_reset(app->text);
+
+    furi_string_cat_printf(app->text, "%u", quantity_to_repeat);
+
+    variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+}
+
 // View to display
 void set_timing_view(App* app) {
     VariableItem* item;
@@ -175,7 +202,7 @@ void set_timing_view(App* app) {
     variable_item_list_set_enter_callback(app->varList, empty_input_callback, app);
 
     // First Item
-    item = variable_item_list_add(app->varList, "Timing", 2, set_timings_callback, app);
+    item = variable_item_list_add(app->varList, "Timing", 3, set_timings_callback, app);
     variable_item_set_current_value_index(item, timing);
     variable_item_set_current_value_text(item, timing_texts[timing]);
 
@@ -199,6 +226,18 @@ void set_timing_view(App* app) {
     item = variable_item_list_add(app->varList, "Multiply by", 4, set_multiply_time, app);
     variable_item_set_current_value_index(item, multiply);
     variable_item_set_current_value_text(item, timing_multiply[multiply]);
+
+    if(timing == 2) {
+        item = variable_item_list_add(app->varList, "Count to send", 100, set_count_to_send, app);
+        variable_item_set_current_value_index(item, quantity_to_repeat - 1);
+        furi_string_reset(app->text);
+        furi_string_cat_printf(app->text, "%u", quantity_to_repeat);
+        variable_item_set_current_value_text(item, furi_string_get_cstr(app->text));
+
+        item = variable_item_list_add(app->varList, "Count Multiply", 6, set_multiply_count, app);
+        variable_item_set_current_value_index(item, multiply_quantity);
+        variable_item_set_current_value_text(item, timing_multiply[multiply_quantity]);
+    }
 }
 
 // Menu sender Scene On enter
@@ -506,13 +545,11 @@ void app_scene_send_message_on_enter(void* context) {
     App* app = context;
 
     widget_reset(app->widget);
-    widget_add_string_element(
-        app->widget, 65, 32, AlignCenter, AlignCenter, FontPrimary, "Waiting to send...");
+    draw_in_development(app);
+    // app->thread = furi_thread_alloc_ex("Sender Thread", 1024,NULL,app);
+    // furi_thread_start(app->thread);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
-
-    app->thread = furi_thread_alloc_ex("Sender_on_work", 1024, sender_on_work, app);
-    furi_thread_start(app->thread);
 }
 
 // Sender on event
@@ -545,37 +582,38 @@ bool app_scene_send_message_on_event(void* context, SceneManagerEvent event) {
 // Sender on exit
 void app_scene_send_message_on_exit(void* context) {
     App* app = context;
-    furi_thread_join(app->thread);
-    furi_thread_free(app->thread);
+    // furi_thread_join(app->thread);
+    // furi_thread_free(app->thread);
 
     widget_reset(app->widget);
 }
 
 /**
- * Thread to work with
+ * Thread to send Once
  */
 
-static int32_t sender_on_work(void* context) {
+int32_t thread_to_send_once(void* context) {
     App* app = context;
-    app->mcp_can->mode = MCP_NORMAL;
-    ERROR_CAN debug = ERROR_OK;
-    ERROR_CAN error = ERROR_OK;
-    debug = mcp2515_init(app->mcp_can);
+    UNUSED(app);
+    return 0;
+}
 
-    furi_delay_ms(10);
+/**
+ *  Thread to send Periodic
+ */
 
-    if(debug == ERROR_OK) {
-        error = send_can_frame(app->mcp_can, app->frame_to_send);
-        furi_delay_ms(500);
+int32_t thread_to_send_periodic(void* context) {
+    App* app = context;
+    UNUSED(app);
+    return 0;
+}
 
-        if(error != ERROR_OK)
-            scene_manager_handle_custom_event(app->scene_manager, SEND_ERROR);
-        else
-            scene_manager_handle_custom_event(app->scene_manager, SEND_OK);
-    } else {
-        scene_manager_handle_custom_event(app->scene_manager, DEVICE_NO_CONNECTED);
-    }
+/**
+ * Thread to send multiple times
+ */
 
-    free_mcp2515(app->mcp_can);
+int32_t thread_to_send_repeat(void* context) {
+    App* app = context;
+    UNUSED(app);
     return 0;
 }
