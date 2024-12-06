@@ -93,7 +93,6 @@ void default_list_for_sender_menu(App* app) {
 
     // Second Item [1]
     item = variable_item_list_add(app->varList, "Timing", 0, NULL, app);
-    variable_item_set_current_value_index(item, timing);
     variable_item_set_current_value_text(item, timing_texts[timing]);
 
     // Third Item [2]
@@ -540,14 +539,173 @@ void app_scene_input_data_on_exit(void* context) {
  *  Scene for display the sender
  */
 
+// Views for the sender
+void draw_timer_to_send(App* app, double time) {
+    widget_reset(app->widget);
+    widget_add_string_multiline_element(
+        app->widget,
+        64,
+        10,
+        AlignCenter,
+        AlignCenter,
+        FontSecondary,
+        "Message will be\nsent in...");
+
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "%.3f s", time);
+
+    widget_add_string_element(
+        app->widget,
+        64,
+        32,
+        AlignCenter,
+        AlignCenter,
+        FontPrimary,
+        furi_string_get_cstr(app->text));
+}
+
+// Views to know if it was send it
+void draw_data_send(App* app, bool was_send_it, uint32_t count) {
+    widget_reset(app->widget);
+
+    furi_string_reset(app->text);
+
+    if(was_send_it) {
+        widget_add_string_element(
+            app->widget, 32, 20, AlignCenter, AlignCenter, FontPrimary, "Successfully");
+    } else {
+        widget_add_string_element(
+            app->widget, 32, 20, AlignCenter, AlignCenter, FontPrimary, "Failure");
+    }
+
+    furi_string_cat_printf(app->text, "%lx ", app->frame_to_send->canId);
+
+    if(app->frame_to_send->req) {
+        furi_string_cat_printf(app->text, "Request");
+        widget_add_string_element(
+            app->widget,
+            64,
+            32,
+            AlignCenter,
+            AlignCenter,
+            FontPrimary,
+            furi_string_get_cstr(app->text));
+
+        return;
+    }
+
+    for(uint8_t i = 0; i < app->frame_to_send->data_lenght; i++) {
+        if(app->frame_to_send->buffer[i] > 0xf) {
+            furi_string_cat_printf(app->text, "%x ", app->frame_to_send->buffer[i]);
+            continue;
+        }
+
+        furi_string_cat_printf(app->text, "0%x ", app->frame_to_send->buffer[i]);
+    }
+
+    widget_add_string_element(
+        app->widget,
+        64,
+        32,
+        AlignCenter,
+        AlignCenter,
+        FontSecondary,
+        furi_string_get_cstr(app->text));
+
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "Message count: %lu", count);
+
+    widget_add_string_element(
+        app->widget,
+        64,
+        45,
+        AlignCenter,
+        AlignCenter,
+        FontSecondary,
+        furi_string_get_cstr(app->text));
+}
+
+void draw_data_send_repeat(App* app, bool was_send_it, uint32_t count, uint32_t total_count) {
+    widget_reset(app->widget);
+
+    furi_string_reset(app->text);
+
+    if(was_send_it) {
+        widget_add_string_element(
+            app->widget, 32, 20, AlignCenter, AlignCenter, FontPrimary, "Successfully");
+    } else {
+        widget_add_string_element(
+            app->widget, 32, 20, AlignCenter, AlignCenter, FontPrimary, "Failure");
+    }
+
+    furi_string_cat_printf(app->text, "%lx ", app->frame_to_send->canId);
+
+    if(app->frame_to_send->req) {
+        furi_string_cat_printf(app->text, "Request");
+        widget_add_string_element(
+            app->widget,
+            64,
+            32,
+            AlignCenter,
+            AlignCenter,
+            FontPrimary,
+            furi_string_get_cstr(app->text));
+
+        return;
+    }
+
+    for(uint8_t i = 0; i < app->frame_to_send->data_lenght; i++) {
+        if(app->frame_to_send->buffer[i] > 0xf) {
+            furi_string_cat_printf(app->text, "%x ", app->frame_to_send->buffer[i]);
+            continue;
+        }
+
+        furi_string_cat_printf(app->text, "0%x ", app->frame_to_send->buffer[i]);
+    }
+
+    widget_add_string_element(
+        app->widget,
+        64,
+        32,
+        AlignCenter,
+        AlignCenter,
+        FontSecondary,
+        furi_string_get_cstr(app->text));
+
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "%lu of %lu", count, total_count);
+
+    widget_add_string_element(
+        app->widget,
+        64,
+        45,
+        AlignCenter,
+        AlignCenter,
+        FontSecondary,
+        furi_string_get_cstr(app->text));
+}
+
 // Sender on enter
 void app_scene_send_message_on_enter(void* context) {
     App* app = context;
 
     widget_reset(app->widget);
-    draw_in_development(app);
-    // app->thread = furi_thread_alloc_ex("Sender Thread", 1024,NULL,app);
-    // furi_thread_start(app->thread);
+
+    switch(timing) {
+    case 0:
+        app->thread = furi_thread_alloc_ex("Sender Thread", 1024, thread_to_send_once, app);
+        break;
+
+    case 1:
+        app->thread = furi_thread_alloc_ex("Sender Thread", 1024, thread_to_send_periodic, app);
+        break;
+
+    default:
+        app->thread = furi_thread_alloc_ex("Sender Thread", 1024, thread_to_send_repeat, app);
+        break;
+    }
+
+    furi_thread_start(app->thread);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }
@@ -582,8 +740,8 @@ bool app_scene_send_message_on_event(void* context, SceneManagerEvent event) {
 // Sender on exit
 void app_scene_send_message_on_exit(void* context) {
     App* app = context;
-    // furi_thread_join(app->thread);
-    // furi_thread_free(app->thread);
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
 
     widget_reset(app->widget);
 }
@@ -594,7 +752,21 @@ void app_scene_send_message_on_exit(void* context) {
 
 int32_t thread_to_send_once(void* context) {
     App* app = context;
-    UNUSED(app);
+    MCP2515* mcp_can = app->mcp_can;
+    mcp_can->mode = MCP_NORMAL;
+
+    bool debug = (mcp2515_init(mcp_can) == ERROR_OK) ? true : false;
+
+    if(!debug) draw_device_no_connected(app);
+
+    draw_timer_to_send(app, 0.001);
+
+    while(debug && furi_hal_gpio_read(&gpio_button_back)) {
+        furi_delay_ms(1);
+    }
+
+    free_mcp2515(mcp_can);
+
     return 0;
 }
 
@@ -604,7 +776,21 @@ int32_t thread_to_send_once(void* context) {
 
 int32_t thread_to_send_periodic(void* context) {
     App* app = context;
-    UNUSED(app);
+    MCP2515* mcp_can = app->mcp_can;
+    mcp_can->mode = MCP_NORMAL;
+
+    bool debug = (mcp2515_init(mcp_can) == ERROR_OK) ? true : false;
+
+    if(!debug) draw_device_no_connected(app);
+
+    draw_data_send(app, true, 1);
+
+    while(debug && furi_hal_gpio_read(&gpio_button_back)) {
+        furi_delay_ms(1);
+    }
+
+    free_mcp2515(mcp_can);
+
     return 0;
 }
 
@@ -614,6 +800,22 @@ int32_t thread_to_send_periodic(void* context) {
 
 int32_t thread_to_send_repeat(void* context) {
     App* app = context;
-    UNUSED(app);
+    MCP2515* mcp_can = app->mcp_can;
+    mcp_can->mode = MCP_NORMAL;
+
+    log_info("REPEAT");
+
+    bool debug = (mcp2515_init(mcp_can) == ERROR_OK) ? true : false;
+
+    if(!debug) draw_device_no_connected(app);
+
+    draw_data_send_repeat(app, true, 1, 1);
+
+    while(debug && furi_hal_gpio_read(&gpio_button_back)) {
+        furi_delay_ms(1);
+    }
+
+    free_mcp2515(mcp_can);
+
     return 0;
 }
