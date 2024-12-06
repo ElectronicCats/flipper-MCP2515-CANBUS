@@ -5,6 +5,11 @@ static uint8_t id_response_array[4];
 
 static uint32_t selected_item = 0;
 
+/**
+ * Scene to set the Ids for UDS services
+ */
+
+// Callback for the settings
 void settings_input_callback(void* context, uint32_t index) {
     App* app = context;
 

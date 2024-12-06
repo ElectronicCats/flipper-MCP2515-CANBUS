@@ -5,7 +5,6 @@ static uint32_t id_response;
 
 static uint8_t id_request_array[4] = {0, 0, 0x7, 0xe0};
 static uint8_t id_response_array[4] = {0, 0, 0x7, 0xe8};
-;
 
 static uint8_t count_of_frames = 1;
 static uint8_t count_of_bytes = 1;
@@ -14,12 +13,12 @@ static uint8_t data_to_send[100] = {0};
 
 static uint32_t selected_item = 0;
 
-// Thread to test
+// Thread to work with
 static int32_t uds_multiframe_request_thread(void* context);
 
-/*
-    Scene uds manual sender to set the values to send
-*/
+/**
+ * Scene for UDS MENU
+ */
 
 void callback_input_manual_sender_uds(void* context, uint32_t index) {
     App* app = context;
@@ -152,9 +151,9 @@ void app_scene_uds_single_frame_request_sender_on_exit(void* context) {
     variable_item_list_reset(app->varList);
 }
 
-/*
-    Scene to set the Data
-*/
+/**
+ * Scene to set the Data
+ */
 
 void input_manual_uds(void* context) {
     App* app = context;
@@ -249,9 +248,9 @@ void app_scene_uds_single_frame_data_on_exit(void* context) {
     UNUSED(context);
 }
 
-/*
-    Scene for the response of the uds services
-*/
+/**
+ * Scene for the response of the uds services
+ */
 
 void app_scene_uds_single_frame_request_response_on_enter(void* context) {
     App* app = context;
@@ -278,9 +277,9 @@ void app_scene_uds_single_frame_request_response_on_exit(void* context) {
     text_box_reset(app->textBox);
 }
 
-/*
-    Thread to TEST
-*/
+/**
+ * Thread for the manual request
+ */
 
 static int32_t uds_multiframe_request_thread(void* context) {
     App* app = context;

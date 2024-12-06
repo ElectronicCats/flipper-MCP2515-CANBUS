@@ -12,6 +12,10 @@ typedef enum {
 // Variable to set the item selected
 uint32_t selector_option = 0;
 
+/**
+ * Scene to show the menu in the UDS Menu option
+ */
+
 // Callback function
 void uds_menu_callback(void* context, uint32_t index) {
     App* app = context;

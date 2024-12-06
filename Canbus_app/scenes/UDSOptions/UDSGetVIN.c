@@ -1,11 +1,11 @@
 #include "../../app_user.h"
 
+// Thread to get the vin
 static int32_t uds_get_vin_thread(void* context);
 
-/*
-    UDS get Vin Scene
-*/
-
+/**
+ * UDS get Vin Scene
+ */
 // Scene on enter
 void app_scene_uds_request_vin_on_enter(void* context) {
     App* app = context;
@@ -35,9 +35,9 @@ void app_scene_uds_request_vin_on_exit(void* context) {
     widget_reset(app->widget);
 }
 
-/*
-    Thread to work with
-*/
+/**
+ * Thread to work with
+ */
 
 static int32_t uds_get_vin_thread(void* context) {
     App* app = context;

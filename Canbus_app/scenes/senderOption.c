@@ -48,9 +48,9 @@ void empty_input_callback(void* context, uint32_t index) {
  * Threads
  */
 
-int32_t thread_to_send_once(void* context);
-int32_t thread_to_send_periodic(void* context);
-int32_t thread_to_send_repeat(void* context);
+static int32_t thread_to_send_once(void* context);
+static int32_t thread_to_send_periodic(void* context);
+static int32_t thread_to_send_repeat(void* context);
 
 /**
  *  Scene for the Menu Sender
@@ -769,7 +769,7 @@ void app_scene_send_message_on_exit(void* context) {
  * Thread to send Once
  */
 
-int32_t thread_to_send_once(void* context) {
+static int32_t thread_to_send_once(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
     mcp_can->mode = MCP_NORMAL;
@@ -805,7 +805,7 @@ int32_t thread_to_send_once(void* context) {
  *  Thread to send Periodic
  */
 
-int32_t thread_to_send_periodic(void* context) {
+static int32_t thread_to_send_periodic(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
     mcp_can->mode = MCP_NORMAL;
@@ -840,7 +840,7 @@ int32_t thread_to_send_periodic(void* context) {
  * Thread to send multiple times
  */
 
-int32_t thread_to_send_repeat(void* context) {
+static int32_t thread_to_send_repeat(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
     mcp_can->mode = MCP_NORMAL;
