@@ -34,6 +34,8 @@
 #define UDS_REQUEST_ID_DEFAULT  0x7e1
 #define UDS_RESPONSE_ID_DEFAULT 0x7e9
 
+#define START_TIME 1000
+
 typedef enum {
     WorkerflagStop = (1 << 0),
     WorkerflagReceived = (1 << 1),

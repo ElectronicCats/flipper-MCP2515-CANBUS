@@ -89,6 +89,24 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
 
 void app_scene_menu_on_enter(void* context) {
     App* app = context;
+
+    uint32_t state = scene_manager_get_scene_state(app->scene_manager, app_scene_main_menu);
+
+    if(state == 0) {
+        widget_reset(app->widget);
+
+        widget_add_icon_element(app->widget, 40, 1, &I_EC48x26);
+        widget_add_string_element(
+            app->widget, 64, 40, AlignCenter, AlignCenter, FontPrimary, "ELECTRONIC CATS");
+        widget_add_string_element(
+            app->widget, 64, 50, AlignCenter, AlignCenter, FontSecondary, "Canbus App");
+
+        view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+
+        furi_delay_ms(START_TIME);
+        scene_manager_set_scene_state(app->scene_manager, app_scene_main_menu, 1);
+    }
+
     submenu_reset(app->submenu);
 
     submenu_set_header(app->submenu, "MENU CANBUS");
