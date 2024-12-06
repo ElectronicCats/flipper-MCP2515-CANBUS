@@ -804,7 +804,20 @@ int32_t thread_to_send_periodic(void* context) {
 
     draw_data_send(app, true, 1);
 
+    uint32_t timer_send = time * (pow(10, multiply));
+
+    uint32_t last_time = furi_get_tick();
+
+    uint32_t count = 1;
+
     while(debug && furi_hal_gpio_read(&gpio_button_back)) {
+        if(timer_send < (furi_get_tick() - last_time)) {
+            draw_data_send(app, (send_can_frame(mcp_can, app->frame_to_send) == ERROR_OK), count);
+            count++;
+            last_time = furi_get_tick();
+        } else
+            furi_delay_ms(1);
+
         furi_delay_ms(1);
     }
 
