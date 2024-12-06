@@ -271,19 +271,19 @@ void set_data_view(App* app);
 void input_set_data(void* context, uint32_t index) {
     App* app = context;
 
-    switch(index) {
-    case 0:
+    if(index == 0) {
         if(app->num_of_devices > 0) {
             scene_manager_next_scene(app->scene_manager, app_scene_id_list_option);
+            return;
         } else {
             scene_manager_next_scene(app->scene_manager, app_scene_warning_log_sender);
+            return;
         }
-        break;
+    }
 
-    default:
+    if(index == 1 || index > 3) {
         scene_manager_set_scene_state(app->scene_manager, app_scene_input_data_option, index);
         scene_manager_next_scene(app->scene_manager, app_scene_input_data_option);
-        break;
     }
 }
 
@@ -498,7 +498,7 @@ void app_scene_input_data_on_enter(void* context) {
         byte_input_set_header_text(scene, "SET ID");
         byte_input_set_result_callback(scene, input_byte_sender_callback, NULL, app, can_id, 4);
     }
-    if(state < 0xff) {
+    if((state > 1) && (state < 0xff)) {
         state = state - 4;
 
         furi_string_reset(app->text);
