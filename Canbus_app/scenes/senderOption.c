@@ -17,9 +17,9 @@ static const char* timing_texts[] = {"ONCE", "PERIODIC", "REPEAT"};
 static const char* timing_multiply[] = {"x1", "x10", "x100", "x1000", "x10000", "x100000"};
 
 static uint8_t time = 1;
-static uint8_t multiply = 0;
+static uint8_t multiply = 3;
 
-static uint8_t quantity_to_repeat = 1;
+static uint8_t quantity_to_repeat = 10;
 static uint8_t multiply_quantity = 0;
 
 // Only solution I think for the text with
@@ -82,6 +82,11 @@ void callback_input_sender_options(void* context, uint32_t index) {
     }
 }
 
+void set_timing_menu_callback(VariableItem* item) {
+    timing = variable_item_get_current_value_index(item);
+    variable_item_set_current_value_text(item, timing_texts[timing]);
+}
+
 // To display the variable list
 void default_list_for_sender_menu(App* app) {
     VariableItem* item;
@@ -92,7 +97,8 @@ void default_list_for_sender_menu(App* app) {
     variable_item_set_current_value_index(item, 0);
 
     // Second Item [1]
-    item = variable_item_list_add(app->varList, "Timing", 0, NULL, app);
+    item = variable_item_list_add(app->varList, "Timing", 3, set_timing_menu_callback, app);
+    variable_item_set_current_value_index(item, timing);
     variable_item_set_current_value_text(item, timing_texts[timing]);
 
     // Third Item [2]
@@ -545,19 +551,19 @@ void draw_timer_to_send(App* app, double time) {
     widget_add_string_multiline_element(
         app->widget,
         64,
-        10,
+        20,
         AlignCenter,
         AlignCenter,
         FontSecondary,
         "Message will be\nsent in...");
 
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "%.3f s", time);
+    furi_string_cat_printf(app->text, "%.3f ms", time);
 
     widget_add_string_element(
         app->widget,
         64,
-        32,
+        40,
         AlignCenter,
         AlignCenter,
         FontPrimary,
@@ -568,17 +574,18 @@ void draw_timer_to_send(App* app, double time) {
 void draw_data_send(App* app, bool was_send_it, uint32_t count) {
     widget_reset(app->widget);
 
-    furi_string_reset(app->text);
+    UNUSED(was_send_it);
 
     if(was_send_it) {
         widget_add_string_element(
-            app->widget, 32, 20, AlignCenter, AlignCenter, FontPrimary, "Successfully");
+            app->widget, 64, 10, AlignCenter, AlignCenter, FontPrimary, "Successfully");
     } else {
         widget_add_string_element(
-            app->widget, 32, 20, AlignCenter, AlignCenter, FontPrimary, "Failure");
+            app->widget, 64, 10, AlignCenter, AlignCenter, FontPrimary, "Failure");
     }
 
-    furi_string_cat_printf(app->text, "%lx ", app->frame_to_send->canId);
+    furi_string_reset(app->text);
+    furi_string_cat_printf(app->text, "%lx\n", app->frame_to_send->canId);
 
     if(app->frame_to_send->req) {
         furi_string_cat_printf(app->text, "Request");
@@ -603,10 +610,10 @@ void draw_data_send(App* app, bool was_send_it, uint32_t count) {
         furi_string_cat_printf(app->text, "0%x ", app->frame_to_send->buffer[i]);
     }
 
-    widget_add_string_element(
+    widget_add_string_multiline_element(
         app->widget,
         64,
-        32,
+        30,
         AlignCenter,
         AlignCenter,
         FontSecondary,
@@ -618,7 +625,7 @@ void draw_data_send(App* app, bool was_send_it, uint32_t count) {
     widget_add_string_element(
         app->widget,
         64,
-        45,
+        50,
         AlignCenter,
         AlignCenter,
         FontSecondary,
@@ -632,10 +639,10 @@ void draw_data_send_repeat(App* app, bool was_send_it, uint32_t count, uint32_t 
 
     if(was_send_it) {
         widget_add_string_element(
-            app->widget, 32, 20, AlignCenter, AlignCenter, FontPrimary, "Successfully");
+            app->widget, 64, 20, AlignCenter, AlignCenter, FontPrimary, "Successfully");
     } else {
         widget_add_string_element(
-            app->widget, 32, 20, AlignCenter, AlignCenter, FontPrimary, "Failure");
+            app->widget, 64, 20, AlignCenter, AlignCenter, FontPrimary, "Failure");
     }
 
     furi_string_cat_printf(app->text, "%lx ", app->frame_to_send->canId);
@@ -759,10 +766,22 @@ int32_t thread_to_send_once(void* context) {
 
     if(!debug) draw_device_no_connected(app);
 
-    draw_timer_to_send(app, 0.001);
+    uint32_t timer_send = time * (pow(10, multiply));
+
+    uint32_t last_time = furi_get_tick();
+
+    uint32_t timer = 0;
 
     while(debug && furi_hal_gpio_read(&gpio_button_back)) {
-        furi_delay_ms(1);
+        timer = timer_send - (furi_get_tick() - last_time);
+
+        if(timer_send < (furi_get_tick() - last_time)) {
+            draw_data_send(app, (send_can_frame(mcp_can, app->frame_to_send) == ERROR_OK), 1);
+            break;
+        } else
+            furi_delay_ms(1);
+
+        draw_timer_to_send(app, (double)timer / 1000);
     }
 
     free_mcp2515(mcp_can);
