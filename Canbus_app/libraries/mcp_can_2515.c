@@ -267,11 +267,14 @@ void set_registers_init(FuriHalSpiBusHandle* spi) {
 
     set_register(spi, MCP_TXRTSCTRL, 0x00);
 
+    set_register(spi, MCP_RXB0CTRL, MCP_RXB_BUKT_MASK);
+    set_register(spi, MCP_RXB1CTRL, 0);
+
     // Part added
-    modify_register(
+    /*modify_register(
         spi, MCP_RXB0CTRL, MCP_RXB_RX_MASK | MCP_RXB_BUKT_MASK, MCP_RXB_RX_ANY | MCP_RXB_BUKT_MASK);
 
-    modify_register(spi, MCP_RXB1CTRL, MCP_RXB_RX_MASK, MCP_RXB_RX_ANY);
+    modify_register(spi, MCP_RXB1CTRL, MCP_RXB_RX_MASK, MCP_RXB_RX_ANY);*/
 }
 
 // This function Works to set the Clock and Bitrate of the MCP2515
@@ -483,7 +486,6 @@ ERROR_CAN read_can_message(MCP2515* mcp_can, CANFRAME* frame) {
     if(status & MCP_RX0IF) {
         read_frame(spi, frame, INSTRUCTION_READ_RX0);
         modify_register(spi, MCP_CANINTF, MCP_RX0IF, 0);
-
     } else if(status & MCP_RX1IF) {
         read_frame(spi, frame, INSTRUCTION_READ_RX1);
         modify_register(spi, MCP_CANINTF, MCP_RX1IF, 0);
@@ -524,9 +526,11 @@ ERROR_CAN check_receive(MCP2515* mcp_can) {
     uint8_t status = read_rx_tx_status(spi);
 
     if(status & MCP_RX0IF) {
+        log_info("Here RX0");
         return ERROR_OK;
     }
     if(status & MCP_RX1IF) {
+        log_info("Here RX1");
         return ERROR_OK;
     }
 

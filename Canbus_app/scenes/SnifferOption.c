@@ -1,6 +1,7 @@
 #include "../app_user.h"
 
 bool condition = true;
+bool wait_to_be_set = false;
 
 // Function to save logs
 char* sequential_file_resolve_path(
@@ -120,6 +121,13 @@ static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
     furi_string_free(text_file);
 }
 
+// Thread to sniff
+static int32_t worker_sniffing(void* context);
+
+/**
+ * Scene to choose the id to sniff
+ */
+
 // Callback for event
 void sniffing_callback(void* context, uint32_t index) {
     App* app = context;
@@ -127,32 +135,6 @@ void sniffing_callback(void* context, uint32_t index) {
     scene_manager_handle_custom_event(app->scene_manager, EntryEvent);
 }
 
-// Draw the text for the sniffing
-void draw_box_text(App* app) {
-    furi_string_reset(app->text);
-
-    furi_string_cat_printf(
-        app->text,
-        "ADDR: %lx DLC: %u \n",
-        app->frameArray[app->sniffer_index].canId,
-        app->frameArray[app->sniffer_index].data_lenght);
-
-    for(uint8_t i = 0; i < (app->frameArray[app->sniffer_index].data_lenght); i++) {
-        furi_string_cat_printf(
-            app->text, "[%u]:  %x ", i, app->frameArray[app->sniffer_index].buffer[i]);
-    }
-
-    furi_string_cat_printf(app->text, "\ntime: %li ms", app->times[app->sniffer_index]);
-    text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
-    text_box_set_focus(app->textBox, TextBoxFocusEnd);
-}
-
-// Thread to sniff
-static int32_t worker_sniffing(void* context);
-
-/**
- * Scene to choose the id to sniff
- */
 // Scene on enter
 void app_scene_sniffing_on_enter(void* context) {
     App* app = context;
@@ -183,6 +165,7 @@ bool app_scene_sniffing_on_event(void* context, SceneManagerEvent event) {
         switch(event.event) {
         case EntryEvent:
             condition = false;
+            wait_to_be_set = true;
             scene_manager_next_scene(app->scene_manager, app_scene_box_sniffing);
             consumed = true;
             break;
@@ -216,9 +199,57 @@ void app_scene_sniffing_on_exit(void* context) {
  * Scene for show the sniffing
  */
 
+// Function to set the mask and filter for a single id
+void set_filter_sniffing(MCP2515* CAN, uint32_t id) {
+    uint32_t mask = 0x7FF;
+
+    if(id > mask) {
+        mask = 0x1FFFFFFF;
+    }
+
+    init_mask(CAN, 0, mask);
+    init_mask(CAN, 1, mask);
+
+    init_filter(CAN, 0, id);
+    init_filter(CAN, 1, id);
+    init_filter(CAN, 2, id);
+    init_filter(CAN, 3, id);
+    init_filter(CAN, 4, id);
+    init_filter(CAN, 5, id);
+
+    log_info("Is set");
+    log_info("Id to sniff: %lx", id);
+}
+
+// Draw the text for the sniffing
+void draw_box_text(App* app) {
+    furi_string_reset(app->text);
+
+    furi_string_cat_printf(
+        app->text,
+        "ADDR: %lx DLC: %u \n",
+        app->frameArray[app->sniffer_index].canId,
+        app->frameArray[app->sniffer_index].data_lenght);
+
+    for(uint8_t i = 0; i < (app->frameArray[app->sniffer_index].data_lenght); i++) {
+        furi_string_cat_printf(
+            app->text, "[%u]:  %x ", i, app->frameArray[app->sniffer_index].buffer[i]);
+    }
+
+    furi_string_cat_printf(app->text, "\ntime: %li ms", app->times[app->sniffer_index]);
+    text_box_set_text(app->textBox, furi_string_get_cstr(app->text));
+    text_box_set_focus(app->textBox, TextBoxFocusEnd);
+}
+
 // Scene on enter
 void app_scene_box_sniffing_on_enter(void* context) {
     App* app = context;
+
+    if(wait_to_be_set) {
+        set_filter_sniffing(app->mcp_can, app->frameArray[app->sniffer_index].canId);
+        furi_delay_ms(100);
+        wait_to_be_set = false;
+    }
 
     text_box_set_font(app->textBox, TextBoxFontText);
 
@@ -265,15 +296,23 @@ static int32_t worker_sniffing(void* context) {
     mcp_can->mode = MCP_LISTENONLY;
     ERROR_CAN debugStatus = mcp2515_init(mcp_can);
 
+    memset(app->frameArray, 0, sizeof(CANFRAME) * 100);
+
     if(debugStatus != ERROR_OK) {
         run = false;
         view_dispatcher_send_custom_event(app->view_dispatcher, DEVICE_NO_CONNECTED);
     }
 
-    while(run) {
-        bool new = true;
+    bool new = true;
 
-        if(read_can_message(mcp_can, &frame) == ERROR_OK) {
+    while(run) {
+        new = true;
+
+        while(!condition && wait_to_be_set)
+            furi_delay_ms(1);
+
+        if(check_receive(mcp_can) == ERROR_OK) {
+            read_can_message(mcp_can, &frame);
             current_time = furi_get_tick();
 
             if(first_address) {
@@ -359,12 +398,11 @@ static int32_t worker_sniffing(void* context) {
             }
 
             app->num_of_devices = num_of_devices;
+        } else {
+            furi_delay_ms(1);
         }
 
-        if(condition && !furi_hal_gpio_read(&gpio_button_back)) {
-            break;
-        }
-        furi_delay_ms(1);
+        if(condition && !furi_hal_gpio_read(&gpio_button_back)) break;
     }
 
     if((app->save_logs == SaveAll) && (app->log_file_ready)) {

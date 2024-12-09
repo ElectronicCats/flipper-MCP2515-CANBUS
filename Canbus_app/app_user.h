@@ -56,6 +56,7 @@ typedef struct {
     uint32_t current_time[100];
 
     FuriThread* thread;
+    FuriMutex* mutex;
     SceneManager* scene_manager;
     ViewDispatcher* view_dispatcher;
     Widget* widget;
