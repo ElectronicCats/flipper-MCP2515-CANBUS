@@ -191,9 +191,59 @@ bool set_loop_back_mode(MCP2515* mcp_can) {
     return ret;
 }
 
+// To write the mask-filters for the chip
+void write_mf(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t ext, uint32_t id) {
+    uint16_t canId = (uint16_t)(id & 0x0FFFF);
+    uint8_t bufData[4];
+
+    if(ext) {
+        bufData[MCP_EID0] = (uint8_t)(canId & 0xFF);
+        bufData[MCP_EID8] = (uint8_t)(canId >> 8);
+        canId = (uint16_t)(id >> 16);
+        bufData[MCP_SIDL] = (uint8_t)(canId & 0x03);
+        bufData[MCP_SIDL] += (uint8_t)((canId & 0x1C) << 3);
+        bufData[MCP_SIDL] |= MCP_TXB_EXIDE_M;
+        bufData[MCP_SIDH] = (uint8_t)(canId >> 5);
+    } else {
+        bufData[MCP_SIDL] = (uint8_t)((canId & 0x07) << 5);
+        bufData[MCP_SIDH] = (uint8_t)(canId >> 3);
+        bufData[MCP_EID0] = 0;
+        bufData[MCP_EID8] = 0;
+    }
+
+    uint8_t instruction[] = {INSTRUCTION_WRITE, address};
+
+    furi_hal_spi_acquire(spi);
+    furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
+
+    furi_hal_spi_bus_tx(spi, bufData, 4, TIMEOUT_SPI);
+    furi_hal_spi_release(spi);
+}
+
 // Init can buffers
 void init_can_buffer(FuriHalSpiBusHandle* spi) {
     uint8_t a1 = 0, a2 = 0, a3 = 0;
+
+    uint8_t std = 0;
+    uint8_t ext = 1;
+
+    uint32_t ulMask = 0x00, ulFilt = 0x00;
+
+    write_mf(spi, MCP_RXM0SIDH, ext, ulMask);
+
+    write_mf(spi, MCP_RXM1SIDH, ext, ulMask);
+
+    write_mf(spi, MCP_RXF0SIDH, ext, ulFilt);
+
+    write_mf(spi, MCP_RXF1SIDH, std, ulFilt);
+
+    write_mf(spi, MCP_RXF2SIDH, ext, ulFilt);
+
+    write_mf(spi, MCP_RXF3SIDH, std, ulFilt);
+
+    write_mf(spi, MCP_RXF4SIDH, ext, ulFilt);
+
+    write_mf(spi, MCP_RXF5SIDH, std, ulFilt);
 
     a1 = MCP_TXB0CTRL;
     a2 = MCP_TXB1CTRL;
@@ -207,9 +257,6 @@ void init_can_buffer(FuriHalSpiBusHandle* spi) {
         a2++;
         a3++;
     }
-
-    set_register(spi, MCP_RXB0CTRL, 0);
-    set_register(spi, MCP_RXB1CTRL, 0);
 }
 
 // This function works to set Registers to initialize the MCP2515
@@ -219,6 +266,12 @@ void set_registers_init(FuriHalSpiBusHandle* spi) {
     set_register(spi, MCP_BFPCTRL, MCP_BxBFS_MASK | MCP_BxBFE_MASK);
 
     set_register(spi, MCP_TXRTSCTRL, 0x00);
+
+    // Part added
+    modify_register(
+        spi, MCP_RXB0CTRL, MCP_RXB_RX_MASK | MCP_RXB_BUKT_MASK, MCP_RXB_RX_ANY | MCP_RXB_BUKT_MASK);
+
+    modify_register(spi, MCP_RXB1CTRL, MCP_RXB_RX_MASK, MCP_RXB_RX_ANY);
 }
 
 // This function Works to set the Clock and Bitrate of the MCP2515
@@ -304,35 +357,6 @@ void mcp_set_bitrate(FuriHalSpiBusHandle* spi, MCP_BITRATE bitrate, MCP_CLOCK cl
     set_register(spi, MCP_CNF1, cfg1);
     set_register(spi, MCP_CNF2, cfg2);
     set_register(spi, MCP_CNF3, cfg3);
-}
-
-// To write the mask-filters for the chip
-void write_mf(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t ext, uint32_t id) {
-    uint16_t canId = (uint16_t)(id & 0x0FFFF);
-    uint8_t bufData[4];
-
-    if(ext) {
-        bufData[MCP_EID0] = (uint8_t)(canId & 0xFF);
-        bufData[MCP_EID8] = (uint8_t)(canId >> 8);
-        canId = (uint16_t)(id >> 16);
-        bufData[MCP_SIDL] = (uint8_t)(canId & 0x03);
-        bufData[MCP_SIDL] += (uint8_t)((canId & 0x1C) << 3);
-        bufData[MCP_SIDL] |= MCP_TXB_EXIDE_M;
-        bufData[MCP_SIDH] = (uint8_t)(canId >> 5);
-    } else {
-        bufData[MCP_SIDL] = (uint8_t)((canId & 0x07) << 5);
-        bufData[MCP_SIDH] = (uint8_t)(canId >> 3);
-        bufData[MCP_EID0] = 0;
-        bufData[MCP_EID8] = 0;
-    }
-
-    uint8_t instruction[] = {INSTRUCTION_WRITE, address};
-
-    furi_hal_spi_acquire(spi);
-    furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
-
-    furi_hal_spi_bus_tx(spi, bufData, 4, TIMEOUT_SPI);
-    furi_hal_spi_release(spi);
 }
 
 // To set a Mask
@@ -677,6 +701,8 @@ ERROR_CAN mcp2515_start(MCP2515* mcp_can) {
     bool ret = true;
 
     mcp_reset(mcp_can->spi);
+
+    set_new_mode(mcp_can, MODE_CONFIG);
 
     mcp_set_bitrate(mcp_can->spi, mcp_can->bitRate, mcp_can->clck);
 
