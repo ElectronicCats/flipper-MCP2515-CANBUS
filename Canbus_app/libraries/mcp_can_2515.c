@@ -184,6 +184,14 @@ bool set_sleep_mode(MCP2515* mcp_can) {
     return ret;
 }
 
+// To set Loop Back Mode
+bool set_loop_back_mode(MCP2515* mcp_can) {
+    bool ret = true;
+    ret = set_new_mode(mcp_can, MCP_LOOPBACK);
+    return ret;
+}
+
+// Init can buffers
 void init_can_buffer(FuriHalSpiBusHandle* spi) {
     uint8_t a1 = 0, a2 = 0, a3 = 0;
 
