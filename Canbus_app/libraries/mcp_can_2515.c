@@ -481,7 +481,9 @@ ERROR_CAN read_can_message(MCP2515* mcp_can, CANFRAME* frame) {
     ERROR_CAN ret = ERROR_OK;
     FuriHalSpiBusHandle* spi = mcp_can->spi;
 
-    uint8_t status = read_rx_tx_status(spi);
+    uint8_t status = 0;
+
+    mcp_get_status(spi, &status);
 
     if(status & MCP_RX0IF) {
         read_frame(spi, frame, INSTRUCTION_READ_RX0);
@@ -526,11 +528,9 @@ ERROR_CAN check_receive(MCP2515* mcp_can) {
     uint8_t status = read_rx_tx_status(spi);
 
     if(status & MCP_RX0IF) {
-        log_info("Here RX0");
         return ERROR_OK;
     }
     if(status & MCP_RX1IF) {
-        log_info("Here RX1");
         return ERROR_OK;
     }
 

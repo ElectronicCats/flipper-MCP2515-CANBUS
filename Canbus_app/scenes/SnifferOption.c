@@ -221,6 +221,18 @@ void set_filter_sniffing(MCP2515* CAN, uint32_t id) {
     log_info("Id to sniff: %lx", id);
 }
 
+void restart_filtering(MCP2515* CAN) {
+    init_mask(CAN, 0, 0);
+    init_mask(CAN, 1, 0);
+
+    init_filter(CAN, 0, 0);
+    init_filter(CAN, 1, 0);
+    init_filter(CAN, 2, 0);
+    init_filter(CAN, 3, 0);
+    init_filter(CAN, 4, 0);
+    init_filter(CAN, 5, 0);
+}
+
 // Draw the text for the sniffing
 void draw_box_text(App* app) {
     furi_string_reset(app->text);
@@ -273,6 +285,14 @@ bool app_scene_box_sniffing_on_event(void* context, SceneManagerEvent event) {
 void app_scene_box_sniffing_on_exit(void* context) {
     App* app = context;
     close_file_on_data_log(app);
+
+    wait_to_be_set = true;
+
+    restart_filtering(app->mcp_can);
+    furi_delay_ms(100);
+
+    wait_to_be_set = false;
+
     furi_string_reset(app->text);
     text_box_reset(app->textBox);
 }
