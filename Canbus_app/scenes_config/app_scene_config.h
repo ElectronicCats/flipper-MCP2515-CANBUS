@@ -6,6 +6,11 @@ ADD_SCENE(app, menu, main_menu)
 ADD_SCENE(app, sniffing, sniffing_option)
 ADD_SCENE(app, box_sniffing, box_sniffing)
 ADD_SCENE(app, device_no_connected, device_no_connected)
+
+// --------------------------------------------------------------
+ADD_SCENE(app, speed_detector, speed_detector_option)
+// --------------------------------------------------------------
+
 ADD_SCENE(app, sender, sender_option)
 ADD_SCENE(app, set_timing, set_timing_option)
 ADD_SCENE(app, set_data_sender, set_data_sender_option)

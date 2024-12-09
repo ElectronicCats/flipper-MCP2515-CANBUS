@@ -100,6 +100,7 @@ typedef struct {
 // This is for the menu Options
 typedef enum {
     SniffingTestOption,
+    SpeedDetectorOption,
     SenderOption,
     ObdiiOption,
     UDSOption,
@@ -112,6 +113,7 @@ typedef enum {
 // These are the events on the main menu
 typedef enum {
     SniffingOptionEvent,
+    SpeedDetectorEvent,
     SenderOptionEvent,
     SettingsOptionEvent,
     ObdiiOptionEvent,
