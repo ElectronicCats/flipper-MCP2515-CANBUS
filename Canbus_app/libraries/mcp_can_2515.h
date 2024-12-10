@@ -386,6 +386,8 @@ ERROR_CAN check_receive(MCP2515* mcp_can);
 ERROR_CAN read_can_message(MCP2515* mcp_can,
                            CANFRAME* frame); // Read a CAN BUS message
 
+bool detect_baudrate(MCP2515* mcp_can, MCP_BITRATE bitrate);
+
 ERROR_CAN send_can_frame(MCP2515* mcp_can,
                          CANFRAME* frame); // Send a CANBUS Frame
 

@@ -5,9 +5,8 @@ static bool read_register(FuriHalSpiBusHandle* spi, uint8_t address, uint8_t* da
     bool ret = true;
     uint8_t instruction[] = {INSTRUCTION_READ, address};
     furi_hal_spi_acquire(spi);
-    ret =
-        (furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI) &&
-         furi_hal_spi_bus_rx(spi, data, sizeof(data), TIMEOUT_SPI));
+    furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
+    furi_hal_spi_bus_rx(spi, data, sizeof(data), TIMEOUT_SPI);
 
     furi_hal_spi_release(spi);
     return ret;
@@ -680,6 +679,43 @@ ERROR_CAN send_can_frame(MCP2515* mcp_can, CANFRAME* frame) {
     if(free_buffer == 0xFF) return ERROR_ALLTXBUSY;
 
     return send_can_message(spi, frame, free_buffer);
+}
+
+// Function to detect the baudrate
+bool detect_baudrate(MCP2515* mcp_can, MCP_BITRATE bitrate) {
+    FuriHalSpiBusHandle* spi = mcp_can->spi;
+    bool ret = true;
+
+    set_config_mode(mcp_can);
+
+    mcp_set_bitrate(spi, bitrate, mcp_can->clck);
+
+    set_listen_only_mode(mcp_can);
+
+    uint8_t data_canintf = 0;
+    uint8_t data_caninte = 0;
+
+    uint8_t instruction[] = {INSTRUCTION_READ, MCP_CANINTF};
+    furi_hal_spi_acquire(spi);
+    furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
+    furi_hal_spi_bus_rx(spi, &data_canintf, 1, TIMEOUT_SPI);
+    furi_hal_spi_release(spi);
+
+    instruction[1] = MCP_CANINTE;
+    furi_hal_spi_acquire(spi);
+    furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
+    furi_hal_spi_bus_rx(spi, &data_caninte, 1, TIMEOUT_SPI);
+    furi_hal_spi_release(spi);
+
+    set_register(spi, MCP_CANINTF, 0);
+
+    // data_canintf &= 0x80;
+
+    log_info("CANTINTF: %x", data_canintf);
+    log_info("CANTINTE: %x", data_caninte);
+
+    // if(data_canintf == 0x80) ret = false;
+    return ret;
 }
 
 // This function works to alloc the struct
