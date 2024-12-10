@@ -119,7 +119,7 @@ void app_scene_menu_on_enter(void* context) {
         app->submenu, "Sniffing", SniffingTestOption, basic_scenes_menu_callback, app);
 
     submenu_add_item(
-        app->submenu, "SpeedDetector", SpeedDetectorOption, basic_scenes_menu_callback, app);
+        app->submenu, "Speed Detector", SpeedDetectorOption, basic_scenes_menu_callback, app);
 
     submenu_add_item(app->submenu, "Sender", SenderOption, basic_scenes_menu_callback, app);
 

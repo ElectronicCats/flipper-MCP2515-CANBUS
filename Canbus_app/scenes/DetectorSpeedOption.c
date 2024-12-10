@@ -99,7 +99,11 @@ static int32_t thread_to_detect_speed(void* context) {
 
     bool debug = (mcp2515_init(mcp_can) == ERROR_OK) ? true : false;
 
-    if(!debug) draw_device_no_connected(app);
+    if(!debug)
+        draw_device_no_connected(app);
+
+    else
+        draw_detecting_speed(app);
 
     furi_delay_ms(100);
 
@@ -113,8 +117,6 @@ static int32_t thread_to_detect_speed(void* context) {
     bool was_break = false;
 
     ERROR_CAN response = ERROR_NOMSG;
-
-    draw_detecting_speed(app);
 
     while(debug) {
         response = is_this_bitrate(mcp_can, bitrates[bitrate_selector]);
