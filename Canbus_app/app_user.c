@@ -121,6 +121,8 @@ static void app_free(App* app) {
     free(app->log_file_path);
     free(app->frameArray);
 
+    free_mcp2515(app->mcp_can);
+
     free(app);
 }
 

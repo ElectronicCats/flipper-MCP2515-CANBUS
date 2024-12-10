@@ -739,6 +739,12 @@ void deinit_mcp2515(MCP2515* mcp_can) {
     furi_hal_spi_bus_handle_deinit(mcp_can->spi);
 }
 
+// free instance
+void free_mcp2515(MCP2515* mcp_can) {
+    free(mcp_can->spi);
+    free(mcp_can);
+}
+
 // This function starts the SPI communication and set the MCP2515 device
 ERROR_CAN mcp2515_start(MCP2515* mcp_can) {
     furi_hal_spi_bus_handle_init(mcp_can->spi);
