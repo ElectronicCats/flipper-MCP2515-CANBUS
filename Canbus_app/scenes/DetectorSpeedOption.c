@@ -16,7 +16,9 @@ MCP_BITRATE bitrates[] = {
     MCP_1000KBPS,
 };
 
-uint32_t time = 0;
+static uint32_t time = 0;
+static const uint32_t iteration = 20;
+static const uint32_t time_to_wait = 10; // seconds
 
 // Thread to work with the speed detector
 static int32_t thread_to_detect_speed(void* context);
@@ -76,7 +78,7 @@ void draw_speed_detected(App* app, const char* bitrate) {
     widget_reset(widget);
 
     furi_string_reset(app->text);
-    furi_string_cat_printf(app->text, "Canbsu Speed \nDetected\n%s", bitrate);
+    furi_string_cat_printf(app->text, "Canbus Speed \nDetected\n%s", bitrate);
 
     widget_add_string_multiline_element(
         widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, furi_string_get_cstr(app->text));
@@ -127,11 +129,11 @@ static int32_t thread_to_detect_speed(void* context) {
             counter = 0;
         }
 
-        if(counter > 5) break;
+        if(counter > iteration) break;
 
         if(bitrate_selector > 3) break;
 
-        if(time > 10) break;
+        if(time > time_to_wait) break;
 
         if(!furi_hal_gpio_read(&gpio_button_back)) {
             was_break = true;

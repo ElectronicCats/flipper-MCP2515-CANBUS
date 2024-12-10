@@ -714,9 +714,9 @@ ERROR_CAN is_this_bitrate(MCP2515* mcp_can, MCP_BITRATE bitrate) {
     furi_hal_spi_bus_rx(spi, &data_canintf, 1, TIMEOUT_SPI);
     furi_hal_spi_release(spi);
 
-    data_canintf &= 0x83;
+    data_canintf &= 0x80;
 
-    if(data_canintf == 0x83) ret = ERROR_FAIL;
+    if(data_canintf == 0x80) ret = ERROR_FAIL;
 
     set_register(spi, MCP_CANINTF, 0);
 
