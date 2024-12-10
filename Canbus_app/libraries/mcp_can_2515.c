@@ -733,8 +733,8 @@ MCP2515* mcp_alloc(MCP_MODE mode, MCP_CLOCK clck, MCP_BITRATE bitrate) {
     return mcp_can;
 }
 
-// To free
-void free_mcp2515(MCP2515* mcp_can) {
+// To deinit
+void deinit_mcp2515(MCP2515* mcp_can) {
     mcp_reset(mcp_can->spi);
     furi_hal_spi_bus_handle_deinit(mcp_can->spi);
 }

@@ -428,6 +428,6 @@ static int32_t worker_sniffing(void* context) {
     }
 
     furi_string_free(text_label);
-    free_mcp2515(mcp_can);
+    deinit_mcp2515(mcp_can);
     return 0;
 }

@@ -42,7 +42,7 @@ bool uds_init(UDS_SERVICE* uds_instance) {
 
 // Free instance
 void free_uds(UDS_SERVICE* uds_instance) {
-    free_mcp2515(uds_instance->CAN);
+    deinit_mcp2515(uds_instance->CAN);
     free(uds_instance->CAN);
     free(uds_instance);
 }

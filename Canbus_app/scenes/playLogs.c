@@ -254,7 +254,7 @@ void play_data_frames_bk(void* context, int frame_interval) {
         while((furi_get_tick() - current_time) < delay) {
             if(!furi_hal_gpio_read(&(gpio_button_back))) {
                 storage_file_close(app->log_file);
-                free_mcp2515(app->mcp_can);
+                deinit_mcp2515(app->mcp_can);
                 return;
             }
         }
@@ -282,7 +282,7 @@ void play_data_frames_bk(void* context, int frame_interval) {
     draw_finished(app);
 
     storage_file_close(app->log_file);
-    free_mcp2515(app->mcp_can);
+    deinit_mcp2515(app->mcp_can);
 }
 
 // Thread work

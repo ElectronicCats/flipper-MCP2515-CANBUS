@@ -796,7 +796,7 @@ static int32_t thread_to_send_once(void* context) {
         draw_timer_to_send(app, (double)timer / 1000);
     }
 
-    free_mcp2515(mcp_can);
+    deinit_mcp2515(mcp_can);
 
     return 0;
 }
@@ -831,7 +831,7 @@ static int32_t thread_to_send_periodic(void* context) {
             furi_delay_ms(1);
     }
 
-    free_mcp2515(mcp_can);
+    deinit_mcp2515(mcp_can);
 
     return 0;
 }
@@ -874,7 +874,7 @@ static int32_t thread_to_send_repeat(void* context) {
         }
     }
 
-    free_mcp2515(mcp_can);
+    deinit_mcp2515(mcp_can);
 
     return 0;
 }

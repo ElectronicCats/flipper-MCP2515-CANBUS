@@ -356,7 +356,7 @@ MCP2515* mcp_alloc(MCP_MODE mode, MCP_CLOCK clck, MCP_BITRATE bitrate);
 ERROR_CAN mcp2515_init(MCP2515* mcp_can);
 
 // To close the MCP2515
-void free_mcp2515(MCP2515* mcp_can);
+void deinit_mcp2515(MCP2515* mcp_can);
 
 // This is to get the status
 bool mcp_get_status(FuriHalSpiBusHandle* spi, uint8_t* data);

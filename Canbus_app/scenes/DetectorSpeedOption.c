@@ -166,7 +166,7 @@ static int32_t thread_to_detect_speed(void* context) {
     furi_timer_stop(timer);
     furi_timer_free(timer);
 
-    free_mcp2515(mcp_can);
+    deinit_mcp2515(mcp_can);
 
     return 0;
 }

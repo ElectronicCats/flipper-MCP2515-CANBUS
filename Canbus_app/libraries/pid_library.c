@@ -454,7 +454,7 @@ bool get_ECU_name(OBDII* obdii, FuriString* ecu_name) {
 
 // It works to free
 void pid_deinit(OBDII* obdii) {
-    free_mcp2515(obdii->CAN);
+    deinit_mcp2515(obdii->CAN);
     free(obdii->codes);
 }
 
