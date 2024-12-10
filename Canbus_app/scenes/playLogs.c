@@ -300,8 +300,6 @@ void draw_list_costum(App* app);
 void callback_input_player_options(void* context, uint32_t index) {
     App* app = context;
 
-    UNUSED(app);
-
     switch(index) {
     case 0:
         scene_manager_next_scene(app->scene_manager, app_scene_play_logs_widget);
@@ -498,7 +496,6 @@ bool app_scene_file_browser_on_event(void* context, SceneManagerEvent event) {
 // File browser on exit
 void app_scene_file_browser_on_exit(void* context) {
     App* app = context;
-    UNUSED(app);
     file_browser_stop(app->file_browser);
 }
 

@@ -216,9 +216,6 @@ void set_filter_sniffing(MCP2515* CAN, uint32_t id) {
     init_filter(CAN, 3, id);
     init_filter(CAN, 4, id);
     init_filter(CAN, 5, id);
-
-    log_info("Is set");
-    log_info("Id to sniff: %lx", id);
 }
 
 void restart_filtering(MCP2515* CAN) {
