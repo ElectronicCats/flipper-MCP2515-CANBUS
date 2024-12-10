@@ -4,6 +4,19 @@
 // enter at the Scene
 static uint8_t menu_selector = 0;
 
+// Function to display init
+void draw_start(App* app) {
+    widget_reset(app->widget);
+
+    widget_add_icon_element(app->widget, 40, 1, &I_EC48x26);
+    widget_add_string_element(
+        app->widget, 64, 40, AlignCenter, AlignCenter, FontPrimary, "CANBUS APP");
+    widget_add_string_element(
+        app->widget, 64, 55, AlignCenter, AlignCenter, FontSecondary, "Electronic Cats");
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+}
+
 // This is to open the files
 bool OpenLogFile(App* app) {
     // browse for files
@@ -97,16 +110,7 @@ void app_scene_menu_on_enter(void* context) {
     uint32_t state = scene_manager_get_scene_state(app->scene_manager, app_scene_main_menu);
 
     if(state == 0) {
-        widget_reset(app->widget);
-
-        widget_add_icon_element(app->widget, 40, 1, &I_EC48x26);
-        widget_add_string_element(
-            app->widget, 64, 40, AlignCenter, AlignCenter, FontPrimary, "ELECTRONIC CATS");
-        widget_add_string_element(
-            app->widget, 64, 50, AlignCenter, AlignCenter, FontSecondary, "Canbus App");
-
-        view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
-
+        draw_start(app);
         furi_delay_ms(START_TIME);
         scene_manager_set_scene_state(app->scene_manager, app_scene_main_menu, 1);
     }

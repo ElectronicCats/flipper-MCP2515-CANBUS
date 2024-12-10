@@ -23,6 +23,8 @@
 
 #include "canbus_app_icons.h"
 
+#define PROGRAM_VERSION "v1.1.4.0"
+
 #define PATHAPP    "apps_data/canbus"
 #define PATHAPPEXT EXT_PATH(PATHAPP)
 #define PATHLOGS   PATHAPPEXT "/logs"
@@ -34,7 +36,7 @@
 #define UDS_REQUEST_ID_DEFAULT  0x7e1
 #define UDS_RESPONSE_ID_DEFAULT 0x7e9
 
-#define START_TIME 1000
+#define START_TIME 1500
 
 typedef enum {
     WorkerflagStop = (1 << 0),
