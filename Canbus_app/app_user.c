@@ -71,8 +71,6 @@ static App* app_alloc() {
 
     app->mcp_can = mcp_alloc(MCP_NORMAL, MCP_16MHZ, MCP_500KBPS);
 
-    // app->frameArray = (CANFRAME*)malloc(100 * sizeof(CANFRAME));
-
     app->frameArray = (CANFRAME*)calloc(100, sizeof(CANFRAME));
 
     app->log_file_path = (char*)malloc(100 * sizeof(char));

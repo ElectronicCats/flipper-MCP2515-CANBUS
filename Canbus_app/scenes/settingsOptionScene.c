@@ -53,6 +53,8 @@ void app_scene_settings_on_enter(void* context) {
     App* app = context;
     VariableItem* item;
 
+    currentBitrate = app->mcp_can->bitRate;
+
     variable_item_list_reset(app->varList);
 
     // First Item

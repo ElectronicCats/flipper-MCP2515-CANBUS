@@ -46,23 +46,13 @@ void app_scene_speed_detector_on_exit(void* context) {
     widget_reset(app->widget);
 }
 
-/*
-bool get_real_bitrate(MCP2515* mcp_can, MCP_BITRATE bitrate) {
-    for(uint8_t j = 0; j < 10; j++) {
-        if(detect_baudrate(mcp_can, bitrate)) {
-            return true;
-        }
-
-        furi_delay_ms(1);
-    }
-}
-*/
-
+// Callback for the timer
 void timer_callback(void* context) {
     UNUSED(context);
     time++;
 }
 
+//Thread to detect the bitrate
 static int32_t thread_to_detect_speed(void* context) {
     App* app = context;
 
@@ -73,7 +63,7 @@ static int32_t thread_to_detect_speed(void* context) {
 
     if(!debug) draw_device_no_connected(app);
 
-    furi_delay_ms(500);
+    furi_delay_ms(100);
 
     FuriTimer* timer = furi_timer_alloc(timer_callback, FuriTimerTypePeriodic, app);
 
@@ -83,8 +73,6 @@ static int32_t thread_to_detect_speed(void* context) {
     uint32_t bitrate_selector = 0;
 
     ERROR_CAN response = ERROR_NOMSG;
-
-    UNUSED(response);
 
     while(furi_hal_gpio_read(&gpio_button_back) && debug) {
         response = is_this_bitrate(mcp_can, bitrates[bitrate_selector]);
@@ -117,6 +105,7 @@ static int32_t thread_to_detect_speed(void* context) {
 
         if(bitrate_selector <= 3) {
             log_info("The Bitrate is: %s", bitrates_names[bitrate_selector]);
+            mcp_can->bitRate = bitrates[bitrate_selector];
         }
     }
 
