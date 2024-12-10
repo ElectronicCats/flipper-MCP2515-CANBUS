@@ -30,7 +30,7 @@ static void draw_can_app_view(App* app) {
     widget_add_string_multiline_element(
         app->widget, 65, 20, AlignCenter, AlignCenter, FontPrimary, "CANBUS APP");
     widget_add_string_element(
-        app->widget, 65, 35, AlignCenter, AlignCenter, FontSecondary, "v1.1.3.1");
+        app->widget, 65, 35, AlignCenter, AlignCenter, FontSecondary, "v1.1.4.0");
 
     widget_add_button_element(app->widget, GuiButtonTypeRight, "Next", button_callback, app);
     widget_add_button_element(app->widget, GuiButtonTypeLeft, "Prev", button_callback, app);
