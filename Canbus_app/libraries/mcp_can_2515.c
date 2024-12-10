@@ -681,19 +681,8 @@ ERROR_CAN send_can_frame(MCP2515* mcp_can, CANFRAME* frame) {
     return send_can_message(spi, frame, free_buffer);
 }
 
-// Function to detect the baudrate
-bool detect_baudrate(MCP2515* mcp_can, MCP_BITRATE bitrate) {
-    FuriHalSpiBusHandle* spi = mcp_can->spi;
-    bool ret = true;
-
-    set_config_mode(mcp_can);
-
-    mcp_set_bitrate(spi, bitrate, mcp_can->clck);
-
-    set_listen_only_mode(mcp_can);
-
+uint8_t read_detection_baudrate(FuriHalSpiBusHandle* spi) {
     uint8_t data_canintf = 0;
-    uint8_t data_caninte = 0;
 
     uint8_t instruction[] = {INSTRUCTION_READ, MCP_CANINTF};
     furi_hal_spi_acquire(spi);
@@ -701,20 +690,36 @@ bool detect_baudrate(MCP2515* mcp_can, MCP_BITRATE bitrate) {
     furi_hal_spi_bus_rx(spi, &data_canintf, 1, TIMEOUT_SPI);
     furi_hal_spi_release(spi);
 
-    instruction[1] = MCP_CANINTE;
+    return (data_canintf & 0xf0);
+}
+
+// Function to detect the baudrate
+ERROR_CAN is_this_bitrate(MCP2515* mcp_can, MCP_BITRATE bitrate) {
+    FuriHalSpiBusHandle* spi = mcp_can->spi;
+    ERROR_CAN ret = ERROR_OK;
+
+    set_config_mode(mcp_can);
+
+    mcp_set_bitrate(spi, bitrate, mcp_can->clck);
+
+    set_listen_only_mode(mcp_can);
+
+    if(check_receive(mcp_can) == ERROR_NOMSG) return ERROR_NOMSG;
+
+    uint8_t data_canintf = 0;
+
+    uint8_t instruction[] = {INSTRUCTION_READ, MCP_CANINTF};
     furi_hal_spi_acquire(spi);
     furi_hal_spi_bus_tx(spi, instruction, sizeof(instruction), TIMEOUT_SPI);
-    furi_hal_spi_bus_rx(spi, &data_caninte, 1, TIMEOUT_SPI);
+    furi_hal_spi_bus_rx(spi, &data_canintf, 1, TIMEOUT_SPI);
     furi_hal_spi_release(spi);
+
+    data_canintf &= 0x83;
+
+    if(data_canintf == 0x83) ret = ERROR_FAIL;
 
     set_register(spi, MCP_CANINTF, 0);
 
-    // data_canintf &= 0x80;
-
-    log_info("CANTINTF: %x", data_canintf);
-    log_info("CANTINTE: %x", data_caninte);
-
-    // if(data_canintf == 0x80) ret = false;
     return ret;
 }
 

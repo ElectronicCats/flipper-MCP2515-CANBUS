@@ -9,6 +9,15 @@ const char* bitrates_names[] = {
     "1000KBPS",
 };
 
+MCP_BITRATE bitrates[] = {
+    MCP_125KBPS,
+    MCP_250KBPS,
+    MCP_500KBPS,
+    MCP_1000KBPS,
+};
+
+uint32_t time = 0;
+
 static int32_t thread_to_detect_speed(void* context);
 
 void app_scene_speed_detector_on_enter(void* context) {
@@ -49,6 +58,11 @@ bool get_real_bitrate(MCP2515* mcp_can, MCP_BITRATE bitrate) {
 }
 */
 
+void timer_callback(void* context) {
+    UNUSED(context);
+    time++;
+}
+
 static int32_t thread_to_detect_speed(void* context) {
     App* app = context;
 
@@ -59,42 +73,57 @@ static int32_t thread_to_detect_speed(void* context) {
 
     if(!debug) draw_device_no_connected(app);
 
-    uint8_t baud_detected = 0;
+    furi_delay_ms(500);
 
-    MCP_BITRATE bitrates[] = {
-        MCP_125KBPS,
-        MCP_250KBPS,
-        MCP_500KBPS,
-        MCP_1000KBPS,
-    };
+    FuriTimer* timer = furi_timer_alloc(timer_callback, FuriTimerTypePeriodic, app);
 
-    UNUSED(bitrates);
+    furi_timer_start(timer, 1000);
 
-    furi_delay_ms(100);
+    uint32_t counter = 0;
+    uint32_t bitrate_selector = 0;
 
-    // uint8_t count = 0;
+    ERROR_CAN response = ERROR_NOMSG;
 
-    uint32_t time = furi_get_tick();
+    UNUSED(response);
 
-    while(furi_hal_gpio_read(&gpio_button_back)) {
-        /*if(detect_baudrate(mcp_can, count)) {
-            log_info("The bitrate %s is %u", bitrates_names[count], count);
-        }*/
+    while(furi_hal_gpio_read(&gpio_button_back) && debug) {
+        response = is_this_bitrate(mcp_can, bitrates[bitrate_selector]);
 
-        if((furi_get_tick() - time) > 1000) {
-            log_info(
-                "Con bitrate de %s value of: %u ---------------------",
-                bitrates_names[mcp_can->bitRate],
-                mcp_can->bitRate);
-            detect_baudrate(mcp_can, mcp_can->bitRate);
-            // count++;
-            time = furi_get_tick();
+        if(response == ERROR_OK) {
+            counter++;
+            time = 0;
         }
 
-        // if(count > 3) count = 0;
+        if((counter > 0) && (response == ERROR_FAIL)) {
+            bitrate_selector++;
+            counter = 0;
+        }
+
+        if(counter > 5) break;
+
+        if(bitrate_selector > 3) break;
+
+        if(time > 10) break;
+
+        furi_delay_ms(1);
     }
 
-    log_info("BAUD DETECTED %u", baud_detected);
+    if(response == ERROR_NOMSG && debug) {
+        log_exception("Bitrate no detected");
+    } else {
+        if(bitrate_selector > 3) {
+            log_exception("No bitrate detected");
+        }
+
+        if(bitrate_selector <= 3) {
+            log_info("The Bitrate is: %s", bitrates_names[bitrate_selector]);
+        }
+    }
+
+    time = 0;
+
+    furi_timer_stop(timer);
+    furi_timer_free(timer);
 
     free_mcp2515(mcp_can);
 
