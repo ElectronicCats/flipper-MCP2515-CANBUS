@@ -73,8 +73,6 @@ static int32_t obdii_thread_dtc_on_work(void* context) {
 
     FuriString* text = app->text;
 
-    UNUSED(text);
-
     scanner.bitrate = app->mcp_can->bitRate;
 
     bool loop = false;

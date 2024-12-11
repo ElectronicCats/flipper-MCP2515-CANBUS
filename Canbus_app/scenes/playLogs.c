@@ -254,7 +254,7 @@ void play_data_frames_bk(void* context, int frame_interval) {
         while((furi_get_tick() - current_time) < delay) {
             if(!furi_hal_gpio_read(&(gpio_button_back))) {
                 storage_file_close(app->log_file);
-                free_mcp2515(app->mcp_can);
+                deinit_mcp2515(app->mcp_can);
                 return;
             }
         }
@@ -282,7 +282,7 @@ void play_data_frames_bk(void* context, int frame_interval) {
     draw_finished(app);
 
     storage_file_close(app->log_file);
-    free_mcp2515(app->mcp_can);
+    deinit_mcp2515(app->mcp_can);
 }
 
 // Thread work
@@ -299,8 +299,6 @@ void draw_list_costum(App* app);
 // Option callback using button OK
 void callback_input_player_options(void* context, uint32_t index) {
     App* app = context;
-
-    UNUSED(app);
 
     switch(index) {
     case 0:
@@ -498,7 +496,6 @@ bool app_scene_file_browser_on_event(void* context, SceneManagerEvent event) {
 // File browser on exit
 void app_scene_file_browser_on_exit(void* context) {
     App* app = context;
-    UNUSED(app);
     file_browser_stop(app->file_browser);
 }
 

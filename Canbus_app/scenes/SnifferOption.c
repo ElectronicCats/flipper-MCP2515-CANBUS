@@ -1,6 +1,7 @@
 #include "../app_user.h"
 
 bool condition = true;
+bool wait_to_be_set = false;
 
 // Function to save logs
 char* sequential_file_resolve_path(
@@ -27,6 +28,7 @@ char* sequential_file_resolve_path(
     return strdup(file_path);
 }
 
+// Function to resolve the paths to save logs
 char* sequential_file_resolve_path_address(
     Storage* storage,
     uint32_t address,
@@ -66,6 +68,7 @@ char* sequential_file_resolve_path_address(
     return strdup(file_path);
 }
 
+// Function to save logs
 void save_data_on_log(App* app) {
     strcpy(app->log_file_path, sequential_file_resolve_path(app->storage, PATHLOGS, "Log", "log"));
     if(app->log_file_path != NULL) {
@@ -79,6 +82,7 @@ void save_data_on_log(App* app) {
     }
 }
 
+// Save the logs by address
 void save_address_data_on_log(App* app) {
     uint32_t can_id = app->frameArray[app->sniffer_index].canId;
     strcpy(
@@ -95,6 +99,7 @@ void save_address_data_on_log(App* app) {
     }
 }
 
+// Fuction to close the files and stop saving
 void close_file_on_data_log(App* app) {
     app->log_file_ready = false;
     if(app->log_file && storage_file_is_open(app->log_file)) {
@@ -102,6 +107,7 @@ void close_file_on_data_log(App* app) {
     }
 }
 
+// Write the frames
 static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
     FuriString* text_file = furi_string_alloc();
 
@@ -115,13 +121,116 @@ static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
     furi_string_free(text_file);
 }
 
-// Call backs
+// Thread to sniff
+static int32_t worker_sniffing(void* context);
+
+/**
+ * Scene to choose the id to sniff
+ */
+
+// Callback for event
 void sniffing_callback(void* context, uint32_t index) {
     App* app = context;
     app->sniffer_index = index;
     scene_manager_handle_custom_event(app->scene_manager, EntryEvent);
 }
 
+// Scene on enter
+void app_scene_sniffing_on_enter(void* context) {
+    App* app = context;
+
+    if(condition) {
+        app->thread = furi_thread_alloc_ex("SniffingWork", 1024, worker_sniffing, app);
+        furi_thread_start(app->thread);
+        submenu_reset(app->submenu);
+        submenu_set_header(app->submenu, "CANBUS ADDRESS");
+    }
+
+    condition = true;
+
+    if(scene_manager_get_scene_state(app->scene_manager, app_scene_sniffing_option) == 1) {
+        scene_manager_previous_scene(app->scene_manager);
+        scene_manager_set_scene_state(app->scene_manager, app_scene_sniffing_option, 0);
+    }
+
+    view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
+}
+
+// Scene on event
+bool app_scene_sniffing_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    bool consumed = false;
+    switch(event.type) {
+    case SceneManagerEventTypeCustom:
+        switch(event.event) {
+        case EntryEvent:
+            condition = false;
+            wait_to_be_set = true;
+            scene_manager_next_scene(app->scene_manager, app_scene_box_sniffing);
+            consumed = true;
+            break;
+
+        case DEVICE_NO_CONNECTED:
+            scene_manager_set_scene_state(app->scene_manager, app_scene_sniffing_option, 1);
+            scene_manager_next_scene(app->scene_manager, app_scene_device_no_connected);
+            consumed = true;
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        break;
+    }
+    return consumed;
+}
+
+// Scene on exit
+void app_scene_sniffing_on_exit(void* context) {
+    App* app = context;
+    if(condition) {
+        furi_thread_join(app->thread);
+        furi_thread_free(app->thread);
+        submenu_reset(app->submenu);
+    }
+}
+
+/**
+ * Scene for show the sniffing
+ */
+
+// Function to set the mask and filter for a single id
+void set_filter_sniffing(MCP2515* CAN, uint32_t id) {
+    uint32_t mask = 0x7FF;
+
+    if(id > mask) {
+        mask = 0x1FFFFFFF;
+    }
+
+    init_mask(CAN, 0, mask);
+    init_mask(CAN, 1, mask);
+
+    init_filter(CAN, 0, id);
+    init_filter(CAN, 1, id);
+    init_filter(CAN, 2, id);
+    init_filter(CAN, 3, id);
+    init_filter(CAN, 4, id);
+    init_filter(CAN, 5, id);
+}
+
+void restart_filtering(MCP2515* CAN) {
+    init_mask(CAN, 0, 0);
+    init_mask(CAN, 1, 0);
+
+    init_filter(CAN, 0, 0);
+    init_filter(CAN, 1, 0);
+    init_filter(CAN, 2, 0);
+    init_filter(CAN, 3, 0);
+    init_filter(CAN, 4, 0);
+    init_filter(CAN, 5, 0);
+}
+
+// Draw the text for the sniffing
 void draw_box_text(App* app) {
     furi_string_reset(app->text);
 
@@ -141,6 +250,54 @@ void draw_box_text(App* app) {
     text_box_set_focus(app->textBox, TextBoxFocusEnd);
 }
 
+// Scene on enter
+void app_scene_box_sniffing_on_enter(void* context) {
+    App* app = context;
+
+    if(wait_to_be_set) {
+        set_filter_sniffing(app->mcp_can, app->frameArray[app->sniffer_index].canId);
+        furi_delay_ms(100);
+        wait_to_be_set = false;
+    }
+
+    text_box_set_font(app->textBox, TextBoxFontText);
+
+    if(app->save_logs == OnlyAddress) save_address_data_on_log(app);
+
+    text_box_reset(app->textBox);
+    draw_box_text(app);
+    view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
+}
+
+// Scene on event
+bool app_scene_box_sniffing_on_event(void* context, SceneManagerEvent event) {
+    App* app = context;
+    bool consumed = false;
+    UNUSED(app);
+    UNUSED(event);
+    return consumed;
+}
+
+// Scene on exit
+void app_scene_box_sniffing_on_exit(void* context) {
+    App* app = context;
+    close_file_on_data_log(app);
+
+    wait_to_be_set = true;
+
+    restart_filtering(app->mcp_can);
+    furi_delay_ms(100);
+
+    wait_to_be_set = false;
+
+    furi_string_reset(app->text);
+    text_box_reset(app->textBox);
+}
+
+/**
+ * Thread to sniff
+ */
+
 static int32_t worker_sniffing(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
@@ -156,15 +313,23 @@ static int32_t worker_sniffing(void* context) {
     mcp_can->mode = MCP_LISTENONLY;
     ERROR_CAN debugStatus = mcp2515_init(mcp_can);
 
+    memset(app->frameArray, 0, sizeof(CANFRAME) * 100);
+
     if(debugStatus != ERROR_OK) {
         run = false;
         view_dispatcher_send_custom_event(app->view_dispatcher, DEVICE_NO_CONNECTED);
     }
 
-    while(run) {
-        bool new = true;
+    bool new = true;
 
-        if(read_can_message(mcp_can, &frame) == ERROR_OK) {
+    while(run) {
+        new = true;
+
+        while(!condition && wait_to_be_set)
+            furi_delay_ms(1);
+
+        if(check_receive(mcp_can) == ERROR_OK) {
+            read_can_message(mcp_can, &frame);
             current_time = furi_get_tick();
 
             if(first_address) {
@@ -250,12 +415,11 @@ static int32_t worker_sniffing(void* context) {
             }
 
             app->num_of_devices = num_of_devices;
+        } else {
+            furi_delay_ms(1);
         }
 
-        if(condition && !furi_hal_gpio_read(&gpio_button_back)) {
-            break;
-        }
-        furi_delay_ms(1);
+        if(condition && !furi_hal_gpio_read(&gpio_button_back)) break;
     }
 
     if((app->save_logs == SaveAll) && (app->log_file_ready)) {
@@ -264,89 +428,6 @@ static int32_t worker_sniffing(void* context) {
     }
 
     furi_string_free(text_label);
-    free_mcp2515(mcp_can);
+    deinit_mcp2515(mcp_can);
     return 0;
-}
-
-void app_scene_sniffing_on_enter(void* context) {
-    App* app = context;
-
-    if(condition) {
-        app->thread = furi_thread_alloc_ex("SniffingWork", 1024, worker_sniffing, app);
-        furi_thread_start(app->thread);
-        submenu_reset(app->submenu);
-        submenu_set_header(app->submenu, "CANBUS ADDRESS");
-    }
-
-    condition = true;
-
-    if(scene_manager_get_scene_state(app->scene_manager, app_scene_sniffing_option) == 1) {
-        scene_manager_previous_scene(app->scene_manager);
-        scene_manager_set_scene_state(app->scene_manager, app_scene_sniffing_option, 0);
-    }
-
-    view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
-}
-
-bool app_scene_sniffing_on_event(void* context, SceneManagerEvent event) {
-    App* app = context;
-    bool consumed = false;
-    switch(event.type) {
-    case SceneManagerEventTypeCustom:
-        switch(event.event) {
-        case EntryEvent:
-            condition = false;
-            scene_manager_next_scene(app->scene_manager, app_scene_box_sniffing);
-            consumed = true;
-            break;
-
-        case DEVICE_NO_CONNECTED:
-            scene_manager_set_scene_state(app->scene_manager, app_scene_sniffing_option, 1);
-            scene_manager_next_scene(app->scene_manager, app_scene_device_no_connected);
-            consumed = true;
-            break;
-        default:
-            break;
-        }
-        break;
-    default:
-        break;
-    }
-    return consumed;
-}
-
-void app_scene_sniffing_on_exit(void* context) {
-    App* app = context;
-    if(condition) {
-        furi_thread_join(app->thread);
-        furi_thread_free(app->thread);
-        submenu_reset(app->submenu);
-    }
-}
-
-void app_scene_box_sniffing_on_enter(void* context) {
-    App* app = context;
-
-    text_box_set_font(app->textBox, TextBoxFontText);
-
-    if(app->save_logs == OnlyAddress) save_address_data_on_log(app);
-
-    text_box_reset(app->textBox);
-    draw_box_text(app);
-    view_dispatcher_switch_to_view(app->view_dispatcher, TextBoxView);
-}
-
-bool app_scene_box_sniffing_on_event(void* context, SceneManagerEvent event) {
-    App* app = context;
-    bool consumed = false;
-    UNUSED(app);
-    UNUSED(event);
-    return consumed;
-}
-
-void app_scene_box_sniffing_on_exit(void* context) {
-    App* app = context;
-    close_file_on_data_log(app);
-    furi_string_reset(app->text);
-    text_box_reset(app->textBox);
 }
