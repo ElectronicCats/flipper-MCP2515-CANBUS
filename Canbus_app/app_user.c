@@ -71,13 +71,16 @@ static App* app_alloc() {
 
     app->mcp_can = mcp_alloc(MCP_NORMAL, MCP_16MHZ, MCP_500KBPS);
 
-    app->frameArray = (CANFRAME*)malloc(100 * sizeof(CANFRAME));
+    app->frameArray = (CANFRAME*)calloc(100, sizeof(CANFRAME));
 
     app->log_file_path = (char*)malloc(100 * sizeof(char));
 
     app->frame_to_send = malloc(sizeof(CANFRAME));
 
     app->obdii.bitrate = app->mcp_can->bitRate;
+
+    app->uds_received_id = UDS_RESPONSE_ID_DEFAULT;
+    app->uds_send_id = UDS_REQUEST_ID_DEFAULT;
 
     makePaths(app);
 
@@ -117,6 +120,8 @@ static void app_free(App* app) {
 
     free(app->log_file_path);
     free(app->frameArray);
+
+    free_mcp2515(app->mcp_can);
 
     free(app);
 }

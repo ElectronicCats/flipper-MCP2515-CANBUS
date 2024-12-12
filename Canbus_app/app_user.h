@@ -19,8 +19,11 @@
 
 #include "libraries/mcp_can_2515.h"
 #include "libraries/pid_library.h"
+#include "libraries/uds_library.h"
 
 #include "canbus_app_icons.h"
+
+#define PROGRAM_VERSION "v1.1.4.0"
 
 #define PATHAPP    "apps_data/canbus"
 #define PATHAPPEXT EXT_PATH(PATHAPP)
@@ -29,6 +32,11 @@
 #define DEVICE_NO_CONNECTED (0xFF)
 
 #define MESSAGE_ERROR 0xF0
+
+#define UDS_REQUEST_ID_DEFAULT  0x7e1
+#define UDS_RESPONSE_ID_DEFAULT 0x7e9
+
+#define START_TIME 1500
 
 typedef enum {
     WorkerflagStop = (1 << 0),
@@ -50,6 +58,7 @@ typedef struct {
     uint32_t current_time[100];
 
     FuriThread* thread;
+    FuriMutex* mutex;
     SceneManager* scene_manager;
     ViewDispatcher* view_dispatcher;
     Widget* widget;
@@ -73,6 +82,9 @@ typedef struct {
     uint32_t sniffer_index;
     uint32_t sniffer_index_aux;
 
+    uint32_t uds_received_id;
+    uint32_t uds_send_id;
+
     uint8_t config_timing_index;
 
     uint8_t num_of_devices;
@@ -90,8 +102,10 @@ typedef struct {
 // This is for the menu Options
 typedef enum {
     SniffingTestOption,
+    SpeedDetectorOption,
     SenderOption,
     ObdiiOption,
+    UDSOption,
     ReadLOGOption,
     PlayLOGOption,
     SettingsOption,
@@ -101,9 +115,11 @@ typedef enum {
 // These are the events on the main menu
 typedef enum {
     SniffingOptionEvent,
+    SpeedDetectorEvent,
     SenderOptionEvent,
     SettingsOptionEvent,
     ObdiiOptionEvent,
+    UDSOptionEvent,
     ReadLOGOptionEvent,
     PlayLOGOptionEvent,
     AboutUsEvent,

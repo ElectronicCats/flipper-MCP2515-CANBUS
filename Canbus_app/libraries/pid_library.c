@@ -241,8 +241,6 @@ void separate_codes(CANFRAME* frames, uint16_t* save_codes, uint8_t length) {
 void get_dtc(uint16_t numerical_code, char* dtc_code) {
     char* first;
 
-    UNUSED(dtc_code);
-
     FuriString* text = furi_string_alloc();
 
     uint8_t identifier = numerical_code >> 12; // For the second
@@ -456,7 +454,7 @@ bool get_ECU_name(OBDII* obdii, FuriString* ecu_name) {
 
 // It works to free
 void pid_deinit(OBDII* obdii) {
-    free_mcp2515(obdii->CAN);
+    deinit_mcp2515(obdii->CAN);
     free(obdii->codes);
 }
 

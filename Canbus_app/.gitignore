@@ -1,4 +1,3 @@
-dist/*
 .vscode
 .clang-format
 .clangd
@@ -8,3 +7,6 @@ dist/*
 
 # Ignore the makefile
 Makefile
+
+#ignore folder
+/dist
