@@ -1,0 +1,17 @@
+# For details & more options, see documentation/AppManifests.md in firmware repo
+
+App(
+    appid="test_canbus",  # Must be unique
+    name="Testing CanBus",  # Displayed in menus
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="app_main",
+    stack_size=5 * 1024,
+    fap_category="Examples",
+    # Optional values
+    # fap_version="0.1",
+    fap_icon="test_canbus.png",  # 10x10 1-bit PNG
+    # fap_description="A simple app",
+    # fap_author="J. Doe",
+    # fap_weburl="https://github.com/user/test_canbus",
+    fap_icon_assets="images",  # Image assets to compile for this application
+)
