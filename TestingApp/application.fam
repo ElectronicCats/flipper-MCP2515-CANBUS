@@ -6,7 +6,7 @@ App(
     apptype=FlipperAppType.EXTERNAL,
     entry_point="app_main",
     stack_size=5 * 1024,
-    fap_category="Examples",
+    fap_category="ElectronicCats",
     # Optional values
     # fap_version="0.1",
     fap_icon="test_canbus.png",  # 10x10 1-bit PNG

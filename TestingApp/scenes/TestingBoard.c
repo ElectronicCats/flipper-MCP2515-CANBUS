@@ -58,6 +58,9 @@ void draw_start(Widget* widget, uint32_t node) {
         widget_add_string_element(widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "Nodo 1");
     if(node == 1)
         widget_add_string_element(widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "Nodo 2");
+    if(node == 2)
+        widget_add_string_element(
+            widget, 64, 32, AlignCenter, AlignCenter, FontPrimary, "AutoTest");
 
     widget_add_button_element(widget, GuiButtonTypeCenter, "Start", NULL, NULL);
 }
@@ -136,6 +139,11 @@ void function_node_one(App* app) {
     draw_start(widget, state);
 
     /**
+     * Estado Normal para empezar
+     */
+    app->mcp_can->mode = MCP_NORMAL;
+
+    /**
      * Esperando para comenzar
      */
     while(true) {
@@ -210,6 +218,91 @@ void function_node_two(App* app) {
     draw_start(widget, state);
 
     /**
+     * Estado Normal para empezar
+     */
+    app->mcp_can->mode = MCP_NORMAL;
+
+    /**
+     * Esperando para comenzar
+     */
+    while(true) {
+        if(furi_hal_gpio_read(&gpio_button_ok)) break;
+
+        if(!furi_hal_gpio_read(&gpio_button_back)) return;
+    }
+
+    /**
+     * Comienza la comunicacion con el MCP2515
+     */
+
+    if(mcp2515_init(app->mcp_can) != ERROR_OK) {
+        draw_no_connected(widget);
+        return;
+    }
+
+    /**
+     * Estado para hacer el envio de mensaje
+     */
+
+    draw_sending(widget);
+    uint32_t time_pass = furi_get_tick();
+    while(send_can_frame(app->mcp_can, &frame) != ERROR_OK) {
+        if((furi_get_tick() - time_pass) > time_waiting) {
+            draw_message_sent_fail(widget);
+            return;
+        }
+    }
+
+    draw_message_sent(widget);
+
+    /**
+     * Estado esperando
+     */
+
+    draw_waiting(widget);
+    time_pass = furi_get_tick();
+    while(read_can_message(app->mcp_can, &frame_to_received) != ERROR_OK) {
+        if((furi_get_tick() - time_pass) > time_waiting) {
+            draw_message_received_fail(widget);
+            return;
+        }
+    }
+
+    // comprobacion del mensaje
+    for(uint8_t i = 0; i < frame_to_received.data_lenght; i++) {
+        if(frame_to_received.buffer[i] != i) {
+            draw_message_received_fail(widget);
+            return;
+        }
+    }
+
+    draw_message_received(widget);
+
+    drawe_all_okay(widget);
+}
+
+void auto_test(App* app) {
+    CANFRAME frame;
+    CANFRAME frame_to_received;
+
+    Widget* widget = app->widget;
+
+    frame.canId = 0x100;
+
+    frame.data_lenght = 8;
+
+    for(uint8_t i = 0; i < 8; i++) {
+        frame.buffer[i] = i;
+    }
+
+    draw_start(widget, state);
+
+    /**
+     * Estado Normal para empezar
+     */
+    app->mcp_can->mode = MCP_LOOPBACK;
+
+    /**
      * Esperando para comenzar
      */
     while(true) {
@@ -278,6 +371,7 @@ int32_t testing_thread(void* context) {
     while(furi_hal_gpio_read(&gpio_button_back)) {
         if(state == 0) function_node_one(app);
         if(state == 1) function_node_two(app);
+        if(state == 2) auto_test(app);
     }
 
     return 0;

@@ -16,6 +16,7 @@ void app_scene_main_menu_on_enter(void* context) {
 
     submenu_add_item(app->submenu, "NODO 1", 0, main_menu_callback, app);
     submenu_add_item(app->submenu, "NODO 2", 1, main_menu_callback, app);
+    submenu_add_item(app->submenu, "AUTOTEST", 2, main_menu_callback, app);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuView);
 }
