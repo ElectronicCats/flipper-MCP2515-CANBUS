@@ -54,6 +54,13 @@ static App* app_alloc() {
     view_dispatcher_add_view(
         app->view_dispatcher, InputByteView, byte_input_get_view(app->input_byte_value));
 
+    app->dialog_ex = dialog_ex_alloc();
+    view_dispatcher_add_view(
+        app->view_dispatcher, DialogViewScene, dialog_ex_get_view(app->dialog_ex));
+    view_dispatcher_add_view(app->view_dispatcher, SubmenuLogView, submenu_get_view(app->submenu));
+    app->frame_active = frame_can_alloc();
+    app->file_active = file_active_alloc();
+
     app->dialogs = furi_record_open(RECORD_DIALOGS);
     app->storage = furi_record_open(RECORD_STORAGE);
     app->log_file = storage_file_alloc(app->storage);
@@ -93,6 +100,8 @@ static void app_free(App* app) {
     view_dispatcher_remove_view(app->view_dispatcher, SubmenuView);
     view_dispatcher_remove_view(app->view_dispatcher, ViewWidget);
     view_dispatcher_remove_view(app->view_dispatcher, TextBoxView);
+    view_dispatcher_remove_view(app->view_dispatcher, SubmenuLogView);
+    view_dispatcher_remove_view(app->view_dispatcher, DialogViewScene);
     view_dispatcher_remove_view(app->view_dispatcher, VarListView);
     view_dispatcher_remove_view(app->view_dispatcher, InputByteView);
     view_dispatcher_remove_view(app->view_dispatcher, FileBrowserView);
@@ -117,6 +126,10 @@ static void app_free(App* app) {
     storage_file_free(app->log_file);
     furi_record_close(RECORD_STORAGE);
     furi_record_close(RECORD_DIALOGS);
+
+    file_active_free(app->file_active);
+    frame_can_free(app->frame_active);
+    dialog_ex_free(app->dialog_ex);
 
     free(app->log_file_path);
     free(app->frameArray);

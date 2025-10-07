@@ -8,4 +8,15 @@ App(
     fap_icon="icon.png",
     fap_category="ElectronicCats",
     fap_icon_assets="assets",
+    fap_private_libs = [
+        Lib(
+            name = 'files_scaner',
+            sources = [
+                'dir_walker.c',
+                'files_scaner.c',
+                'frame_can.c',
+                'frame_extractor.c',
+            ],
+        ),
+    ],
 )

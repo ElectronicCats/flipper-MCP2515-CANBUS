@@ -11,6 +11,7 @@
 #include <gui/modules/widget.h>
 #include <gui/modules/file_browser.h>
 #include <gui/modules/file_browser_worker.h>
+#include <gui/modules/dialog_ex.h>
 #include <gui/scene_manager.h>
 #include <gui/view_dispatcher.h>
 #include <storage/storage.h>
@@ -23,11 +24,13 @@
 
 #include "canbus_app_icons.h"
 
+#include "files_scaner.h"
+
 #define PROGRAM_VERSION "v1.1.4.0"
 
 #define PATHAPP    "apps_data/canbus"
 #define PATHAPPEXT EXT_PATH(PATHAPP)
-#define PATHLOGS   PATHAPPEXT "/logs"
+#define PATHLOGS   APP_DATA_PATH("logs")
 
 #define DEVICE_NO_CONNECTED (0xFF)
 
@@ -78,6 +81,11 @@ typedef struct {
     char* log_file_path;
     bool log_file_ready;
     uint8_t save_logs;
+
+    // New Logs Objecs
+    DialogEx* dialog_ex;
+    FrameCAN* frame_active;
+    FileActive* file_active;
 
     uint32_t sniffer_index;
     uint32_t sniffer_index_aux;
@@ -176,6 +184,8 @@ typedef enum {
     ViewWidget,
     VarListView,
     TextBoxView,
+    SubmenuLogView,
+    DialogViewScene,
     DialogInfoView,
     InputByteView,
     FileBrowserView,
