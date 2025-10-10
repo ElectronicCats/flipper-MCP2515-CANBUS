@@ -111,9 +111,9 @@ void close_file_on_data_log(App* app) {
 static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
     FuriString* text_file = furi_string_alloc();
 
-    furi_string_cat_printf(text_file, "(%li) %lx %u", time, frame.canId, frame.data_lenght);
+    furi_string_cat_printf(text_file, "r:%li:%08lX:%u:", time, frame.canId, frame.data_lenght);
     for(uint8_t i = 0; i < (frame.data_lenght); i++) {
-        furi_string_cat_printf(text_file, " %x", frame.buffer[i]);
+        furi_string_cat_printf(text_file, "%s%02X", i ? " " : "", frame.buffer[i]);
     }
     furi_string_cat_printf(text_file, "\n");
     storage_file_write(file, furi_string_get_cstr(text_file), furi_string_size(text_file));
