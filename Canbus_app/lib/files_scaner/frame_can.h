@@ -3,8 +3,11 @@
 #include <furi.h>
 
 typedef struct {
+    FuriString* timestamp;
+    FuriString* type;
     FuriString* can_id;
-    FuriString* can_data;
+    FuriString* len;
+    FuriString* dlc;
 } FrameCAN;
 
 FrameCAN* frame_can_alloc();

@@ -55,8 +55,7 @@ static App* app_alloc() {
         app->view_dispatcher, InputByteView, byte_input_get_view(app->input_byte_value));
 
     app->dialog_ex = dialog_ex_alloc();
-    view_dispatcher_add_view(
-        app->view_dispatcher, DialogViewScene, dialog_ex_get_view(app->dialog_ex));
+    view_dispatcher_add_view(app->view_dispatcher, DialogView, dialog_ex_get_view(app->dialog_ex));
     view_dispatcher_add_view(app->view_dispatcher, SubmenuLogView, submenu_get_view(app->submenu));
     app->frame_active = frame_can_alloc();
     app->file_active = file_active_alloc();
@@ -101,7 +100,7 @@ static void app_free(App* app) {
     view_dispatcher_remove_view(app->view_dispatcher, ViewWidget);
     view_dispatcher_remove_view(app->view_dispatcher, TextBoxView);
     view_dispatcher_remove_view(app->view_dispatcher, SubmenuLogView);
-    view_dispatcher_remove_view(app->view_dispatcher, DialogViewScene);
+    view_dispatcher_remove_view(app->view_dispatcher, DialogView);
     view_dispatcher_remove_view(app->view_dispatcher, VarListView);
     view_dispatcher_remove_view(app->view_dispatcher, InputByteView);
     view_dispatcher_remove_view(app->view_dispatcher, FileBrowserView);

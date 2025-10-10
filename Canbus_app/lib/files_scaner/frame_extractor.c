@@ -2,6 +2,7 @@
 #include "frame_can.h"
 
 #define STREAM_BUFFER_SIZE (32U)
+#define FRAME_DELIMITER    (char)':'
 
 #define TAG "FRAMES EXTRACTOR"
 
@@ -48,7 +49,6 @@ bool stream_read_line_index(Stream* stream, FuriString* str_result, uint64_t lin
                         error = true;
                         break;
                     }
-                    furi_string_push_back(str_result, buffer[i]);
                     if(lines_count - 1 == line_index) {
                         result = true;
                     } else {
@@ -75,17 +75,53 @@ bool stream_read_line_index(Stream* stream, FuriString* str_result, uint64_t lin
     return furi_string_size(str_result) != 0;
 }
 
-void frame_spliter(FrameCAN* frame, FuriString* frame_line) {
-    size_t position = furi_string_search_char(frame_line, ':', 0);
+char count_char(FuriString* frame_line, char target) {
+    char count = 0;
 
-    if(position != FURI_STRING_FAILURE) {
+    for(uint16_t i = 0; i < furi_string_size(frame_line); i++) {
+        if(target == furi_string_get_char(frame_line, i)) count++;
+    }
+
+    return count;
+}
+
+void frame_splitter(FrameCAN* frame, FuriString* frame_line) {
+    char delimiter_count = count_char(frame_line, FRAME_DELIMITER);
+
+    if(delimiter_count) {
+        size_t delimiter_index_rt = furi_string_search_char(frame_line, FRAME_DELIMITER, 0);
+        size_t delimiter_index_timestamp =
+            furi_string_search_char(frame_line, FRAME_DELIMITER, delimiter_index_rt + 1);
+        size_t delimiter_index_canid =
+            furi_string_search_char(frame_line, FRAME_DELIMITER, delimiter_index_timestamp + 1);
+        size_t delimiter_index_len =
+            furi_string_search_char(frame_line, FRAME_DELIMITER, delimiter_index_canid + 1);
+
+        furi_string_set(frame->timestamp, frame_line);
+        furi_string_set(frame->type, frame_line);
         furi_string_set(frame->can_id, frame_line);
-        furi_string_set(frame->can_data, frame_line);
+        furi_string_set(frame->len, frame_line);
+        furi_string_set(frame->dlc, frame_line);
 
-        furi_string_left(frame->can_id, position);
-        furi_string_right(frame->can_data, position + 1);
+        furi_string_left(frame->type, delimiter_index_rt);
+        furi_string_mid(
+            frame->timestamp,
+            delimiter_index_rt + 1,
+            delimiter_index_timestamp - delimiter_index_rt - 1);
+        furi_string_mid(
+            frame->can_id,
+            delimiter_index_timestamp + 1,
+            delimiter_index_canid - delimiter_index_timestamp - 1);
+        furi_string_mid(
+            frame->len,
+            delimiter_index_canid + 1,
+            delimiter_index_len - delimiter_index_canid - 1);
+        furi_string_mid(
+            frame->dlc,
+            delimiter_index_len + 1,
+            furi_string_size(frame->dlc) - delimiter_index_len - 1);
     } else {
-        FURI_LOG_E(TAG, "Error: can't read CAN format");
+        FURI_LOG_E(TAG, "Error: can't read frame format");
     }
 }
 
@@ -95,7 +131,7 @@ void frame_extractor(Storage* storage, const char* path, FrameCAN* frame, uint64
 
     if(file_stream_open(stream, path, FSAM_READ, FSOM_OPEN_EXISTING)) {
         if(stream_read_line_index(stream, line, index)) {
-            frame_spliter(frame, line);
+            frame_splitter(frame, line);
         } else {
             FURI_LOG_E(TAG, "Failed to read line");
         }

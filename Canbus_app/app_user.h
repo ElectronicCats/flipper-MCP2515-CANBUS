@@ -185,7 +185,7 @@ typedef enum {
     VarListView,
     TextBoxView,
     SubmenuLogView,
-    DialogViewScene,
+    DialogView,
     DialogInfoView,
     InputByteView,
     FileBrowserView,

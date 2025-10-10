@@ -6,21 +6,13 @@ void callback(DialogExResult result, void* context) {
     App* app = context;
 
     switch(result) {
-    case DialogExPressLeft:
-        FURI_LOG_I(TAG, "SE PRESIONÓ EL BOTÓN IZQUIERDO");
+    case DialogExResultLeft:
         app->file_active->frame_index--;
         app_scene_dialog_on_enter(app);
         break;
-    case DialogExPressRight:
-        FURI_LOG_I(TAG, "SE PRESIONÓ EL BOTÓN DERECHO");
+    case DialogExResultRight:
         app->file_active->frame_index++;
         app_scene_dialog_on_enter(app);
-        break;
-    case DialogExReleaseLeft:
-        FURI_LOG_I(TAG, "SE SOLTÓ EL BOTÓN IZQUIERDO");
-        break;
-    case DialogExReleaseRight:
-        FURI_LOG_I(TAG, "SE SOLTÓ EL BOTÓN DERECHO");
         break;
     default:
         break;
@@ -34,7 +26,6 @@ void app_scene_dialog_on_enter(void* context) {
     dialog_ex_reset(app->dialog_ex);
     dialog_ex_set_context(app->dialog_ex, app);
     dialog_ex_set_result_callback(app->dialog_ex, callback);
-    dialog_ex_enable_extended_events(app->dialog_ex);
 
     frame_extractor(
         app->storage,
@@ -52,7 +43,7 @@ void app_scene_dialog_on_enter(void* context) {
 
     dialog_ex_set_text(
         app->dialog_ex,
-        furi_string_get_cstr(app->frame_active->can_data),
+        furi_string_get_cstr(app->frame_active->dlc),
         64,
         32,
         AlignCenter,
@@ -66,7 +57,7 @@ void app_scene_dialog_on_enter(void* context) {
         dialog_ex_set_right_button_text(app->dialog_ex, "Next");
     }
 
-    view_dispatcher_switch_to_view(app->view_dispatcher, DialogViewScene);
+    view_dispatcher_switch_to_view(app->view_dispatcher, DialogView);
 }
 
 bool app_scene_dialog_on_event(void* context, SceneManagerEvent event) {
