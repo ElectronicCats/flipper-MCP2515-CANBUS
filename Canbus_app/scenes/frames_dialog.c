@@ -14,6 +14,12 @@ void callback(DialogExResult result, void* context) {
         app->file_active->frame_index++;
         app_scene_dialog_on_enter(app);
         break;
+    case DialogExResultCenter:
+        scene_manager_handle_custom_event(app->scene_manager, DialogExResultCenter);
+        //lawicel_open_port();
+        //lawicel_send_frame(app->frame_active);
+        //lawicel_close_port();
+        break;
     default:
         break;
     }
@@ -57,13 +63,30 @@ void app_scene_dialog_on_enter(void* context) {
         dialog_ex_set_right_button_text(app->dialog_ex, "Next");
     }
 
+    dialog_ex_set_center_button_text(app->dialog_ex, "Options");
+
     view_dispatcher_switch_to_view(app->view_dispatcher, DialogView);
 }
 
 bool app_scene_dialog_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
+    App* app = context;
     bool consumed = false;
+
+    switch(event.type) {
+    case SceneManagerEventTypeCustom:
+        switch(event.event) {
+        case DialogExResultCenter:
+            scene_manager_next_scene(app->scene_manager, app_scene_lawicel_options_scene);
+            consumed = true;
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        break;
+    }
+
     return consumed;
 }
 

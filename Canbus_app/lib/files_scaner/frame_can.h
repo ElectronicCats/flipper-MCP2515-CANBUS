@@ -10,6 +10,6 @@ typedef struct {
     FuriString* dlc;
 } FrameCAN;
 
-FrameCAN* frame_can_alloc();
+FrameCAN* frame_can_alloc(void);
 
 void frame_can_free(FrameCAN* frame);

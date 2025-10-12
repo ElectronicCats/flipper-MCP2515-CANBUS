@@ -24,7 +24,8 @@
 
 #include "canbus_app_icons.h"
 
-#include "files_scaner.h"
+#include <files_scaner.h>
+#include <lawicel_serial.h>
 
 #define PROGRAM_VERSION "v1.1.4.0"
 

@@ -1,6 +1,6 @@
 #include "frame_can.h"
 
-FrameCAN* frame_can_alloc() {
+FrameCAN* frame_can_alloc(void) {
     FrameCAN* frame = malloc(sizeof(FrameCAN));
 
     frame->timestamp = furi_string_alloc();

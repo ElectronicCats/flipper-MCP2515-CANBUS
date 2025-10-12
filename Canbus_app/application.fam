@@ -18,5 +18,12 @@ App(
                 'frame_extractor.c',
             ],
         ),
+        Lib(
+            name = 'lawicel_serial',
+            sources = [
+                'lawicel_serial.c',
+                'lawicel_writer.c',
+            ],
+        ),
     ],
 )

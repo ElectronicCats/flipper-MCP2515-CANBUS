@@ -1,6 +1,6 @@
 #include "files_scaner.h"
 
-FileActive* file_active_alloc() {
+FileActive* file_active_alloc(void) {
     FileActive* file_active = malloc(sizeof(FileActive));
 
     file_active->path = furi_string_alloc();
