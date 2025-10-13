@@ -11,11 +11,6 @@
 
 #define LAWICEL_CDC_NUM 1
 
-typedef enum {
-    LAWICEL_SEND_FRAME,
-    LAWICEL_SEND_LOG,
-} LAWICEL_OPTIONS;
-
 bool lawicel_open_port(void);
 bool lawicel_close_port(void);
 

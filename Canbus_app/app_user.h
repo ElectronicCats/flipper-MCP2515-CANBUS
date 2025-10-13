@@ -87,6 +87,7 @@ typedef struct {
     DialogEx* dialog_ex;
     FrameCAN* frame_active;
     FileActive* file_active;
+    bool* can_send_frame;
 
     uint32_t sniffer_index;
     uint32_t sniffer_index_aux;
@@ -191,6 +192,17 @@ typedef enum {
     InputByteView,
     FileBrowserView,
 } scenesViews;
+
+typedef enum {
+    LAWICEL_SEND_FRAME,
+    LAWICEL_SEND_LOG,
+} LAWICEL_OPTIONS_SCENE;
+
+typedef enum {
+    VIEW_LOG,
+    EXPORT_LOG,
+    TRANSMIT_LOG,
+} LOGS_OPTIONS;
 
 /**
  * These functions works in other scenes and widget

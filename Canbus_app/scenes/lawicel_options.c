@@ -13,13 +13,11 @@ void submenu_callback_lawicel_options(void* context, uint32_t index) {
 void app_scene_lawicel_options_on_enter(void* context) {
     App* app = context;
 
-    lawicel_open_port();
-
     submenu_reset(app->submenu);
     submenu_set_header(app->submenu, "LAWICEL OPTIONS");
 
     submenu_add_item(
-        app->submenu, "Send frame", LAWICEL_SEND_FRAME, submenu_callback_lawicel_options, app);
+        app->submenu, "Send frames", LAWICEL_SEND_FRAME, submenu_callback_lawicel_options, app);
     submenu_add_item(
         app->submenu, "Send log", LAWICEL_SEND_LOG, submenu_callback_lawicel_options, app);
 
@@ -36,7 +34,8 @@ bool app_scene_lawicel_options_on_event(void* context, SceneManagerEvent event) 
     case SceneManagerEventTypeCustom:
         switch(event.event) {
         case LAWICEL_SEND_FRAME:
-            lawicel_send_frame(app->frame_active);
+            *app->can_send_frame = true;
+            scene_manager_next_scene(app->scene_manager, app_scene_dialog_scene);
             break;
         case LAWICEL_SEND_LOG:
             lawicel_send_log(app->storage, app->file_active->path);
@@ -44,11 +43,6 @@ bool app_scene_lawicel_options_on_event(void* context, SceneManagerEvent event) 
         default:
             break;
         }
-        break;
-    case SceneManagerEventTypeBack:
-        select_index_lawicel_options = 0;
-        scene_manager_previous_scene(app->scene_manager);
-        consumed = true;
         break;
     default:
         break;
@@ -59,6 +53,5 @@ bool app_scene_lawicel_options_on_event(void* context, SceneManagerEvent event) 
 
 void app_scene_lawicel_options_on_exit(void* context) {
     App* app = context;
-    lawicel_close_port();
     submenu_reset(app->submenu);
 }

@@ -59,6 +59,8 @@ static App* app_alloc() {
     view_dispatcher_add_view(app->view_dispatcher, SubmenuLogView, submenu_get_view(app->submenu));
     app->frame_active = frame_can_alloc();
     app->file_active = file_active_alloc();
+    app->can_send_frame = malloc(sizeof(bool));
+    *app->can_send_frame = false;
 
     app->dialogs = furi_record_open(RECORD_DIALOGS);
     app->storage = furi_record_open(RECORD_STORAGE);
@@ -129,6 +131,7 @@ static void app_free(App* app) {
     file_active_free(app->file_active);
     frame_can_free(app->frame_active);
     dialog_ex_free(app->dialog_ex);
+    free(app->can_send_frame);
 
     free(app->log_file_path);
     free(app->frameArray);
@@ -140,6 +143,8 @@ static void app_free(App* app) {
 
 int app_main(void* p) {
     UNUSED(p);
+
+    lawicel_open_port();
 
     App* app = app_alloc();
 
@@ -153,6 +158,8 @@ int app_main(void* p) {
     furi_record_close(RECORD_GUI);
 
     app_free(app);
+
+    lawicel_close_port();
 
     return 0;
 }

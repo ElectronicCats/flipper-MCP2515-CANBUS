@@ -58,12 +58,7 @@ bool app_scene_read_logs_on_event(void* context, SceneManagerEvent event) {
     switch(event.type) {
     case SceneManagerEventTypeCustom:
         select_index = submenu_get_selected_item(app->submenu);
-        scene_manager_next_scene(app->scene_manager, app_scene_dialog_scene);
-        break;
-    case SceneManagerEventTypeBack:
-        select_index = 0;
-        scene_manager_previous_scene(app->scene_manager);
-        consumed = true;
+        scene_manager_next_scene(app->scene_manager, app_scene_logs_options_scene);
         break;
     default:
         break;
