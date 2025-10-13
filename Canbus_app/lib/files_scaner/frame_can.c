@@ -3,8 +3,9 @@
 FrameCAN* frame_can_alloc(void) {
     FrameCAN* frame = malloc(sizeof(FrameCAN));
 
-    frame->timestamp = furi_string_alloc();
-    frame->type = furi_string_alloc();
+    frame->timestamp = (uint16_t*)calloc(1, sizeof(uint16_t));
+    frame->extended = (bool*)calloc(1, sizeof(bool));
+    frame->dir = furi_string_alloc();
     frame->can_id = furi_string_alloc();
     frame->len = furi_string_alloc();
     frame->dlc = furi_string_alloc();
@@ -13,8 +14,9 @@ FrameCAN* frame_can_alloc(void) {
 }
 
 void frame_can_free(FrameCAN* frame) {
-    furi_string_free(frame->timestamp);
-    furi_string_free(frame->type);
+    free(frame->timestamp);
+    free(frame->extended);
+    furi_string_free(frame->dir);
     furi_string_free(frame->can_id);
     furi_string_free(frame->len);
     furi_string_free(frame->dlc);

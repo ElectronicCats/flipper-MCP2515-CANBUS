@@ -36,7 +36,7 @@ bool app_scene_logs_options_on_event(void* context, SceneManagerEvent event) {
             consumed = true;
             break;
         case EXPORT_LOG:
-            FURI_LOG_I(TAG, "EXPORTAR CSV");
+            export_log_as_csv(app->storage, app->file_active->path);
             consumed = true;
             break;
         case TRANSMIT_LOG:

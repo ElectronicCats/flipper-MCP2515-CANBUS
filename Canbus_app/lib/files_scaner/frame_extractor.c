@@ -86,28 +86,40 @@ char count_char(FuriString* frame_line, char target) {
 }
 
 void frame_splitter(FrameCAN* frame, FuriString* frame_line) {
+    furi_string_trim(frame_line);
+
     char delimiter_count = count_char(frame_line, FRAME_DELIMITER);
 
     if(delimiter_count) {
-        size_t delimiter_index_rt = furi_string_search_char(frame_line, FRAME_DELIMITER, 0);
-        size_t delimiter_index_timestamp =
-            furi_string_search_char(frame_line, FRAME_DELIMITER, delimiter_index_rt + 1);
-        size_t delimiter_index_canid =
+        uint64_t delimiter_index_dir = furi_string_search_char(frame_line, FRAME_DELIMITER, 0);
+        uint64_t delimiter_index_extended =
+            furi_string_search_char(frame_line, FRAME_DELIMITER, delimiter_index_dir + 1);
+        uint64_t delimiter_index_timestamp =
+            furi_string_search_char(frame_line, FRAME_DELIMITER, delimiter_index_extended + 1);
+        uint64_t delimiter_index_canid =
             furi_string_search_char(frame_line, FRAME_DELIMITER, delimiter_index_timestamp + 1);
-        size_t delimiter_index_len =
+        uint64_t delimiter_index_len =
             furi_string_search_char(frame_line, FRAME_DELIMITER, delimiter_index_canid + 1);
 
-        furi_string_set(frame->timestamp, frame_line);
-        furi_string_set(frame->type, frame_line);
+        FuriString* extended_str = furi_string_alloc();
+        FuriString* timestamp_str = furi_string_alloc();
+
+        furi_string_set(timestamp_str, frame_line);
+        furi_string_set(extended_str, frame_line);
+        furi_string_set(frame->dir, frame_line);
         furi_string_set(frame->can_id, frame_line);
         furi_string_set(frame->len, frame_line);
         furi_string_set(frame->dlc, frame_line);
 
-        furi_string_left(frame->type, delimiter_index_rt);
+        furi_string_left(frame->dir, delimiter_index_dir);
         furi_string_mid(
-            frame->timestamp,
-            delimiter_index_rt + 1,
-            delimiter_index_timestamp - delimiter_index_rt - 1);
+            extended_str,
+            delimiter_index_dir + 1,
+            delimiter_index_extended - delimiter_index_dir - 1);
+        furi_string_mid(
+            timestamp_str,
+            delimiter_index_extended + 1,
+            delimiter_index_timestamp - delimiter_index_extended - 1);
         furi_string_mid(
             frame->can_id,
             delimiter_index_timestamp + 1,
@@ -120,6 +132,12 @@ void frame_splitter(FrameCAN* frame, FuriString* frame_line) {
             frame->dlc,
             delimiter_index_len + 1,
             furi_string_size(frame->dlc) - delimiter_index_len - 1);
+
+        *frame->extended = (bool)atoi(furi_string_get_cstr(extended_str));
+        *frame->timestamp = (uint16_t)atoi(furi_string_get_cstr(timestamp_str));
+
+        furi_string_free(timestamp_str);
+        furi_string_free(extended_str);
     } else {
         FURI_LOG_E(TAG, "Error: can't read frame format");
     }

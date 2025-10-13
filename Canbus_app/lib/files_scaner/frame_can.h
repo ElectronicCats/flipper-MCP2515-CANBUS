@@ -3,8 +3,9 @@
 #include <furi.h>
 
 typedef struct {
-    FuriString* timestamp;
-    FuriString* type;
+    uint16_t* timestamp;
+    bool* extended;
+    FuriString* dir;
     FuriString* can_id;
     FuriString* len;
     FuriString* dlc;

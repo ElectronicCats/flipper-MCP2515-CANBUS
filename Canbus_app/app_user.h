@@ -26,6 +26,7 @@
 
 #include <files_scaner.h>
 #include <lawicel_serial.h>
+#include <log_exporter.h>
 
 #define PROGRAM_VERSION "v1.1.4.0"
 

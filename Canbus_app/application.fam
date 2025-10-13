@@ -25,5 +25,11 @@ App(
                 'lawicel_writer.c',
             ],
         ),
+        Lib(
+            name = 'log_exporter',
+            sources = [
+                'exporter_csv.c',
+            ],
+        ),
     ],
 )
