@@ -38,7 +38,26 @@ bool app_scene_lawicel_options_on_event(void* context, SceneManagerEvent event) 
             scene_manager_next_scene(app->scene_manager, app_scene_dialog_scene);
             break;
         case LAWICEL_SEND_LOG:
+            DialogMessage* message = dialog_message_alloc();
+
+            view_dispatcher_switch_to_view(app->view_dispatcher, LoadingView);
+
             lawicel_send_log(app->storage, app->file_active->path);
+
+            view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuLogView);
+
+            dialog_message_set_icon(message, &I_EC48x26, 40, 1);
+            dialog_message_set_header(
+                message,
+                "Finished transmitting\nthe log via SLCAN",
+                64,
+                45,
+                AlignCenter,
+                AlignCenter);
+
+            dialog_message_show(app->dialogs, message);
+
+            dialog_message_free(message);
             break;
         default:
             break;

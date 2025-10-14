@@ -26,6 +26,8 @@ void app_scene_dialog_on_enter(void* context) {
     furi_assert(context);
     App* app = context;
 
+    view_dispatcher_switch_to_view(app->view_dispatcher, LoadingView);
+
     dialog_ex_reset(app->dialog_ex);
     dialog_ex_set_context(app->dialog_ex, app);
     dialog_ex_set_result_callback(app->dialog_ex, callback);

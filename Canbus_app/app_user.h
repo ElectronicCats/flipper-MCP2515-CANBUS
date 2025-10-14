@@ -15,6 +15,7 @@
 #include <gui/scene_manager.h>
 #include <gui/view_dispatcher.h>
 #include <storage/storage.h>
+#include <gui/modules/loading.h>
 
 #include "scenes_config/app_scene_functions.h"
 
@@ -30,9 +31,8 @@
 
 #define PROGRAM_VERSION "v1.1.4.0"
 
-#define PATHAPP    "apps_data/canbus"
-#define PATHAPPEXT EXT_PATH(PATHAPP)
-#define PATHLOGS   APP_DATA_PATH("logs")
+#define PATHEXPORTS APP_DATA_PATH("exports")
+#define PATHLOGS    APP_DATA_PATH("logs")
 
 #define DEVICE_NO_CONNECTED (0xFF)
 
@@ -89,6 +89,7 @@ typedef struct {
     FrameCAN* frame_active;
     FileActive* file_active;
     bool* can_send_frame;
+    Loading* loading;
 
     uint32_t sniffer_index;
     uint32_t sniffer_index_aux;
@@ -189,6 +190,7 @@ typedef enum {
     TextBoxView,
     SubmenuLogView,
     DialogView,
+    LoadingView,
     DialogInfoView,
     InputByteView,
     FileBrowserView,

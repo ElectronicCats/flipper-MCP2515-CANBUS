@@ -2,10 +2,13 @@
 
 #define TAG "OPTIONS LOGS"
 
+char logs_options_index = 0;
+
 void submenu_callback_logs_options(void* context, uint32_t index) {
     App* app = context;
 
     scene_manager_handle_custom_event(app->scene_manager, index);
+    logs_options_index = index;
 }
 
 void app_scene_logs_options_on_enter(void* context) {
@@ -20,6 +23,8 @@ void app_scene_logs_options_on_enter(void* context) {
         app->submenu, "Export log as CSV", EXPORT_LOG, submenu_callback_logs_options, app);
     submenu_add_item(
         app->submenu, "Transmit log to SavvyCAN", TRANSMIT_LOG, submenu_callback_logs_options, app);
+
+    submenu_set_selected_item(app->submenu, logs_options_index);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuLogView);
 }
@@ -36,7 +41,25 @@ bool app_scene_logs_options_on_event(void* context, SceneManagerEvent event) {
             consumed = true;
             break;
         case EXPORT_LOG:
-            export_log_as_csv(app->storage, app->file_active->path);
+            FuriString* out_path = furi_string_alloc();
+            DialogMessage* message = dialog_message_alloc();
+
+            view_dispatcher_switch_to_view(app->view_dispatcher, LoadingView);
+
+            export_log_as_csv(app->storage, app->file_active->path, out_path);
+
+            view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuLogView);
+
+            dialog_message_set_icon(message, &I_EC48x26, 40, 1);
+            dialog_message_set_header(
+                message, "Log exported to:", 64, 40, AlignCenter, AlignCenter);
+            dialog_message_set_text(
+                message, furi_string_get_cstr(out_path), 64, 55, AlignCenter, AlignCenter);
+
+            dialog_message_show(app->dialogs, message);
+
+            dialog_message_free(message);
+            furi_string_free(out_path);
             consumed = true;
             break;
         case TRANSMIT_LOG:

@@ -2,6 +2,9 @@
 
 #include <files_scaner.h>
 
+#define PATHEXPORTS APP_DATA_PATH("exports")
+#define PATHLOGS    APP_DATA_PATH("logs")
+
 #define CSV_HEADER       "Time Stamp,ID,Extended,Dir,Bus,LEN,D1,D2,D3,D4,D5,D6,D7,D8\n"
 #define CSV_FORMAT_FRAME "%d,%s,%s,%s,0,%d,%s,\n"
 #define DIR_RX           "Rx"
@@ -25,18 +28,16 @@ void csv_frame_format(FrameCAN* frame, FuriString* csv_format) {
                                                 DIR_RX,
         (furi_string_size(frame->dlc) + 1) / 3,
         furi_string_get_cstr(frame->dlc));
-
-    FURI_LOG_I(TAG, "FRAME: %s", furi_string_get_cstr(csv_format));
 }
 
-void export_log_as_csv(Storage* storage, FuriString* log_path) {
+void export_log_as_csv(Storage* storage, FuriString* log_path, FuriString* out_path) {
     Stream* stream = file_stream_alloc(storage);
     Stream* stream_out = file_stream_alloc(storage);
-    FuriString* out_path = furi_string_alloc();
     FuriString* line = furi_string_alloc();
     FrameCAN* frame = frame_can_alloc();
 
     furi_string_set(out_path, log_path);
+    furi_string_replace_all_str(out_path, PATHLOGS, PATHEXPORTS);
     furi_string_left(out_path, furi_string_search_char(out_path, '.', 0));
     furi_string_cat_str(out_path, ".csv");
 
@@ -58,7 +59,6 @@ void export_log_as_csv(Storage* storage, FuriString* log_path) {
 
     frame_can_free(frame);
     furi_string_free(line);
-    furi_string_free(out_path);
     stream_free(stream_out);
     stream_free(stream);
 }
