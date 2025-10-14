@@ -14,5 +14,5 @@
 bool lawicel_open_port(void);
 bool lawicel_close_port(void);
 
-void lawicel_send_frame(FrameCAN* frame);
-void lawicel_send_log(Storage* storage, FuriString* log_path);
+void lawicel_send_frame(FrameCAN* frame, bool* send_timestamp);
+void lawicel_send_log(Storage* storage, FuriString* log_path, bool* send_timestamp);

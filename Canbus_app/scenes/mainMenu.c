@@ -69,6 +69,9 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
 void app_scene_menu_on_enter(void* context) {
     App* app = context;
 
+    *app->can_send_frame = false;
+    *app->send_timestamp = false;
+
     uint32_t state = scene_manager_get_scene_state(app->scene_manager, app_scene_main_menu);
 
     if(state == 0) {
@@ -116,7 +119,7 @@ bool app_scene_menu_on_event(void* context, SceneManagerEvent event) {
     case SceneManagerEventTypeCustom:
         switch(event.event) {
         case SniffingOptionEvent:
-            scene_manager_next_scene(app->scene_manager, app_scene_sniffing_option);
+            scene_manager_next_scene(app->scene_manager, app_scene_sniffer_relay_config_scene);
             consumed = true;
             break;
 

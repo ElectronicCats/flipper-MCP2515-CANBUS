@@ -22,7 +22,7 @@ void app_scene_logs_options_on_enter(void* context) {
     submenu_add_item(
         app->submenu, "Export log as CSV", EXPORT_LOG, submenu_callback_logs_options, app);
     submenu_add_item(
-        app->submenu, "Transmit log to SavvyCAN", TRANSMIT_LOG, submenu_callback_logs_options, app);
+        app->submenu, "Transmit log to SLCAN", TRANSMIT_LOG, submenu_callback_logs_options, app);
 
     submenu_set_selected_item(app->submenu, logs_options_index);
 
@@ -63,7 +63,7 @@ bool app_scene_logs_options_on_event(void* context, SceneManagerEvent event) {
             consumed = true;
             break;
         case TRANSMIT_LOG:
-            scene_manager_next_scene(app->scene_manager, app_scene_lawicel_options_scene);
+            scene_manager_next_scene(app->scene_manager, app_scene_send_timestamp_scene);
             consumed = true;
             break;
         default:

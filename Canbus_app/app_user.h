@@ -89,6 +89,7 @@ typedef struct {
     FrameCAN* frame_active;
     FileActive* file_active;
     bool* can_send_frame;
+    bool* send_timestamp;
     Loading* loading;
 
     uint32_t sniffer_index;
@@ -197,8 +198,8 @@ typedef enum {
 } scenesViews;
 
 typedef enum {
-    LAWICEL_SEND_FRAME,
     LAWICEL_SEND_LOG,
+    LAWICEL_SEND_FRAME,
 } LAWICEL_OPTIONS_SCENE;
 
 typedef enum {

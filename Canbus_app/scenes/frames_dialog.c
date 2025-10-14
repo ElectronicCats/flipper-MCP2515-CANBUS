@@ -15,7 +15,7 @@ void callback(DialogExResult result, void* context) {
         app_scene_dialog_on_enter(app);
         break;
     case DialogExResultCenter:
-        lawicel_send_frame(app->frame_active);
+        lawicel_send_frame(app->frame_active, app->send_timestamp);
         break;
     default:
         break;

@@ -10,23 +10,23 @@ void submenu_callback_lawicel_options(void* context, uint32_t index) {
     scene_manager_handle_custom_event(app->scene_manager, index);
 }
 
-void app_scene_lawicel_options_on_enter(void* context) {
+void app_scene_transmit_options_on_enter(void* context) {
     App* app = context;
 
     submenu_reset(app->submenu);
-    submenu_set_header(app->submenu, "LAWICEL OPTIONS");
+    submenu_set_header(app->submenu, "TRANSMIT OPTIONS");
 
     submenu_add_item(
-        app->submenu, "Send frames", LAWICEL_SEND_FRAME, submenu_callback_lawicel_options, app);
-    submenu_add_item(
         app->submenu, "Send log", LAWICEL_SEND_LOG, submenu_callback_lawicel_options, app);
+    submenu_add_item(
+        app->submenu, "Send frames", LAWICEL_SEND_FRAME, submenu_callback_lawicel_options, app);
 
     submenu_set_selected_item(app->submenu, select_index_lawicel_options);
 
     view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuLogView);
 }
 
-bool app_scene_lawicel_options_on_event(void* context, SceneManagerEvent event) {
+bool app_scene_transmit_options_on_event(void* context, SceneManagerEvent event) {
     App* app = context;
     bool consumed = false;
 
@@ -42,7 +42,7 @@ bool app_scene_lawicel_options_on_event(void* context, SceneManagerEvent event) 
 
             view_dispatcher_switch_to_view(app->view_dispatcher, LoadingView);
 
-            lawicel_send_log(app->storage, app->file_active->path);
+            lawicel_send_log(app->storage, app->file_active->path, app->send_timestamp);
 
             view_dispatcher_switch_to_view(app->view_dispatcher, SubmenuLogView);
 
@@ -70,7 +70,7 @@ bool app_scene_lawicel_options_on_event(void* context, SceneManagerEvent event) 
     return consumed;
 }
 
-void app_scene_lawicel_options_on_exit(void* context) {
+void app_scene_transmit_options_on_exit(void* context) {
     App* app = context;
     submenu_reset(app->submenu);
 }

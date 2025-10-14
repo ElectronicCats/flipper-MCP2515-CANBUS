@@ -426,6 +426,20 @@ static int32_t worker_sniffing(void* context) {
             furi_delay_ms(1);
         }
 
+        if(*app->can_send_frame) {
+            FrameCAN* frame_SLCAN = frame_can_alloc();
+            *frame_SLCAN->timestamp = app->times[app->sniffer_index];
+            *frame_SLCAN->extended = (bool)frame.ext;
+            furi_string_set_str(frame_SLCAN->dir, "r");
+            furi_string_printf(frame_SLCAN->can_id, "%*lX", frame.ext ? 8 : 3, frame.canId);
+            furi_string_printf(frame_SLCAN->len, "%d", frame.data_lenght);
+            for(int i = 0; i < frame.data_lenght; i++)
+                furi_string_cat_printf(frame_SLCAN->dlc, "%02X", frame.buffer[i]);
+            lawicel_send_frame(frame_SLCAN, app->send_timestamp);
+
+            frame_can_free(frame_SLCAN);
+        }
+
         if(condition && !furi_hal_gpio_read(&gpio_button_back)) break;
     }
 

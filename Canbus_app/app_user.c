@@ -63,7 +63,9 @@ static App* app_alloc() {
     app->frame_active = frame_can_alloc();
     app->file_active = file_active_alloc();
     app->can_send_frame = malloc(sizeof(bool));
+    app->send_timestamp = malloc(sizeof(bool));
     *app->can_send_frame = false;
+    *app->send_timestamp = false;
 
     app->dialogs = furi_record_open(RECORD_DIALOGS);
     app->storage = furi_record_open(RECORD_STORAGE);
@@ -137,6 +139,7 @@ static void app_free(App* app) {
     frame_can_free(app->frame_active);
     dialog_ex_free(app->dialog_ex);
     free(app->can_send_frame);
+    free(app->send_timestamp);
 
     free(app->log_file_path);
     free(app->frameArray);
