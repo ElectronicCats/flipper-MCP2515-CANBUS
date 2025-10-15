@@ -2,7 +2,7 @@
 
 #define TAG "DIALOG LOG"
 
-void callback(DialogExResult result, void* context) {
+void frames_dialog_callback(DialogExResult result, void* context) {
     App* app = context;
 
     switch(result) {
@@ -30,7 +30,7 @@ void app_scene_dialog_on_enter(void* context) {
 
     dialog_ex_reset(app->dialog_ex);
     dialog_ex_set_context(app->dialog_ex, app);
-    dialog_ex_set_result_callback(app->dialog_ex, callback);
+    dialog_ex_set_result_callback(app->dialog_ex, frames_dialog_callback);
 
     frame_extractor(
         app->storage,

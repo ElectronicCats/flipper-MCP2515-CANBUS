@@ -7,7 +7,7 @@ typedef struct {
     bool* extended;
     FuriString* dir;
     FuriString* can_id;
-    FuriString* len;
+    char* len;
     FuriString* dlc;
 } FrameCAN;
 

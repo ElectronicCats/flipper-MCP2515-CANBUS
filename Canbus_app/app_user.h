@@ -28,6 +28,7 @@
 #include <files_scaner.h>
 #include <lawicel_serial.h>
 #include <log_exporter.h>
+#include <hex_converter.h>
 
 #define PROGRAM_VERSION "v1.1.4.0"
 
@@ -115,6 +116,7 @@ typedef struct {
 // This is for the menu Options
 typedef enum {
     SniffingTestOption,
+    SLCANOption,
     SpeedDetectorOption,
     SenderOption,
     ObdiiOption,
@@ -128,6 +130,7 @@ typedef enum {
 // These are the events on the main menu
 typedef enum {
     SniffingOptionEvent,
+    SLCAN2CANOptionEvent,
     SpeedDetectorEvent,
     SenderOptionEvent,
     SettingsOptionEvent,

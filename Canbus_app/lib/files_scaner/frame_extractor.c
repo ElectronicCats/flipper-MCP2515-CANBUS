@@ -103,12 +103,13 @@ void frame_splitter(FrameCAN* frame, FuriString* frame_line) {
 
         FuriString* extended_str = furi_string_alloc();
         FuriString* timestamp_str = furi_string_alloc();
+        FuriString* len_str = furi_string_alloc();
 
         furi_string_set(timestamp_str, frame_line);
         furi_string_set(extended_str, frame_line);
         furi_string_set(frame->dir, frame_line);
         furi_string_set(frame->can_id, frame_line);
-        furi_string_set(frame->len, frame_line);
+        furi_string_set(len_str, frame_line);
         furi_string_set(frame->dlc, frame_line);
 
         furi_string_left(frame->dir, delimiter_index_dir);
@@ -125,9 +126,7 @@ void frame_splitter(FrameCAN* frame, FuriString* frame_line) {
             delimiter_index_timestamp + 1,
             delimiter_index_canid - delimiter_index_timestamp - 1);
         furi_string_mid(
-            frame->len,
-            delimiter_index_canid + 1,
-            delimiter_index_len - delimiter_index_canid - 1);
+            len_str, delimiter_index_canid + 1, delimiter_index_len - delimiter_index_canid - 1);
         furi_string_mid(
             frame->dlc,
             delimiter_index_len + 1,
@@ -135,7 +134,9 @@ void frame_splitter(FrameCAN* frame, FuriString* frame_line) {
 
         *frame->extended = (bool)atoi(furi_string_get_cstr(extended_str));
         *frame->timestamp = (uint16_t)atoi(furi_string_get_cstr(timestamp_str));
+        *frame->len = furi_string_get_char(len_str, 0) - '0';
 
+        furi_string_free(len_str);
         furi_string_free(timestamp_str);
         furi_string_free(extended_str);
     } else {

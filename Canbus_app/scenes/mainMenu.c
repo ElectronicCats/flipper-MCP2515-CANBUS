@@ -27,6 +27,10 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
         scene_manager_handle_custom_event(app->scene_manager, SniffingOptionEvent);
         break;
 
+    case SLCANOption:
+        scene_manager_handle_custom_event(app->scene_manager, SLCAN2CANOptionEvent);
+        break;
+
     case SpeedDetectorOption:
         scene_manager_handle_custom_event(app->scene_manager, SpeedDetectorEvent);
         break;
@@ -87,6 +91,8 @@ void app_scene_menu_on_enter(void* context) {
     submenu_add_item(
         app->submenu, "Sniffing", SniffingTestOption, basic_scenes_menu_callback, app);
 
+    submenu_add_item(app->submenu, "SLCAN to CAN", SLCANOption, basic_scenes_menu_callback, app);
+
     submenu_add_item(
         app->submenu, "Speed Detector", SpeedDetectorOption, basic_scenes_menu_callback, app);
 
@@ -120,6 +126,11 @@ bool app_scene_menu_on_event(void* context, SceneManagerEvent event) {
         switch(event.event) {
         case SniffingOptionEvent:
             scene_manager_next_scene(app->scene_manager, app_scene_sniffer_relay_config_scene);
+            consumed = true;
+            break;
+
+        case SLCAN2CANOptionEvent:
+            scene_manager_next_scene(app->scene_manager, app_scene_SLCAN_2_CAN_scene);
             consumed = true;
             break;
 

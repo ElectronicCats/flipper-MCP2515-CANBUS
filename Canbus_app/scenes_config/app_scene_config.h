@@ -5,6 +5,7 @@
 ADD_SCENE(app, menu, main_menu)
 ADD_SCENE(app, sniffer_relay_config, sniffer_relay_config_scene)
 ADD_SCENE(app, sniffing, sniffing_option)
+ADD_SCENE(app, SLCAN_2_CAN, SLCAN_2_CAN_scene)
 ADD_SCENE(app, box_sniffing, box_sniffing)
 ADD_SCENE(app, device_no_connected, device_no_connected)
 

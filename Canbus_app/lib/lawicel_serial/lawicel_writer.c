@@ -2,8 +2,8 @@
 
 #include <files_scaner.h>
 
-#define FORMAT_WITH_TIMESTAMP    "%c%s%s%s%04X\r"
-#define FORMAT_WITHOUT_TIMESTAMP "%c%s%s%s\r"
+#define FORMAT_WITH_TIMESTAMP    "%c%s%d%s%04X\r"
+#define FORMAT_WITHOUT_TIMESTAMP "%c%s%d%s\r"
 
 #define TAG "LAWICEL WRITER"
 
@@ -18,7 +18,7 @@ void lawicel_send_frame(FrameCAN* frame, bool* send_timestamp) {
             FORMAT_WITH_TIMESTAMP,
             *frame->extended ? 'T' : 't',
             furi_string_get_cstr(frame->can_id),
-            furi_string_get_cstr(frame->len),
+            *frame->len,
             furi_string_get_cstr(frame->dlc),
             *frame->timestamp);
     } else {
@@ -27,7 +27,7 @@ void lawicel_send_frame(FrameCAN* frame, bool* send_timestamp) {
             FORMAT_WITHOUT_TIMESTAMP,
             *frame->extended ? 'T' : 't',
             furi_string_get_cstr(frame->can_id),
-            furi_string_get_cstr(frame->len),
+            *frame->len,
             furi_string_get_cstr(frame->dlc));
     }
 

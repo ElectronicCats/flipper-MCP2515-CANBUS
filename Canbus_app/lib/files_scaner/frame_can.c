@@ -7,7 +7,7 @@ FrameCAN* frame_can_alloc(void) {
     frame->extended = (bool*)calloc(1, sizeof(bool));
     frame->dir = furi_string_alloc();
     frame->can_id = furi_string_alloc();
-    frame->len = furi_string_alloc();
+    frame->len = (char*)calloc(1, sizeof(char));
     frame->dlc = furi_string_alloc();
 
     return frame;
@@ -18,7 +18,7 @@ void frame_can_free(FrameCAN* frame) {
     free(frame->extended);
     furi_string_free(frame->dir);
     furi_string_free(frame->can_id);
-    furi_string_free(frame->len);
+    free(frame->len);
     furi_string_free(frame->dlc);
 
     free(frame);

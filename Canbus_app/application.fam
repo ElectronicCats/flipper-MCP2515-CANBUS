@@ -31,5 +31,11 @@ App(
                 'exporter_csv.c',
             ],
         ),
+        Lib(
+            name = 'hex_converter',
+            sources = [
+                'hex_converter.c',
+            ],
+        ),
     ],
 )
