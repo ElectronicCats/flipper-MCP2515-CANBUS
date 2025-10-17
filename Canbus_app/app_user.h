@@ -26,7 +26,7 @@
 #include "canbus_app_icons.h"
 
 #include <files_scaner.h>
-#include <lawicel_serial.h>
+#include <SLCAN_serial.h>
 #include <log_exporter.h>
 #include <hex_converter.h>
 
@@ -63,7 +63,9 @@ typedef struct {
     uint32_t times[100];
     uint32_t current_time[100];
 
+    FuriString* text_label;
     FuriThread* thread;
+    FuriThread* thread_SLCAN;
     FuriMutex* mutex;
     SceneManager* scene_manager;
     ViewDispatcher* view_dispatcher;
@@ -201,15 +203,19 @@ typedef enum {
 } scenesViews;
 
 typedef enum {
-    LAWICEL_SEND_LOG,
-    LAWICEL_SEND_FRAME,
-} LAWICEL_OPTIONS_SCENE;
+    SLCAN_SEND_LOG,
+    SLCAN_SEND_FRAME,
+} SLCAN_OPTIONS_SCENE;
 
 typedef enum {
     VIEW_LOG,
     EXPORT_LOG,
     TRANSMIT_LOG,
 } LOGS_OPTIONS;
+
+typedef enum {
+    THREAD_STOP = (1 << 0),
+} THREAD_CONTROL;
 
 /**
  * These functions works in other scenes and widget
@@ -220,3 +226,6 @@ void draw_device_no_connected(App* app);
 void draw_transmition_failure(App* app);
 void draw_send_ok(App* app);
 void draw_send_wrong(App* app);
+
+// Thread to sniff
+int32_t worker_sniffing(void* context);

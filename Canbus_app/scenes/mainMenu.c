@@ -56,9 +56,7 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
         break;
 
     case ReadLOGOption:
-        //if(OpenLogFile(app)) {
         scene_manager_next_scene(app->scene_manager, app_scene_read_logs);
-        //}
         break;
 
     case AboutUsOption:

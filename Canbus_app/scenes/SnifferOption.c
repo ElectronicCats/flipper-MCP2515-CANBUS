@@ -128,9 +128,6 @@ static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
     furi_string_free(text_file);
 }
 
-// Thread to sniff
-static int32_t worker_sniffing(void* context);
-
 /**
  * Scene to choose the id to sniff
  */
@@ -305,7 +302,7 @@ void app_scene_box_sniffing_on_exit(void* context) {
  * Thread to sniff
  */
 
-static int32_t worker_sniffing(void* context) {
+int32_t worker_sniffing(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
     CANFRAME frame = app->can_frame;
@@ -432,7 +429,7 @@ static int32_t worker_sniffing(void* context) {
                 *frame_SLCAN->len = frame.data_lenght;
                 for(int i = 0; i < frame.data_lenght; i++)
                     furi_string_cat_printf(frame_SLCAN->dlc, "%02X", frame.buffer[i]);
-                lawicel_send_frame(frame_SLCAN, app->send_timestamp);
+                SLCAN_send_frame(frame_SLCAN, app->send_timestamp);
 
                 frame_can_free(frame_SLCAN);
             }
@@ -441,7 +438,15 @@ static int32_t worker_sniffing(void* context) {
             furi_delay_ms(1);
         }
 
-        if(condition && !furi_hal_gpio_read(&gpio_button_back)) break;
+        uint32_t flags = furi_thread_flags_get();
+        if(flags & THREAD_STOP) {
+            furi_thread_flags_clear(THREAD_STOP);
+            break;
+        }
+
+        if((condition && !furi_hal_gpio_read(&gpio_button_back))) {
+            break;
+        }
     }
 
     if((app->save_logs == SaveAll) && (app->log_file_ready)) {

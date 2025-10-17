@@ -19,10 +19,10 @@ App(
             ],
         ),
         Lib(
-            name = 'lawicel_serial',
+            name = 'SLCAN_serial',
             sources = [
-                'lawicel_serial.c',
-                'lawicel_writer.c',
+                'SLCAN_serial.c',
+                'SLCAN_writer.c',
             ],
         ),
         Lib(

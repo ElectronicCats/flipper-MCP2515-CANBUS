@@ -62,10 +62,8 @@ static App* app_alloc() {
     view_dispatcher_add_view(app->view_dispatcher, SubmenuLogView, submenu_get_view(app->submenu));
     app->frame_active = frame_can_alloc();
     app->file_active = file_active_alloc();
-    app->can_send_frame = malloc(sizeof(bool));
-    app->send_timestamp = malloc(sizeof(bool));
-    *app->can_send_frame = false;
-    *app->send_timestamp = false;
+    app->can_send_frame = (bool*)calloc(1, sizeof(bool));
+    app->send_timestamp = (bool*)calloc(1, sizeof(bool));
 
     app->dialogs = furi_record_open(RECORD_DIALOGS);
     app->storage = furi_record_open(RECORD_STORAGE);
@@ -74,6 +72,7 @@ static App* app_alloc() {
     app->text = furi_string_alloc();
     app->data = furi_string_alloc();
     app->path = furi_string_alloc();
+    app->text_label = furi_string_alloc();
 
     furi_string_reset(app->data);
     furi_string_cat_printf(app->data, "---");
@@ -126,6 +125,7 @@ static void app_free(App* app) {
     furi_string_free(app->text);
     furi_string_free(app->data);
     furi_string_free(app->path);
+    furi_string_free(app->text_label);
 
     if(app->log_file && storage_file_is_open(app->log_file)) {
         storage_file_close(app->log_file);
@@ -152,7 +152,7 @@ static void app_free(App* app) {
 int app_main(void* p) {
     UNUSED(p);
 
-    lawicel_open_port();
+    SLCAN_open_port();
 
     App* app = app_alloc();
 
@@ -167,7 +167,7 @@ int app_main(void* p) {
 
     app_free(app);
 
-    lawicel_close_port();
+    SLCAN_close_port();
 
     return 0;
 }
