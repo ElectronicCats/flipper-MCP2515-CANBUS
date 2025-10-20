@@ -5,7 +5,7 @@
 bool started = false;
 
 int32_t thread_SLCAN_callback(void* context) {
-    App* app = context;
+    UNUSED(context);
 
     FuriString* SLCAN_received = furi_string_alloc();
     FuriString* can_id_received = furi_string_alloc();
