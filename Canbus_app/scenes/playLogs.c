@@ -169,6 +169,7 @@ void play_data_frames_bk(void* context, int frame_interval) {
 
     // Read first character for next frame
     bytes_read = storage_file_read(app->log_file, &c, 1);
+    storage_file_seek(app->log_file, 0, true);
 
     // To have the time
     uint32_t delay = 0;
@@ -193,19 +194,23 @@ void play_data_frames_bk(void* context, int frame_interval) {
         char* token;
 
         // Get current timestamp
-        token = custom_strtok_r(buffer, "() ", &saveptr);
+        token = custom_strtok_r(buffer, ":", &saveptr);
+        if(!token) break;
+        token = custom_strtok_r(NULL, ":", &saveptr);
+        if(!token) break;
+        token = custom_strtok_r(NULL, ":", &saveptr);
         if(!token) break;
 
         // Get next timestamp if available
         uint32_t delay_ms = strtod(token, &endptr);
 
         // CAN bus ID
-        token = custom_strtok_r(NULL, " ", &saveptr);
+        token = custom_strtok_r(NULL, ":", &saveptr);
         if(!token) break;
         frame_to_send.canId = hex_to_int(token);
 
         // Data length
-        token = custom_strtok_r(NULL, " ", &saveptr);
+        token = custom_strtok_r(NULL, ":", &saveptr);
         if(!token) break;
         frame_to_send.data_lenght = (uint8_t)atoi(token);
 

@@ -72,7 +72,6 @@ static App* app_alloc() {
     app->text = furi_string_alloc();
     app->data = furi_string_alloc();
     app->path = furi_string_alloc();
-    app->text_label = furi_string_alloc();
 
     furi_string_reset(app->data);
     furi_string_cat_printf(app->data, "---");
@@ -125,7 +124,6 @@ static void app_free(App* app) {
     furi_string_free(app->text);
     furi_string_free(app->data);
     furi_string_free(app->path);
-    furi_string_free(app->text_label);
 
     if(app->log_file && storage_file_is_open(app->log_file)) {
         storage_file_close(app->log_file);

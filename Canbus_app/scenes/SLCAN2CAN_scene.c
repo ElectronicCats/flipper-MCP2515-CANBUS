@@ -14,14 +14,17 @@ int32_t thread_SLCAN_callback(void* context) {
     uint8_t* buffer = calloc(30, sizeof(buffer));
 
     while(true) {
+        uint32_t events = furi_thread_flags_wait(THREAD_SLCAN_STOP, FuriFlagWaitAny, 1);
+        if(events & THREAD_SLCAN_STOP) break;
+
         uint32_t num_recived = furi_hal_cdc_receive(SLCAN_CDC_NUM, buffer, 30);
-        if(num_recived && (buffer[0] == 't' || buffer[0] == 'T')) {
+        if(num_recived && (*buffer == 't' || *buffer == 'T')) {
             furi_string_set_str(SLCAN_received, (char*)buffer);
 
             furi_string_set(can_id_received, SLCAN_received);
             furi_string_set(dlc_received, SLCAN_received);
 
-            frame_received.ext = buffer[0] == 'T';
+            frame_received.ext = *buffer == 'T';
 
             furi_string_mid(can_id_received, 1, frame_received.ext ? 8 : 3);
 
@@ -34,7 +37,7 @@ int32_t thread_SLCAN_callback(void* context) {
             if(frame_received.ext) *(char*)furi_string_get_cstr(can_id_received) -= 8;
 
             for(int i = 0; i < frame_received.data_lenght * 2; i += 2) {
-                frame_received.buffer[(i / 2) + 1] = hex2uint8(
+                frame_received.buffer[i / 2] = hex2uint8(
                     (char*)furi_string_get_cstr(dlc_received) + i,
                     (char*)furi_string_get_cstr(dlc_received) + i + 1);
             }
@@ -47,16 +50,8 @@ int32_t thread_SLCAN_callback(void* context) {
             }
         }
 
-        send_can_frame(app->mcp_can, &frame_received);
-
         for(uint8_t i = 0; i < num_recived; i++)
-            buffer[i] = '\0';
-
-        uint32_t flags = furi_thread_flags_get();
-        if(flags & THREAD_STOP) {
-            furi_thread_flags_clear(THREAD_STOP);
-            break;
-        }
+            *(buffer + i) = '\0';
     }
 
     free(buffer);
@@ -75,24 +70,25 @@ void dialog_SLCAN_callback(DialogExResult result, void* context) {
         if(started) {
             started = false;
 
-            furi_thread_flags_set(furi_thread_get_id(app->thread_SLCAN), THREAD_STOP);
-            furi_thread_join(app->thread_SLCAN);
-
-            furi_thread_flags_set(furi_thread_get_id(app->thread), THREAD_STOP);
-            furi_thread_join(app->thread);
-
             dialog_ex_set_header(
                 app->dialog_ex, "Start listening on SLCAN", 64, 30, AlignCenter, AlignCenter);
             dialog_ex_set_center_button_text(app->dialog_ex, "Start");
+
+            furi_thread_flags_set(furi_thread_get_id(app->thread_SLCAN), THREAD_SLCAN_STOP);
+            furi_thread_join(app->thread_SLCAN);
+
+            furi_thread_flags_set(furi_thread_get_id(app->thread), THREAD_SNIFFER_STOP);
+            furi_thread_join(app->thread);
+
         } else {
             started = true;
-
-            furi_thread_start(app->thread_SLCAN);
-            furi_thread_start(app->thread);
 
             dialog_ex_set_header(
                 app->dialog_ex, "Forwarding messages", 64, 30, AlignCenter, AlignCenter);
             dialog_ex_set_center_button_text(app->dialog_ex, "Stop");
+
+            furi_thread_start(app->thread_SLCAN);
+            furi_thread_start(app->thread);
         }
         break;
     default:
@@ -104,28 +100,25 @@ void app_scene_SLCAN_2_CAN_on_enter(void* context) {
     furi_assert(context);
     App* app = context;
 
-    app->thread_SLCAN = furi_thread_alloc();
-    furi_thread_set_name(app->thread_SLCAN, "SLCAN");
-    furi_thread_set_context(app->thread_SLCAN, app);
-    furi_thread_set_stack_size(app->thread_SLCAN, 3 * 1024);
-    furi_thread_set_callback(app->thread_SLCAN, thread_SLCAN_callback);
+    if(mcp2515_init(app->mcp_can) == ERROR_OK) {
+        app->thread_SLCAN = furi_thread_alloc_ex("SLCAN", 2 * 1024, thread_SLCAN_callback, app);
+        app->thread = furi_thread_alloc_ex("SniffingWork", 2 * 1024, worker_sniffing, app);
+        *app->can_send_frame = true;
 
-    app->thread = furi_thread_alloc();
-    furi_thread_set_name(app->thread, "SniffingWork");
-    furi_thread_set_context(app->thread, app);
-    furi_thread_set_stack_size(app->thread, 3 * 1024);
-    furi_thread_set_callback(app->thread, worker_sniffing);
+        dialog_ex_reset(app->dialog_ex);
+        dialog_ex_set_context(app->dialog_ex, app);
+        dialog_ex_set_result_callback(app->dialog_ex, dialog_SLCAN_callback);
 
-    dialog_ex_reset(app->dialog_ex);
-    dialog_ex_set_context(app->dialog_ex, app);
-    dialog_ex_set_result_callback(app->dialog_ex, dialog_SLCAN_callback);
+        dialog_ex_set_header(
+            app->dialog_ex, "Start listening on SLCAN", 64, 30, AlignCenter, AlignCenter);
 
-    dialog_ex_set_header(
-        app->dialog_ex, "Start listening on SLCAN", 64, 30, AlignCenter, AlignCenter);
+        dialog_ex_set_center_button_text(app->dialog_ex, "Start");
 
-    dialog_ex_set_center_button_text(app->dialog_ex, "Start");
-
-    view_dispatcher_switch_to_view(app->view_dispatcher, DialogView);
+        view_dispatcher_switch_to_view(app->view_dispatcher, DialogView);
+    } else {
+        draw_device_no_connected(app);
+        view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+    }
 }
 
 bool app_scene_SLCAN_2_CAN_on_event(void* context, SceneManagerEvent event) {
@@ -140,13 +133,20 @@ void app_scene_SLCAN_2_CAN_on_exit(void* context) {
     furi_assert(context);
     App* app = context;
 
-    started = false;
+    *app->can_send_frame = false;
 
-    furi_thread_flags_set(furi_thread_get_id(app->thread_SLCAN), THREAD_STOP);
-    furi_thread_join(app->thread_SLCAN);
+    if(started) {
+        furi_thread_flags_set(furi_thread_get_id(app->thread_SLCAN), THREAD_SLCAN_STOP);
+        furi_thread_join(app->thread_SLCAN);
+        furi_thread_free(app->thread_SLCAN);
 
-    furi_thread_flags_set(furi_thread_get_id(app->thread), THREAD_STOP);
-    furi_thread_join(app->thread);
+        furi_thread_flags_set(furi_thread_get_id(app->thread), THREAD_SNIFFER_STOP);
+        furi_thread_join(app->thread);
+        furi_thread_free(app->thread);
+
+        started = false;
+    }
 
     dialog_ex_reset(app->dialog_ex);
+    widget_reset(app->widget);
 }

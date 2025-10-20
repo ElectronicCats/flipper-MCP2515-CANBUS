@@ -327,6 +327,9 @@ int32_t worker_sniffing(void* context) {
     bool new = true;
 
     while(run) {
+        uint32_t events = furi_thread_flags_wait(THREAD_SNIFFER_STOP, FuriFlagWaitAny, 1);
+        if(events & THREAD_SNIFFER_STOP) break;
+
         new = true;
 
         while(!condition && wait_to_be_set)
@@ -436,12 +439,6 @@ int32_t worker_sniffing(void* context) {
 
         } else {
             furi_delay_ms(1);
-        }
-
-        uint32_t flags = furi_thread_flags_get();
-        if(flags & THREAD_STOP) {
-            furi_thread_flags_clear(THREAD_STOP);
-            break;
         }
 
         if((condition && !furi_hal_gpio_read(&gpio_button_back))) {

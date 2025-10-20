@@ -63,7 +63,6 @@ typedef struct {
     uint32_t times[100];
     uint32_t current_time[100];
 
-    FuriString* text_label;
     FuriThread* thread;
     FuriThread* thread_SLCAN;
     FuriMutex* mutex;
@@ -214,7 +213,8 @@ typedef enum {
 } LOGS_OPTIONS;
 
 typedef enum {
-    THREAD_STOP = (1 << 0),
+    THREAD_SLCAN_STOP = (1 << 0),
+    THREAD_SNIFFER_STOP = (1 << 1),
 } THREAD_CONTROL;
 
 /**
