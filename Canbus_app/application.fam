@@ -9,12 +9,17 @@ App(
     fap_category="ElectronicCats",
     fap_icon_assets="assets",
     fap_private_libs = [
+        Lib (
+            name = 'frame_can',
+            sources = [
+                'frame_can.c',
+            ],
+        ),
         Lib(
             name = 'files_scaner',
             sources = [
                 'dir_walker.c',
                 'files_scaner.c',
-                'frame_can.c',
                 'frame_extractor.c',
             ],
         ),

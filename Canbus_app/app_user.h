@@ -22,6 +22,7 @@
 #include "libraries/mcp_can_2515.h"
 #include "libraries/pid_library.h"
 #include "libraries/uds_library.h"
+#include "libraries/frame_queue.h"
 
 #include "canbus_app_icons.h"
 
@@ -56,6 +57,7 @@ typedef struct {
     CANFRAME can_frame;
     CANFRAME* frameArray;
     CANFRAME* frame_to_send;
+    FrameCANQueue* frame_queue;
 
     OBDII obdii;
 

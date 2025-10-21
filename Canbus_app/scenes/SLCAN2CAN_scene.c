@@ -5,7 +5,7 @@
 bool started = false;
 
 int32_t thread_SLCAN_callback(void* context) {
-    UNUSED(context);
+    App* app = context;
 
     FuriString* SLCAN_received = furi_string_alloc();
     FuriString* can_id_received = furi_string_alloc();
@@ -14,8 +14,10 @@ int32_t thread_SLCAN_callback(void* context) {
     uint8_t* buffer = calloc(30, sizeof(buffer));
 
     while(true) {
-        uint32_t events = furi_thread_flags_wait(THREAD_SLCAN_STOP, FuriFlagWaitAny, 1);
-        if(events & THREAD_SLCAN_STOP) break;
+        uint32_t events = furi_thread_flags_get();
+        if(events & THREAD_SLCAN_STOP) {
+            break;
+        }
 
         uint32_t num_recived = furi_hal_cdc_receive(SLCAN_CDC_NUM, buffer, 30);
         if(num_recived && (*buffer == 't' || *buffer == 'T')) {
@@ -48,6 +50,8 @@ int32_t thread_SLCAN_callback(void* context) {
                     hex2uint8_nibble((char*)(furi_string_get_cstr(can_id_received) + i))
                     << 4 * ((frame_received.ext ? 7 : 2) - i);
             }
+
+            frame_can_queue_push(app->frame_queue, frame_received);
         }
 
         for(uint8_t i = 0; i < num_recived; i++)
@@ -100,10 +104,14 @@ void app_scene_SLCAN_2_CAN_on_enter(void* context) {
     furi_assert(context);
     App* app = context;
 
-    if(mcp2515_init(app->mcp_can) == ERROR_OK) {
-        app->thread_SLCAN = furi_thread_alloc_ex("SLCAN", 2 * 1024, thread_SLCAN_callback, app);
-        app->thread = furi_thread_alloc_ex("SniffingWork", 2 * 1024, worker_sniffing, app);
+    if(mcp2515_init(app->mcp_can) != ERROR_OK) {
+        draw_device_no_connected(app);
+        view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
+    } else {
         *app->can_send_frame = true;
+
+        app->thread_SLCAN = furi_thread_alloc_ex("SLCAN", 1024, thread_SLCAN_callback, app);
+        app->thread = furi_thread_alloc_ex("SniffingWork", 1024, worker_sniffing, app);
 
         dialog_ex_reset(app->dialog_ex);
         dialog_ex_set_context(app->dialog_ex, app);
@@ -115,9 +123,6 @@ void app_scene_SLCAN_2_CAN_on_enter(void* context) {
         dialog_ex_set_center_button_text(app->dialog_ex, "Start");
 
         view_dispatcher_switch_to_view(app->view_dispatcher, DialogView);
-    } else {
-        draw_device_no_connected(app);
-        view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
     }
 }
 

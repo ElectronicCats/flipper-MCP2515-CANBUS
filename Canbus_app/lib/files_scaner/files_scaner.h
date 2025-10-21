@@ -5,7 +5,7 @@
 #include <toolbox/stream/stream.h>
 #include <toolbox/stream/file_stream.h>
 
-#include "frame_can.h"
+#include <frame_can.h>
 
 typedef struct {
     FuriString* path;

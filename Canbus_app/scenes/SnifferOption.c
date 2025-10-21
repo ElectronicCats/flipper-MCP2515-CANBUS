@@ -192,11 +192,12 @@ bool app_scene_sniffing_on_event(void* context, SceneManagerEvent event) {
 // Scene on exit
 void app_scene_sniffing_on_exit(void* context) {
     App* app = context;
-    if(condition) {
-        furi_thread_join(app->thread);
-        furi_thread_free(app->thread);
-        submenu_reset(app->submenu);
-    }
+
+    furi_thread_flags_set(furi_thread_get_id(app->thread), THREAD_SNIFFER_STOP);
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
+
+    submenu_reset(app->submenu);
 }
 
 /**
@@ -306,6 +307,7 @@ int32_t worker_sniffing(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
     CANFRAME frame = app->can_frame;
+    CANFRAME frame_to_send;
     FuriString* text_label = furi_string_alloc();
 
     uint8_t num_of_devices = 0;
@@ -321,14 +323,23 @@ int32_t worker_sniffing(void* context) {
 
     if(debugStatus != ERROR_OK) {
         run = false;
-        view_dispatcher_send_custom_event(app->view_dispatcher, DEVICE_NO_CONNECTED);
+        draw_device_no_connected(app);
+        view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
     }
 
     bool new = true;
 
     while(run) {
-        uint32_t events = furi_thread_flags_wait(THREAD_SNIFFER_STOP, FuriFlagWaitAny, 1);
-        if(events & THREAD_SNIFFER_STOP) break;
+        uint32_t events = furi_thread_flags_get();
+        if(events & THREAD_SNIFFER_STOP) {
+            break;
+        }
+
+        if(frame_can_queue_get(app->frame_queue) != NULL) {
+            frame_to_send = *frame_can_queue_get(app->frame_queue);
+            frame_can_queue_pop(app->frame_queue);
+            send_can_frame(app->mcp_can, &frame_to_send);
+        }
 
         new = true;
 
@@ -439,10 +450,6 @@ int32_t worker_sniffing(void* context) {
 
         } else {
             furi_delay_ms(1);
-        }
-
-        if((condition && !furi_hal_gpio_read(&gpio_button_back))) {
-            break;
         }
     }
 

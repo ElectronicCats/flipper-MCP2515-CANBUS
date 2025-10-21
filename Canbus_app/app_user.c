@@ -76,6 +76,8 @@ static App* app_alloc() {
     furi_string_reset(app->data);
     furi_string_cat_printf(app->data, "---");
 
+    app->frame_queue = frame_can_queue_alloc();
+
     app->file_browser = file_browser_alloc(app->path);
     view_dispatcher_add_view(
         app->view_dispatcher, FileBrowserView, file_browser_get_view(app->file_browser));
@@ -124,6 +126,8 @@ static void app_free(App* app) {
     furi_string_free(app->text);
     furi_string_free(app->data);
     furi_string_free(app->path);
+
+    frame_can_queue_free(app->frame_queue);
 
     if(app->log_file && storage_file_is_open(app->log_file)) {
         storage_file_close(app->log_file);
