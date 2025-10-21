@@ -316,7 +316,7 @@ int32_t worker_sniffing(void* context) {
     bool run = true;
     bool first_address = true;
 
-    mcp_can->mode = MCP_LISTENONLY;
+    mcp_can->mode = MCP_NORMAL;
     ERROR_CAN debugStatus = mcp2515_init(mcp_can);
 
     memset(app->frameArray, 0, sizeof(CANFRAME) * 100);
