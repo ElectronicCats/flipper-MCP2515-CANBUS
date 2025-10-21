@@ -75,7 +75,7 @@ void dialog_SLCAN_callback(DialogExResult result, void* context) {
             started = false;
 
             dialog_ex_set_header(
-                app->dialog_ex, "Start listening on SLCAN", 64, 30, AlignCenter, AlignCenter);
+                app->dialog_ex, "Start SLCAN-CAN\ncommunication", 64, 30, AlignCenter, AlignCenter);
             dialog_ex_set_center_button_text(app->dialog_ex, "Start");
 
             furi_thread_flags_set(furi_thread_get_id(app->thread_SLCAN), THREAD_SLCAN_STOP);
@@ -88,7 +88,7 @@ void dialog_SLCAN_callback(DialogExResult result, void* context) {
             started = true;
 
             dialog_ex_set_header(
-                app->dialog_ex, "Forwarding messages", 64, 30, AlignCenter, AlignCenter);
+                app->dialog_ex, "Stop communication", 64, 30, AlignCenter, AlignCenter);
             dialog_ex_set_center_button_text(app->dialog_ex, "Stop");
 
             furi_thread_start(app->thread_SLCAN);
@@ -118,7 +118,7 @@ void app_scene_SLCAN_2_CAN_on_enter(void* context) {
         dialog_ex_set_result_callback(app->dialog_ex, dialog_SLCAN_callback);
 
         dialog_ex_set_header(
-            app->dialog_ex, "Start listening on SLCAN", 64, 30, AlignCenter, AlignCenter);
+            app->dialog_ex, "Start SLCAN-CAN\ncommunication", 64, 30, AlignCenter, AlignCenter);
 
         dialog_ex_set_center_button_text(app->dialog_ex, "Start");
 
