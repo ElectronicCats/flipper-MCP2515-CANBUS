@@ -3,7 +3,9 @@
  */
 
 ADD_SCENE(app, menu, main_menu)
+ADD_SCENE(app, sniffer_relay_config, sniffer_relay_config_scene)
 ADD_SCENE(app, sniffing, sniffing_option)
+ADD_SCENE(app, SLCAN_2_CAN, SLCAN_2_CAN_scene)
 ADD_SCENE(app, box_sniffing, box_sniffing)
 ADD_SCENE(app, device_no_connected, device_no_connected)
 
@@ -19,6 +21,10 @@ ADD_SCENE(app, warning_log, warning_log_sender)
 ADD_SCENE(app, id_list, id_list_option)
 ADD_SCENE(app, input_data, input_data_option)
 ADD_SCENE(app, read_logs, read_logs)
+ADD_SCENE(app, dialog, dialog_scene)
+ADD_SCENE(app, transmit_options, transmit_options_scene)
+ADD_SCENE(app, send_timestamp, send_timestamp_scene)
+ADD_SCENE(app, logs_options, logs_options_scene)
 ADD_SCENE(app, settings, settings_option)
 ADD_SCENE(app, about_us, about_us)
 ADD_SCENE(app, obdii_menu, obdii_option)

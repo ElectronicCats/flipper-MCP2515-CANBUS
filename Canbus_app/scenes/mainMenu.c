@@ -17,44 +17,6 @@ void draw_start(App* app) {
     view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
 }
 
-// This is to open the files
-bool OpenLogFile(App* app) {
-    // browse for files
-    FuriString* predefined_filepath = furi_string_alloc_set_str(PATHLOGS);
-    FuriString* selected_filepath = furi_string_alloc();
-    DialogsFileBrowserOptions browser_options;
-    dialog_file_browser_set_basic_options(&browser_options, ".log", NULL);
-    if(!dialog_file_browser_show(
-           app->dialogs, selected_filepath, predefined_filepath, &browser_options)) {
-        return false;
-    }
-    if(storage_file_open(
-           app->log_file, furi_string_get_cstr(selected_filepath), FSAM_READ, FSOM_OPEN_EXISTING)) {
-        app->size_of_storage = storage_file_size(app->log_file);
-    } else {
-        dialog_message_show_storage_error(app->dialogs, "Cannot open File");
-        return false;
-    }
-
-    if(app->size_of_storage > 20000) {
-        dialog_message_show_storage_error(
-            app->dialogs, "Cannot open File\nLarge Memory size\nOpen in a computer");
-        storage_file_close(app->log_file);
-        return false;
-    }
-
-    furi_string_reset(app->text);
-    char buf[storage_file_size(app->log_file)];
-    storage_file_read(app->log_file, buf, sizeof(buf));
-    buf[sizeof(buf)] = '\0';
-    furi_string_cat_str(app->text, buf);
-
-    storage_file_close(app->log_file);
-    furi_string_free(selected_filepath);
-    furi_string_free(predefined_filepath);
-    return true;
-}
-
 void basic_scenes_menu_callback(void* context, uint32_t index) {
     App* app = context;
 
@@ -63,6 +25,10 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
     switch(index) {
     case SniffingTestOption:
         scene_manager_handle_custom_event(app->scene_manager, SniffingOptionEvent);
+        break;
+
+    case SLCANOption:
+        scene_manager_handle_custom_event(app->scene_manager, SLCAN2CANOptionEvent);
         break;
 
     case SpeedDetectorOption:
@@ -90,9 +56,7 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
         break;
 
     case ReadLOGOption:
-        if(OpenLogFile(app)) {
-            scene_manager_next_scene(app->scene_manager, app_scene_read_logs);
-        }
+        scene_manager_next_scene(app->scene_manager, app_scene_read_logs);
         break;
 
     case AboutUsOption:
@@ -106,6 +70,9 @@ void basic_scenes_menu_callback(void* context, uint32_t index) {
 
 void app_scene_menu_on_enter(void* context) {
     App* app = context;
+
+    *app->can_send_frame = false;
+    *app->send_timestamp = false;
 
     uint32_t state = scene_manager_get_scene_state(app->scene_manager, app_scene_main_menu);
 
@@ -121,6 +88,8 @@ void app_scene_menu_on_enter(void* context) {
 
     submenu_add_item(
         app->submenu, "Sniffing", SniffingTestOption, basic_scenes_menu_callback, app);
+
+    submenu_add_item(app->submenu, "SLCAN to CAN", SLCANOption, basic_scenes_menu_callback, app);
 
     submenu_add_item(
         app->submenu, "Speed Detector", SpeedDetectorOption, basic_scenes_menu_callback, app);
@@ -154,7 +123,12 @@ bool app_scene_menu_on_event(void* context, SceneManagerEvent event) {
     case SceneManagerEventTypeCustom:
         switch(event.event) {
         case SniffingOptionEvent:
-            scene_manager_next_scene(app->scene_manager, app_scene_sniffing_option);
+            scene_manager_next_scene(app->scene_manager, app_scene_sniffer_relay_config_scene);
+            consumed = true;
+            break;
+
+        case SLCAN2CANOptionEvent:
+            scene_manager_next_scene(app->scene_manager, app_scene_SLCAN_2_CAN_scene);
             consumed = true;
             break;
 

@@ -111,18 +111,22 @@ void close_file_on_data_log(App* app) {
 static void write_data_on_file(CANFRAME frame, File* file, uint32_t time) {
     FuriString* text_file = furi_string_alloc();
 
-    furi_string_cat_printf(text_file, "(%li) %lx %u", time, frame.canId, frame.data_lenght);
+    furi_string_cat_printf(
+        text_file,
+        "r:%c:%li:%0*lX:%u:",
+        frame.ext ? '1' : '0',
+        time,
+        frame.ext ? 8 : 3,
+        frame.canId,
+        frame.data_lenght);
     for(uint8_t i = 0; i < (frame.data_lenght); i++) {
-        furi_string_cat_printf(text_file, " %x", frame.buffer[i]);
+        furi_string_cat_printf(text_file, "%s%02X", i ? " " : "", frame.buffer[i]);
     }
     furi_string_cat_printf(text_file, "\n");
     storage_file_write(file, furi_string_get_cstr(text_file), furi_string_size(text_file));
     furi_string_reset(text_file);
     furi_string_free(text_file);
 }
-
-// Thread to sniff
-static int32_t worker_sniffing(void* context);
 
 /**
  * Scene to choose the id to sniff
@@ -188,11 +192,12 @@ bool app_scene_sniffing_on_event(void* context, SceneManagerEvent event) {
 // Scene on exit
 void app_scene_sniffing_on_exit(void* context) {
     App* app = context;
-    if(condition) {
-        furi_thread_join(app->thread);
-        furi_thread_free(app->thread);
-        submenu_reset(app->submenu);
-    }
+
+    furi_thread_flags_set(furi_thread_get_id(app->thread), THREAD_SNIFFER_STOP);
+    furi_thread_join(app->thread);
+    furi_thread_free(app->thread);
+
+    submenu_reset(app->submenu);
 }
 
 /**
@@ -298,10 +303,11 @@ void app_scene_box_sniffing_on_exit(void* context) {
  * Thread to sniff
  */
 
-static int32_t worker_sniffing(void* context) {
+int32_t worker_sniffing(void* context) {
     App* app = context;
     MCP2515* mcp_can = app->mcp_can;
     CANFRAME frame = app->can_frame;
+    CANFRAME frame_to_send;
     FuriString* text_label = furi_string_alloc();
 
     uint8_t num_of_devices = 0;
@@ -310,19 +316,31 @@ static int32_t worker_sniffing(void* context) {
     bool run = true;
     bool first_address = true;
 
-    mcp_can->mode = MCP_LISTENONLY;
+    mcp_can->mode = MCP_NORMAL;
     ERROR_CAN debugStatus = mcp2515_init(mcp_can);
 
     memset(app->frameArray, 0, sizeof(CANFRAME) * 100);
 
     if(debugStatus != ERROR_OK) {
         run = false;
-        view_dispatcher_send_custom_event(app->view_dispatcher, DEVICE_NO_CONNECTED);
+        draw_device_no_connected(app);
+        view_dispatcher_switch_to_view(app->view_dispatcher, ViewWidget);
     }
 
     bool new = true;
 
     while(run) {
+        uint32_t events = furi_thread_flags_get();
+        if(events & THREAD_SNIFFER_STOP) {
+            break;
+        }
+
+        if(frame_can_queue_get(app->frame_queue) != NULL) {
+            frame_to_send = *frame_can_queue_get(app->frame_queue);
+            frame_can_queue_pop(app->frame_queue);
+            send_can_frame(app->mcp_can, &frame_to_send);
+        }
+
         new = true;
 
         while(!condition && wait_to_be_set)
@@ -415,11 +433,24 @@ static int32_t worker_sniffing(void* context) {
             }
 
             app->num_of_devices = num_of_devices;
+
+            if(*app->can_send_frame) {
+                FrameCAN* frame_SLCAN = frame_can_alloc();
+                *frame_SLCAN->timestamp = app->times[app->sniffer_index];
+                *frame_SLCAN->extended = (bool)frame.ext;
+                furi_string_set_str(frame_SLCAN->dir, "r");
+                furi_string_printf(frame_SLCAN->can_id, "%*lX", frame.ext ? 8 : 3, frame.canId);
+                *frame_SLCAN->len = frame.data_lenght;
+                for(int i = 0; i < frame.data_lenght; i++)
+                    furi_string_cat_printf(frame_SLCAN->dlc, "%02X", frame.buffer[i]);
+                SLCAN_send_frame(frame_SLCAN, app->send_timestamp);
+
+                frame_can_free(frame_SLCAN);
+            }
+
         } else {
             furi_delay_ms(1);
         }
-
-        if(condition && !furi_hal_gpio_read(&gpio_button_back)) break;
     }
 
     if((app->save_logs == SaveAll) && (app->log_file_ready)) {
