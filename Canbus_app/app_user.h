@@ -31,7 +31,7 @@
 #include <log_exporter.h>
 #include <hex_converter.h>
 
-#define PROGRAM_VERSION "v1.1.4.0"
+#define PROGRAM_VERSION "v1.1.6.0"
 
 #define PATHEXPORTS APP_DATA_PATH("exports")
 #define PATHLOGS    APP_DATA_PATH("logs")
