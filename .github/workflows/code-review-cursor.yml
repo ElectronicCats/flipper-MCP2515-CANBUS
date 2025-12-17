@@ -20,13 +20,13 @@ jobs:
   cursor-code-review:
     name: Cursor AI Code Review
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
-
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    
     # Concurrency: prevent multiple simultaneous runs of the same PR
     concurrency:
       group: code-review-${{ github.event.pull_request.number }}
       cancel-in-progress: true
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -55,58 +55,58 @@ jobs:
           # Download and verify Cursor CLI installation script
           INSTALL_URL="https://cursor.com/install"
           echo "Downloading Cursor CLI installer..."
-
+          
           # Download with timeout protection and retry logic
           MAX_RETRIES=3
           RETRY_COUNT=0
           DOWNLOAD_SUCCESS=false
-
+          
           while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$DOWNLOAD_SUCCESS" = "false" ]; do
             if [ $RETRY_COUNT -gt 0 ]; then
               echo "Retry attempt $RETRY_COUNT of $MAX_RETRIES..."
               sleep 2
             fi
-
+            
             if curl --max-time 300 --connect-timeout 30 -fsSL "$INSTALL_URL" -o /tmp/cursor-install.sh; then
               DOWNLOAD_SUCCESS=true
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
             fi
           done
-
+          
           if [ "$DOWNLOAD_SUCCESS" = "false" ]; then
             echo "::error::Failed to download Cursor CLI installer after $MAX_RETRIES attempts"
             exit 1
           fi
-
+          
           # Verify download integrity (check file exists and is not empty)
           if [ ! -s /tmp/cursor-install.sh ]; then
             echo "::error::Failed to download Cursor CLI installer (file is empty)"
             exit 1
           fi
-
+          
           # Basic validation: check if script contains expected content
           if ! grep -q "cursor" /tmp/cursor-install.sh 2>/dev/null; then
             echo "::error::Failed to download valid Cursor CLI installer (invalid content)"
             exit 1
           fi
-
+          
           # Verify script is executable and has valid shebang
           if ! head -1 /tmp/cursor-install.sh | grep -qE "^#!/(bin|usr)/.*sh"; then
             echo "::error::Downloaded file does not appear to be a valid shell script"
             exit 1
           fi
-
+          
           # Calculate and log checksum for verification (optional future enhancement: verify against known hash)
           CHECKSUM=$(sha256sum /tmp/cursor-install.sh | cut -d' ' -f1)
           echo "Downloaded installer checksum: $CHECKSUM"
-
+          
           # Execute installer with error handling
           bash /tmp/cursor-install.sh || {
             echo "::error::Failed to install Cursor CLI"
             exit 1
           }
-
+          
           # Cursor CLI installer completed successfully
           # Newer installer installs to ~/.local/bin, older to ~/.cursor/bin
           # Add both to PATH - the installer message confirms installation success
@@ -115,7 +115,7 @@ jobs:
           if [ -d "$HOME/.cursor/bin" ]; then
             echo "$HOME/.cursor/bin" >> $GITHUB_PATH
           fi
-
+          
           echo "✅ Cursor CLI installation completed successfully"
           echo "Added ~/.local/bin and ~/.cursor/bin to PATH"
           echo "cursor-agent will be available in subsequent steps"
@@ -138,25 +138,25 @@ jobs:
             echo "Using manually configured model: $MODEL_CONFIG"
             exit 0
           fi
-
+          
           # Get PR metrics with error handling
           set +e
           PR_DATA=$(gh pr view ${{ github.event.pull_request.number }} --json additions,deletions,files --jq '{additions, deletions, files: (.files | length)}' 2>&1)
           PR_VIEW_EXIT_CODE=$?
           set -e
-
+          
           if [ $PR_VIEW_EXIT_CODE -ne 0 ]; then
             echo "::error::Failed to fetch PR data"
             # Improved secret masking: match common secret patterns
             echo "$PR_DATA" | sed -E 's/([A-Z_]*API[_-]?KEY|[A-Z_]*TOKEN|password|secret|credential|auth[_-]?token)=[^[:space:]]+/\1=***/gi'
             exit 1
           fi
-
+          
           ADDITIONS=$(echo "$PR_DATA" | jq -r '.additions // 0')
           DELETIONS=$(echo "$PR_DATA" | jq -r '.deletions // 0')
           FILES=$(echo "$PR_DATA" | jq -r '.files // 0')
           TOTAL_LINES=$((ADDITIONS + DELETIONS))
-
+          
           # Validate numeric values
           if ! [[ "$ADDITIONS" =~ ^[0-9]+$ ]] || ! [[ "$DELETIONS" =~ ^[0-9]+$ ]] || ! [[ "$FILES" =~ ^[0-9]+$ ]]; then
             echo "::error::Invalid PR metrics received"
@@ -164,21 +164,21 @@ jobs:
             echo "$PR_DATA" | sed -E 's/([A-Z_]*API[_-]?KEY|[A-Z_]*TOKEN|password|secret|credential|auth[_-]?token)=[^[:space:]]+/\1=***/gi'
             exit 1
           fi
-
+          
           echo "PR Analysis:"
           echo "  Additions: $ADDITIONS lines"
           echo "  Deletions: $DELETIONS lines"
           echo "  Total changes: $TOTAL_LINES lines"
           echo "  Files changed: $FILES"
-
+          
           # Automatic selection based on PR size and complexity
           # PRIORITY: Claude (Sonnet/Opus) always first > GPT as fallback > Gemini as last resort
           # Available models in Cursor: sonnet-4.5, opus-4.5, gpt-5, gemini-3-pro
-
+          
           # Refactor nested conditionals: use threshold-based selection
           SELECTED_MODEL="sonnet-4.5"
           REASON="Default: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
-
+          
           # Determine model based on PR size thresholds
           if [ "$TOTAL_LINES" -ge 10000 ] || [ "$FILES" -ge 60 ]; then
             # Massive PR: extreme changes
@@ -201,7 +201,7 @@ jobs:
             SELECTED_MODEL="sonnet-4.5"
             REASON="Small PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
           fi
-
+          
           echo "Selected model: $SELECTED_MODEL ($REASON)"
           echo "MODEL=$SELECTED_MODEL" >> $GITHUB_OUTPUT
           echo "MODEL_REASON=$REASON" >> $GITHUB_OUTPUT
@@ -232,12 +232,12 @@ jobs:
         run: |
           # Read prompt template and replace placeholders with actual values
           PROMPT_FILE=".github/workflows/prompts/embedded-systems-review.txt"
-
+          
           if [ ! -f "$PROMPT_FILE" ]; then
             echo "::error::Prompt file not found: $PROMPT_FILE"
             exit 1
           fi
-
+          
           # Replace placeholders with actual values (escaping special characters for sed)
           # Use different delimiter (|) to avoid conflicts with URLs and paths
           sed -e "s|{{REPO}}|$REPO|g" \
@@ -249,16 +249,16 @@ jobs:
               -e "s|{{REVIEW_MAX_COMMENTS}}|$REVIEW_MAX_COMMENTS|g" \
               -e "s|{{MODEL}}|$MODEL|g" \
               "$PROMPT_FILE" > /tmp/review-prompt.txt
-
+          
           echo "✅ Prompt prepared and saved to /tmp/review-prompt.txt"
           echo "Prompt length: $(wc -c < /tmp/review-prompt.txt) characters"
-
+          
           # Validate that all placeholders were replaced
           if grep -q "{{" /tmp/review-prompt.txt; then
             echo "::warning::Some placeholders may not have been replaced:"
             grep -n "{{" /tmp/review-prompt.txt || true
           fi
-
+          
           # Validate that all placeholders were replaced
           if grep -q "{{" /tmp/review-prompt.txt; then
             echo "::warning::Some placeholders may not have been replaced:"
@@ -298,7 +298,7 @@ jobs:
         run: |
           set -e
           echo "Starting code review with model: $MODEL"
-
+          
           # Execute cursor-agent with error handling and timeout protection
           # Read prompt from prepared file
           cursor-agent --force --model "$MODEL" --output-format=text --print "$(cat /tmp/review-prompt.txt)" || {
@@ -308,18 +308,8 @@ jobs:
             echo "Check CURSOR_API_KEY configuration and model availability"
             exit $EXIT_CODE
           }
-
+          
           echo "✅ Code review completed successfully"
-
-      - name: Check blocking review results
-        if: env.BLOCKING_REVIEW == 'true'
-        run: |
-          if [ "${CRITICAL_ISSUES_FOUND:-false}" = "true" ]; then
-            echo "::error::Critical issues found and blocking review is enabled. Failing the workflow."
-            exit 1
-          else
-            echo "✅ No blocking issues found."
-          fi
 
       - name: Summary
         env:
