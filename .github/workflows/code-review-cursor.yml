@@ -1,0 +1,321 @@
+name: AI Code Review (Cursor CLI)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 'AI model to use (overrides auto-selection)'
+        required: false
+        type: string
+        default: 'auto'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  cursor-code-review:
+    name: Cursor AI Code Review
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+
+    # Concurrency: prevent multiple simultaneous runs of the same PR
+    concurrency:
+      group: code-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Optimize: only fetch base and head commits for PR diff comparison
+          fetch-depth: ${{ github.event_name == 'pull_request' && '2' || '0' }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Validate required secrets
+        run: |
+          # Safer method: check if secret exists without exposing its value
+          # GitHub Actions treats empty secrets as empty string, so we check for non-empty
+          SECRET_CHECK="${{ secrets.CURSOR_API_KEY }}"
+          if [ -z "$SECRET_CHECK" ]; then
+            echo "::error::CURSOR_API_KEY secret is not configured"
+            echo "Please configure it in: Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          echo "✅ CURSOR_API_KEY is configured"
+
+      - name: Install Cursor CLI
+        timeout-minutes: 5
+        continue-on-error: false
+        run: |
+          # Download and verify Cursor CLI installation script
+          INSTALL_URL="https://cursor.com/install"
+          echo "Downloading Cursor CLI installer..."
+
+          # Download with timeout protection and retry logic
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          DOWNLOAD_SUCCESS=false
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$DOWNLOAD_SUCCESS" = "false" ]; do
+            if [ $RETRY_COUNT -gt 0 ]; then
+              echo "Retry attempt $RETRY_COUNT of $MAX_RETRIES..."
+              sleep 2
+            fi
+
+            if curl --max-time 300 --connect-timeout 30 -fsSL "$INSTALL_URL" -o /tmp/cursor-install.sh; then
+              DOWNLOAD_SUCCESS=true
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+            fi
+          done
+
+          if [ "$DOWNLOAD_SUCCESS" = "false" ]; then
+            echo "::error::Failed to download Cursor CLI installer after $MAX_RETRIES attempts"
+            exit 1
+          fi
+
+          # Verify download integrity (check file exists and is not empty)
+          if [ ! -s /tmp/cursor-install.sh ]; then
+            echo "::error::Failed to download Cursor CLI installer (file is empty)"
+            exit 1
+          fi
+
+          # Basic validation: check if script contains expected content
+          if ! grep -q "cursor" /tmp/cursor-install.sh 2>/dev/null; then
+            echo "::error::Failed to download valid Cursor CLI installer (invalid content)"
+            exit 1
+          fi
+
+          # Verify script is executable and has valid shebang
+          if ! head -1 /tmp/cursor-install.sh | grep -qE "^#!/(bin|usr)/.*sh"; then
+            echo "::error::Downloaded file does not appear to be a valid shell script"
+            exit 1
+          fi
+
+          # Calculate and log checksum for verification (optional future enhancement: verify against known hash)
+          CHECKSUM=$(sha256sum /tmp/cursor-install.sh | cut -d' ' -f1)
+          echo "Downloaded installer checksum: $CHECKSUM"
+
+          # Execute installer with error handling
+          bash /tmp/cursor-install.sh || {
+            echo "::error::Failed to install Cursor CLI"
+            exit 1
+          }
+
+          # Cursor CLI installer completed successfully
+          # Newer installer installs to ~/.local/bin, older to ~/.cursor/bin
+          # Add both to PATH - the installer message confirms installation success
+          export PATH="$HOME/.local/bin:$HOME/.cursor/bin:$PATH"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          if [ -d "$HOME/.cursor/bin" ]; then
+            echo "$HOME/.cursor/bin" >> $GITHUB_PATH
+          fi
+
+          echo "✅ Cursor CLI installation completed successfully"
+          echo "Added ~/.local/bin and ~/.cursor/bin to PATH"
+          echo "cursor-agent will be available in subsequent steps"
+
+      - name: Configure git identity
+        run: |
+          git config user.name "Cursor AI Reviewer"
+          git config user.email "cursor-reviewer@noreply.github.com"
+
+      - name: Select optimal AI model based on PR size
+        id: select-model
+        env:
+          MODEL_CONFIG: ${{ github.event.inputs.model || vars.MODEL || 'auto' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # If MODEL is manually configured (via workflow_dispatch input or variable) and not 'auto', use it directly
+          if [ "$MODEL_CONFIG" != "auto" ]; then
+            echo "MODEL=$MODEL_CONFIG" >> $GITHUB_OUTPUT
+            echo "MODEL_REASON=Manually configured" >> $GITHUB_OUTPUT
+            echo "Using manually configured model: $MODEL_CONFIG"
+            exit 0
+          fi
+
+          # Get PR metrics with error handling
+          set +e
+          PR_DATA=$(gh pr view ${{ github.event.pull_request.number }} --json additions,deletions,files --jq '{additions, deletions, files: (.files | length)}' 2>&1)
+          PR_VIEW_EXIT_CODE=$?
+          set -e
+
+          if [ $PR_VIEW_EXIT_CODE -ne 0 ]; then
+            echo "::error::Failed to fetch PR data"
+            # Improved secret masking: match common secret patterns
+            echo "$PR_DATA" | sed -E 's/([A-Z_]*API[_-]?KEY|[A-Z_]*TOKEN|password|secret|credential|auth[_-]?token)=[^[:space:]]+/\1=***/gi'
+            exit 1
+          fi
+
+          ADDITIONS=$(echo "$PR_DATA" | jq -r '.additions // 0')
+          DELETIONS=$(echo "$PR_DATA" | jq -r '.deletions // 0')
+          FILES=$(echo "$PR_DATA" | jq -r '.files // 0')
+          TOTAL_LINES=$((ADDITIONS + DELETIONS))
+
+          # Validate numeric values
+          if ! [[ "$ADDITIONS" =~ ^[0-9]+$ ]] || ! [[ "$DELETIONS" =~ ^[0-9]+$ ]] || ! [[ "$FILES" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid PR metrics received"
+            # Improved secret masking
+            echo "$PR_DATA" | sed -E 's/([A-Z_]*API[_-]?KEY|[A-Z_]*TOKEN|password|secret|credential|auth[_-]?token)=[^[:space:]]+/\1=***/gi'
+            exit 1
+          fi
+
+          echo "PR Analysis:"
+          echo "  Additions: $ADDITIONS lines"
+          echo "  Deletions: $DELETIONS lines"
+          echo "  Total changes: $TOTAL_LINES lines"
+          echo "  Files changed: $FILES"
+
+          # Automatic selection based on PR size and complexity
+          # PRIORITY: Claude (Sonnet/Opus) always first > GPT as fallback > Gemini as last resort
+          # Available models in Cursor: sonnet-4.5, opus-4.5, gpt-5, gemini-3-pro
+
+          # Refactor nested conditionals: use threshold-based selection
+          SELECTED_MODEL="sonnet-4.5"
+          REASON="Default: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
+
+          # Determine model based on PR size thresholds
+          if [ "$TOTAL_LINES" -ge 10000 ] || [ "$FILES" -ge 60 ]; then
+            # Massive PR: extreme changes
+            SELECTED_MODEL="opus-4.5"
+            REASON="Massive PR: Claude Opus (priority), fallback: GPT-5-high, then Gemini-3-pro"
+          elif [ "$TOTAL_LINES" -ge 3000 ] || [ "$FILES" -ge 40 ]; then
+            # Large PR: many changes and files
+            SELECTED_MODEL="opus-4.5"
+            REASON="Very large PR: Claude Opus (priority), fallback: GPT-5-high, then Gemini-3-pro"
+          elif [ "$TOTAL_LINES" -ge 1500 ] || [ "$FILES" -ge 25 ]; then
+            # Medium-large PR: significant changes
+            SELECTED_MODEL="sonnet-4.5"
+            REASON="Large PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
+          elif [ "$TOTAL_LINES" -ge 500 ] || [ "$FILES" -ge 10 ]; then
+            # Small-medium PR: moderate changes
+            SELECTED_MODEL="sonnet-4.5"
+            REASON="Medium PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
+          else
+            # Small PR: minor changes, few files
+            SELECTED_MODEL="sonnet-4.5"
+            REASON="Small PR: Claude Sonnet (priority), fallback: GPT-5, then Gemini-3-pro"
+          fi
+
+          echo "Selected model: $SELECTED_MODEL ($REASON)"
+          echo "MODEL=$SELECTED_MODEL" >> $GITHUB_OUTPUT
+          echo "MODEL_REASON=$REASON" >> $GITHUB_OUTPUT
+
+      - name: Validate selected model
+        id: validate-model
+        env:
+          MODEL: ${{ steps.select-model.outputs.MODEL }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          echo "Selected model: $MODEL"
+          # Note: Full model validation would require calling Cursor API to check availability.
+          # The model will be validated when cursor-agent runs - if invalid, it will fail with a clear error.
+          # This step logs the selected model for visibility in the workflow run.
+          echo "MODEL_VALIDATED=true" >> $GITHUB_OUTPUT
+
+      - name: Prepare review prompt
+        id: prepare-prompt
+        env:
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BLOCKING_REVIEW: ${{ vars.BLOCKING_REVIEW || 'false' }}
+          REVIEW_DETAIL_LEVEL: ${{ vars.REVIEW_DETAIL_LEVEL || 'detailed' }}
+          REVIEW_MAX_COMMENTS: ${{ vars.REVIEW_MAX_COMMENTS || '20' }}
+          MODEL: ${{ steps.select-model.outputs.MODEL }}
+        run: |
+          # Read prompt template and replace placeholders with actual values
+          PROMPT_FILE=".github/workflows/prompts/embedded-systems-review.txt"
+
+          if [ ! -f "$PROMPT_FILE" ]; then
+            echo "::error::Prompt file not found: $PROMPT_FILE"
+            exit 1
+          fi
+
+          # Replace placeholders with actual values (escaping special characters for sed)
+          # Use different delimiter (|) to avoid conflicts with URLs and paths
+          sed -e "s|{{REPO}}|$REPO|g" \
+              -e "s|{{PR_NUMBER}}|$PR_NUMBER|g" \
+              -e "s|{{PR_HEAD_SHA}}|$PR_HEAD_SHA|g" \
+              -e "s|{{PR_BASE_SHA}}|$PR_BASE_SHA|g" \
+              -e "s|{{BLOCKING_REVIEW}}|$BLOCKING_REVIEW|g" \
+              -e "s|{{REVIEW_DETAIL_LEVEL}}|$REVIEW_DETAIL_LEVEL|g" \
+              -e "s|{{REVIEW_MAX_COMMENTS}}|$REVIEW_MAX_COMMENTS|g" \
+              -e "s|{{MODEL}}|$MODEL|g" \
+              "$PROMPT_FILE" > /tmp/review-prompt.txt
+
+          echo "✅ Prompt prepared and saved to /tmp/review-prompt.txt"
+          echo "Prompt length: $(wc -c < /tmp/review-prompt.txt) characters"
+
+          # Validate that all placeholders were replaced
+          if grep -q "{{" /tmp/review-prompt.txt; then
+            echo "::warning::Some placeholders may not have been replaced:"
+            grep -n "{{" /tmp/review-prompt.txt || true
+          fi
+
+          # Validate that all placeholders were replaced
+          if grep -q "{{" /tmp/review-prompt.txt; then
+            echo "::warning::Some placeholders may not have been replaced:"
+            grep -n "{{" /tmp/review-prompt.txt || true
+          fi
+
+      - name: Perform automated code review with Cursor
+        timeout-minutes: 30
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          # MODEL: AI model to use
+          #   - 'auto' (default): Automatic selection based on PR size
+          #     Model priority: Claude (Sonnet/Opus) > GPT > Gemini
+          #   Claude models (priority):
+          #   - 'sonnet-4.5': Claude Sonnet 4.5 (default for small/medium/large PRs)
+          #   - 'sonnet-4.5-thinking': Claude Sonnet with extended reasoning
+          #   - 'opus-4.5': Claude Opus 4.5 (best quality, for very large/complex PRs)
+          #   - 'opus-4.5-thinking': Claude Opus with extended reasoning
+          #   GPT models (fallback if Claude unavailable):
+          #   - 'gpt-5': GPT-5 standard
+          #   - 'gpt-5.1': GPT-5.1 improved
+          #   - 'gpt-5-high': GPT-5 high quality
+          #   - 'gpt-5-codex': GPT-5 optimized for code
+          #   - 'gpt-5.1-codex': GPT-5.1 optimized for code
+          #   - 'opus-4.1': Opus 4.1 (alternative)
+          #   Gemini models (final fallback):
+          #   - 'gemini-3-pro': Gemini 3 Pro
+          #   Other:
+          #   - 'composer-1': Composer model
+          #   - 'grok': Grok model
+          #   - 'auto': Auto-selection by Cursor
+          MODEL: ${{ steps.select-model.outputs.MODEL }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BLOCKING_REVIEW: ${{ vars.BLOCKING_REVIEW || 'false' }}
+          REVIEW_MAX_COMMENTS: ${{ vars.REVIEW_MAX_COMMENTS || '20' }}
+          REVIEW_DETAIL_LEVEL: ${{ vars.REVIEW_DETAIL_LEVEL || 'detailed' }}
+        run: |
+          set -e
+          echo "Starting code review with model: $MODEL"
+
+          # Execute cursor-agent with error handling and timeout protection
+          # Read prompt from prepared file
+          cursor-agent --force --model "$MODEL" --output-format=text --print "$(cat /tmp/review-prompt.txt)" || {
+            EXIT_CODE=$?
+            echo "::error::cursor-agent failed with exit code $EXIT_CODE"
+            echo "Model used: $MODEL"
+            echo "Check CURSOR_API_KEY configuration and model availability"
+            exit $EXIT_CODE
+          }
+
+          echo "✅ Code review completed successfully"
+
+      - name: Summary
+        env:
+          MODEL_USED: ${{ steps.select-model.outputs.MODEL }}
+          MODEL_REASON: ${{ steps.select-model.outputs.MODEL_REASON }}
+        run: |
+          echo "✅ Code review with Cursor AI completed"
+          echo "Model used: $MODEL_USED ($MODEL_REASON)"
+          echo "Please review the comments in the Pull Request"
