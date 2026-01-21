@@ -295,6 +295,7 @@ void app_scene_box_sniffing_on_exit(void* context) {
 
     wait_to_be_set = false;
 
+    condition = true;
     furi_string_reset(app->text);
     text_box_reset(app->textBox);
 }
